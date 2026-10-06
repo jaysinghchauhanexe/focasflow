@@ -182,10 +182,13 @@ export const CurrentTaskBanner: React.FC = () => {
 
         {/* Complete Button */}
         <button
+          type="button"
+          data-completion-trigger="true"
+          data-no-click-sound="true"
           onClick={() => {
             toggleTaskStatus(currentTask.id);
           }}
-          className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-tag-healthBg text-tag-health hover:bg-[#D5EFE1] text-[13px] sm:text-[13.5px] font-semibold transition-all"
+          className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-tag-healthBg text-tag-health hover:bg-[#D5EFE1] text-[13px] sm:text-[13.5px] font-semibold transition-all cursor-pointer"
         >
           <Check size={16} strokeWidth={2.5} />
           <span>Complete</span>

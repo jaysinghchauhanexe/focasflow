@@ -19,6 +19,7 @@ import { BreathingModal } from './components/BreathingModal';
 import { OnboardingModal } from './components/OnboardingModal';
 import { MoodInsightModal } from './components/MoodInsightModal';
 import { LofiBackgroundPlayer } from './components/LofiBackgroundPlayer';
+import { setupGlobalClickSoundListener } from './utils/soundEffects';
 
 export const App: React.FC = () => {
   const { currentTab, replanDay, settings, isFocusTimerRunning, setFocusElapsedSeconds } = useAppStore();
@@ -26,6 +27,8 @@ export const App: React.FC = () => {
   useEffect(() => {
     // Initial calculation of daily capacity and schedule
     replanDay();
+    const cleanupClickSounds = setupGlobalClickSoundListener();
+    return cleanupClickSounds;
   }, []);
 
   // Global focus timer ticker

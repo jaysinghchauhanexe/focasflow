@@ -105,6 +105,7 @@ export interface UserPreferences {
   defaultLofiStation: LofiStationId;
   enableOvertimeAlerts: boolean;
   taskCompletionChime: boolean;
+  enableButtonClickSound: boolean;
 
   // Schedule & Capacity Automations
   enableOverloadWarnings: boolean;

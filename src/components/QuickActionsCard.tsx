@@ -66,6 +66,8 @@ export const QuickActionsCard: React.FC = () => {
               return (
                 <div
                   key={habit.id}
+                  data-completion-trigger="true"
+                  data-no-click-sound="true"
                   onClick={() => toggleHabitDate(habit.id, selectedDate)}
                   className="flex items-center justify-between p-2.5 px-3 rounded-2xl bg-card-subtle hover:bg-card-muted cursor-pointer transition-all"
                 >

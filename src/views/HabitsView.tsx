@@ -116,8 +116,11 @@ export const HabitsView: React.FC = () => {
                           {dayName}
                         </span>
                         <button
+                          type="button"
+                          data-completion-trigger="true"
+                          data-no-click-sound="true"
                           onClick={() => toggleHabitDate(habit.id, dateStr)}
-                          className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                             isCompleted
                               ? 'bg-primary text-white shadow-xs'
                               : isToday

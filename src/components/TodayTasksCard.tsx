@@ -167,6 +167,9 @@ export const TodayTasksCard: React.FC = () => {
                   {/* Left: Checkbox + Priority Dot + Title */}
                   <div className="flex items-center gap-3 min-w-0 pr-4">
                     <button
+                      type="button"
+                      data-completion-trigger="true"
+                      data-no-click-sound="true"
                       onClick={() => toggleTaskStatus(task.id)}
                       className={`w-[22px] h-[22px] rounded-[8px] flex items-center justify-center transition-spring cursor-pointer active:scale-75 hover:scale-115 ${isCompleted
                           ? 'bg-tag-health text-white shadow-xs'

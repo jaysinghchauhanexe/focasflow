@@ -18,6 +18,7 @@ import {
   LofiStationId
 } from '../types';
 import { calculateDayCapacity, buildDaySchedule } from '../engine/scheduler';
+import { playCompletionSound } from '../utils/soundEffects';
 
 interface AppState {
   currentTab: 'today' | 'tasks' | 'habits' | 'routines' | 'goals' | 'schedule' | 'history' | 'settings' | 'preferences';
@@ -394,6 +395,7 @@ export const defaultPreferences: UserPreferences = {
   defaultLofiStation: 'coffee',
   enableOvertimeAlerts: true,
   taskCompletionChime: true,
+  enableButtonClickSound: true,
   enableOverloadWarnings: true,
   autoRollFlexibleTasks: true,
   strictBedtimeBoundary: true,
@@ -677,6 +679,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
         return t;
       });
+      if (isNowCompleted) {
+        playCompletionSound();
+      }
       savePersisted('tasks', updated);
       const isCurrentActive = state.activeFocusTaskId === id && isNowCompleted;
       return { 
@@ -820,15 +825,21 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   toggleHabitDate: (id, date) => {
     set((state) => {
+      let isCompletedNow = false;
       const updated = state.habits.map((h) => {
         if (h.id === id) {
-          const completed = h.completedDates.includes(date)
+          const isRemoving = h.completedDates.includes(date);
+          const completed = isRemoving
             ? h.completedDates.filter((d) => d !== date)
             : [...h.completedDates, date];
+          if (!isRemoving) isCompletedNow = true;
           return { ...h, completedDates: completed };
         }
         return h;
       });
+      if (isCompletedNow) {
+        playCompletionSound();
+      }
       savePersisted('habits', updated);
       return { habits: updated };
     });
@@ -969,6 +980,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         const target = updatedTasks.find(t => t.title.toLowerCase().includes((op.title || '').toLowerCase()) || t.id === op.task_id);
         if (target) {
           target.status = 'completed';
+          playCompletionSound();
         }
       } else if (op.op_type === 'MOVE_TASK') {
         const target = updatedTasks.find(t => t.title.toLowerCase().includes((op.title || '').toLowerCase()) || t.id === op.task_id);

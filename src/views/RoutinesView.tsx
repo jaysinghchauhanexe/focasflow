@@ -3,6 +3,7 @@ import { useAppStore } from '../store/useAppStore';
 import { Sun, Moon, Check } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
 import { DoodleRoutine } from '../components/DoodleIllustrations';
+import { playCompletionSound } from '../utils/soundEffects';
 
 export const RoutinesView: React.FC = () => {
   const { routines, updateRoutine } = useAppStore();
@@ -11,9 +12,19 @@ export const RoutinesView: React.FC = () => {
     const routine = routines.find((r) => r.id === routineId);
     if (!routine) return;
 
-    const updatedItems = routine.items.map((item) =>
-      item.id === stepId ? { ...item, completed: !item.completed } : item
-    );
+    let isCompletedNow = false;
+    const updatedItems = routine.items.map((item) => {
+      if (item.id === stepId) {
+        const nextState = !item.completed;
+        if (nextState) isCompletedNow = true;
+        return { ...item, completed: nextState };
+      }
+      return item;
+    });
+
+    if (isCompletedNow) {
+      playCompletionSound();
+    }
 
     updateRoutine({ ...routine, items: updatedItems });
   };
@@ -72,6 +83,8 @@ export const RoutinesView: React.FC = () => {
                 {routine.items.map((step) => (
                   <div
                     key={step.id}
+                    data-completion-trigger="true"
+                    data-no-click-sound="true"
                     onClick={() => toggleRoutineStep(routine.id, step.id)}
                     className="flex items-center justify-between p-3 rounded-2xl bg-card-subtle hover:bg-card-muted cursor-pointer transition-all"
                   >

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore, applyTheme, applyFont, defaultPreferences } from '../store/useAppStore';
 import { UserPreferences, LofiStationId, AppTheme } from '../types';
+import { playCompletionSound, playClickSound } from '../utils/soundEffects';
 import {
   SlidersHorizontal,
   Smile,
@@ -16,7 +17,8 @@ import {
   Palette,
   Shield,
   Clock,
-  Sparkle
+  Sparkle,
+  Play
 } from 'lucide-react';
 
 interface ToggleProps {
@@ -181,10 +183,6 @@ export const PreferencesView: React.FC = () => {
       {/* Page Header */}
       <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-soft text-primary text-[11.5px] font-semibold tracking-wide uppercase mb-2 border border-primary/15">
-            <SlidersHorizontal size={13} />
-            <span>Personalization & Workflow Control</span>
-          </div>
           <h1 className="text-[26px] sm:text-[30px] font-serif font-bold text-foreground tracking-tight">
             Application Preferences
           </h1>
@@ -533,6 +531,74 @@ export const PreferencesView: React.FC = () => {
                 checked={preferences.enableOvertimeAlerts}
                 onChange={() => handleToggle('enableOvertimeAlerts')}
                 label="Task Overtime Warnings & Buffer Tools"
+              />
+            </div>
+
+            {/* Preference: Completion Chime (tick-ting.mp3) */}
+            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+              <div className="space-y-1 pr-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[13.5px] font-semibold text-foreground">
+                    Task & Habit Completion Chime
+                  </span>
+                  <span className="text-[10.5px] font-semibold text-tag-health px-1.5 py-0.5 rounded-full bg-tag-healthBg">
+                    Ting-Ting
+                  </span>
+                </div>
+                <p className="text-[12px] text-mutedText leading-relaxed">
+                  Plays a rewarding physical chime whenever a task, habit, or routine step is completed.
+                </p>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    playCompletionSound();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary-soft hover:bg-primary/20 text-primary text-[11.5px] font-semibold transition-all cursor-pointer mt-1"
+                >
+                  <Play size={11} fill="currentColor" />
+                  <span>Preview Completion Sound</span>
+                </button>
+              </div>
+
+              <ToggleSwitch
+                checked={preferences.taskCompletionChime}
+                onChange={() => handleToggle('taskCompletionChime')}
+                label="Task & Habit Completion Chime"
+              />
+            </div>
+
+            {/* Preference: Tactile Button Click Sound (mouse-click-single.mp3) */}
+            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+              <div className="space-y-1 pr-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[13.5px] font-semibold text-foreground">
+                    Tactile Button Click Feedback
+                  </span>
+                  <span className="text-[10.5px] font-semibold text-primary px-1.5 py-0.5 rounded-full bg-primary-soft">
+                    Mouse Click
+                  </span>
+                </div>
+                <p className="text-[12px] text-mutedText leading-relaxed">
+                  Plays a crisp physical click sound whenever buttons, tabs, switches, and interactive elements are pressed.
+                </p>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    playClickSound();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary-soft hover:bg-primary/20 text-primary text-[11.5px] font-semibold transition-all cursor-pointer mt-1"
+                >
+                  <Play size={11} fill="currentColor" />
+                  <span>Preview Click Sound</span>
+                </button>
+              </div>
+
+              <ToggleSwitch
+                checked={preferences.enableButtonClickSound}
+                onChange={() => handleToggle('enableButtonClickSound')}
+                label="Tactile Button Click Feedback"
               />
             </div>
           </div>
