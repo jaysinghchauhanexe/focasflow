@@ -23,14 +23,24 @@ interface AppState {
   aiLoading: boolean;
   lastAiResult: AiResponsePayload | null;
   isOverloadModalOpen: boolean;
+  isBreathingModalOpen: boolean;
   activeFilter: 'all' | 'important' | 'regular';
   searchQuery: string;
+
+  // Wellness & Calm States
+  currentMood: 'stressed' | 'anxious' | 'okay' | 'calm' | 'great';
+  activeSoundscape: 'rain' | 'stream' | 'waves' | 'forest';
+  isPlayingSoundscape: boolean;
 
   // Actions
   setCurrentTab: (tab: AppState['currentTab']) => void;
   setSelectedDate: (date: string) => void;
   setActiveFilter: (filter: 'all' | 'important' | 'regular') => void;
   setSearchQuery: (query: string) => void;
+  setMood: (mood: 'stressed' | 'anxious' | 'okay' | 'calm' | 'great') => void;
+  openBreathingModal: () => void;
+  closeBreathingModal: () => void;
+  toggleSoundscape: (soundscape?: 'rain' | 'stream' | 'waves' | 'forest') => void;
 
   // Task Actions
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
@@ -326,6 +336,25 @@ const initialSettings: AppSettings = {
   openRouterApiKey: '',
   openRouterModel: 'anthropic/claude-3.5-haiku',
   autoReschedule: true,
+  theme: 'green',
+};
+
+export const applyTheme = (theme: string) => {
+  const safeTheme = theme || 'green';
+  try {
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', safeTheme);
+      if (document.body) {
+        document.body.setAttribute('data-theme', safeTheme);
+      }
+      const root = document.getElementById('root');
+      if (root) {
+        root.setAttribute('data-theme', safeTheme);
+      }
+    }
+  } catch (e) {
+    // SSR safe
+  }
 };
 
 // Persistence helper
@@ -346,6 +375,13 @@ const savePersisted = <T>(key: string, value: T) => {
   }
 };
 
+const rawLoadedSettings = loadPersisted<Partial<AppSettings>>('settings', {});
+const loadedSettings: AppSettings = {
+  ...initialSettings,
+  ...rawLoadedSettings,
+};
+applyTheme(loadedSettings.theme || 'green');
+
 export const useAppStore = create<AppState>((set, get) => ({
   currentTab: 'today',
   selectedDate: getTodayDate(),
@@ -355,7 +391,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   goals: loadPersisted('goals', initialGoals),
   scheduleBlocks: [],
   history: loadPersisted('history', initialHistory),
-  settings: loadPersisted('settings', initialSettings),
+  settings: loadedSettings,
 
   isTaskModalOpen: false,
   editingTask: null,
@@ -366,13 +402,28 @@ export const useAppStore = create<AppState>((set, get) => ({
   aiLoading: false,
   lastAiResult: null,
   isOverloadModalOpen: false,
+  isBreathingModalOpen: false,
   activeFilter: 'all',
   searchQuery: '',
+  currentMood: loadPersisted('mood', 'calm' as const),
+  activeSoundscape: 'rain',
+  isPlayingSoundscape: false,
 
   setCurrentTab: (tab) => set({ currentTab: tab }),
   setSelectedDate: (date) => set({ selectedDate: date }),
   setActiveFilter: (filter) => set({ activeFilter: filter }),
   setSearchQuery: (query) => set({ searchQuery: query }),
+  setMood: (mood) => {
+    savePersisted('mood', mood);
+    set({ currentMood: mood });
+  },
+  openBreathingModal: () => set({ isBreathingModalOpen: true }),
+  closeBreathingModal: () => set({ isBreathingModalOpen: false }),
+  toggleSoundscape: (soundscape) => set((state) => {
+    const nextSoundscape = soundscape || state.activeSoundscape;
+    const nextPlaying = soundscape ? (state.activeSoundscape === soundscape ? !state.isPlayingSoundscape : true) : !state.isPlayingSoundscape;
+    return { activeSoundscape: nextSoundscape, isPlayingSoundscape: nextPlaying };
+  }),
 
   addTask: (taskData) => {
     const newTask: Task = {
@@ -578,6 +629,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   updateSettings: (newSettings) => {
+    if (newSettings.theme) {
+      applyTheme(newSettings.theme);
+    }
     set((state) => {
       const updated = { ...state.settings, ...newSettings };
       savePersisted('settings', updated);

@@ -81,6 +81,8 @@ export interface HistoryLog {
   notes?: string;
 }
 
+export type AppTheme = 'green' | 'teal' | 'blue' | 'monochrome' | 'dark';
+
 export interface AppSettings {
   userName: string;
   wakeTime: string; // e.g. "07:00"
@@ -91,6 +93,7 @@ export interface AppSettings {
   openRouterApiKey: string;
   openRouterModel: string;
   autoReschedule: boolean;
+  theme: AppTheme;
 }
 
 export interface AiOperation {

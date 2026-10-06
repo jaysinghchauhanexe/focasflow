@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Category, Priority } from '../types';
-import { X, Clock, AlertCircle } from 'lucide-react';
+import { X } from 'lucide-react';
 
 export const TaskModal: React.FC = () => {
   const { isTaskModalOpen, closeTaskModal, editingTask, addTask, updateTask, selectedDate } = useAppStore();
@@ -80,18 +80,18 @@ export const TaskModal: React.FC = () => {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05313A]/30 backdrop-blur-xs p-4 animate-fade-in">
-      <div className="bg-white w-full max-w-lg rounded-[20px] shadow-float p-6 select-none border border-[rgba(5,49,58,0.06)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none">
+      <div className="bg-card w-full max-w-lg rounded-[28px] shadow-float p-6 sm:p-7 border border-borderToken transition-colors">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[rgba(5,49,58,0.06)]">
-          <h3 className="text-xl font-serif font-medium text-[#05313A]">
-            {editingTask ? 'Edit Task' : 'Add New Task'}
+        <div className="flex items-center justify-between pb-4 border-b border-borderToken">
+          <h3 className="text-[20px] font-serif font-medium text-foreground">
+            {editingTask ? 'Edit Outcome' : 'Add New Outcome'}
           </h3>
           <button
             onClick={closeTaskModal}
-            className="p-1 rounded-lg text-[rgba(5,49,58,0.4)] hover:text-[#05313A] hover:bg-[rgba(5,49,58,0.05)]"
+            className="w-8 h-8 rounded-full bg-card-subtle hover:bg-card-muted text-mutedText hover:text-foreground flex items-center justify-center transition-colors"
           >
-            <X size={18} />
+            <X size={17} />
           </button>
         </div>
 
@@ -99,8 +99,8 @@ export const TaskModal: React.FC = () => {
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-xs font-semibold text-[rgba(5,49,58,0.7)] uppercase tracking-wider mb-1.5">
-              Task Title
+            <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
+              Outcome Title
             </label>
             <input
               type="text"
@@ -108,27 +108,27 @@ export const TaskModal: React.FC = () => {
               autoFocus
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Finish authentication API"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.12)] text-sm text-[#05313A] focus:outline-none focus:border-[#328F9B] focus:ring-2 focus:ring-[rgba(50,143,155,0.2)]"
+              placeholder="e.g. Finish client authentication module"
+              className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle border border-borderToken text-[14px] text-foreground focus:outline-none focus:border-primary"
             />
           </div>
 
           {/* Duration & Category Grid */}
           <div className="grid grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold text-[rgba(5,49,58,0.7)] uppercase tracking-wider mb-1.5">
-                Estimated Duration (mins)
+              <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
+                Estimated Duration
               </label>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 {[15, 30, 45, 60, 90].map((mins) => (
                   <button
                     key={mins}
                     type="button"
                     onClick={() => setDuration(mins)}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    className={`flex-1 py-1.5 rounded-xl text-[12px] font-medium transition-all ${
                       duration === mins
-                        ? 'bg-[#328F9B] text-white shadow-xs'
-                        : 'bg-[#F4F9FB] text-[rgba(5,49,58,0.7)] hover:bg-[#EAF3F7]'
+                        ? 'bg-primary text-white shadow-xs'
+                        : 'bg-card-subtle text-textSecondary hover:bg-card-muted border border-borderToken'
                     }`}
                   >
                     {mins}m
@@ -138,13 +138,13 @@ export const TaskModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[rgba(5,49,58,0.7)] uppercase tracking-wider mb-1.5">
+              <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
                 Category
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as Category)}
-                className="w-full px-3 py-2 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.12)] text-xs text-[#05313A] focus:outline-none focus:border-[#328F9B]"
+                className="w-full px-3.5 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
               >
                 {categories.map((c) => (
                   <option key={c} value={c}>
@@ -157,7 +157,7 @@ export const TaskModal: React.FC = () => {
 
           {/* Priority Model */}
           <div>
-            <label className="block text-xs font-semibold text-[rgba(5,49,58,0.7)] uppercase tracking-wider mb-1.5">
+            <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
               Priority Level
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -166,14 +166,14 @@ export const TaskModal: React.FC = () => {
                   key={p.id}
                   type="button"
                   onClick={() => setPriority(p.id)}
-                  className={`p-2.5 rounded-xl text-left border transition-all ${
+                  className={`p-2.5 rounded-2xl text-left border transition-all ${
                     priority === p.id
-                      ? 'border-[#328F9B] bg-[rgba(50,143,155,0.08)]'
-                      : 'border-[rgba(5,49,58,0.08)] hover:border-[rgba(5,49,58,0.2)] bg-white'
+                      ? 'border-primary bg-primary-soft'
+                      : 'border-borderToken hover:border-primary/40 bg-card'
                   }`}
                 >
-                  <span className="block text-xs font-semibold text-[#05313A]">{p.label}</span>
-                  <span className="block text-[10.5px] text-[rgba(5,49,58,0.55)]">{p.desc}</span>
+                  <span className="block text-[12.5px] font-semibold text-foreground">{p.label}</span>
+                  <span className="block text-[11px] text-mutedText">{p.desc}</span>
                 </button>
               ))}
             </div>
@@ -181,7 +181,7 @@ export const TaskModal: React.FC = () => {
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-semibold text-[rgba(5,49,58,0.7)] uppercase tracking-wider mb-1.5">
+            <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
               Notes / Sub-steps (Optional)
             </label>
             <textarea
@@ -189,22 +189,22 @@ export const TaskModal: React.FC = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Additional context or outcome checklist..."
-              className="w-full px-3.5 py-2 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.12)] text-xs text-[#05313A] focus:outline-none focus:border-[#328F9B]"
+              className="w-full px-4 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-[rgba(5,49,58,0.06)]">
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-borderToken">
             <button
               type="button"
               onClick={closeTaskModal}
-              className="px-4 py-2 rounded-xl text-xs font-medium text-[rgba(5,49,58,0.6)] hover:text-[#05313A] hover:bg-[rgba(5,49,58,0.05)]"
+              className="px-4 py-2 rounded-2xl text-[13px] font-medium text-mutedText hover:text-foreground hover:bg-card-subtle"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-[#328F9B] hover:bg-[#287C87] text-white text-xs font-semibold transition-all shadow-sm"
+              className="px-5 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold transition-all shadow-xs"
             >
               {editingTask ? 'Save Changes' : 'Add to Schedule'}
             </button>

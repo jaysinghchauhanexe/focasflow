@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useAppStore } from './store/useAppStore';
+import { useAppStore, applyTheme } from './store/useAppStore';
 import { Sidebar } from './components/Sidebar';
 import { TodayView } from './views/TodayView';
 import { TasksView } from './views/TasksView';
@@ -14,14 +14,19 @@ import { HabitModal } from './components/HabitModal';
 import { CommitmentModal } from './components/CommitmentModal';
 import { AiResultModal } from './components/AiResultModal';
 import { OverloadModal } from './components/OverloadModal';
+import { BreathingModal } from './components/BreathingModal';
 
 export const App: React.FC = () => {
-  const { currentTab, replanDay } = useAppStore();
+  const { currentTab, replanDay, settings } = useAppStore();
 
   useEffect(() => {
     // Initial calculation of daily capacity and schedule
     replanDay();
   }, []);
+
+  useEffect(() => {
+    applyTheme(settings.theme || 'green');
+  }, [settings.theme]);
 
   const renderActiveView = () => {
     switch (currentTab) {
@@ -47,12 +52,15 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen bg-[#DEEFF6] p-6 lg:p-7 overflow-hidden gap-6 font-sans antialiased text-[#05313A]">
+    <div
+      data-theme={settings.theme || 'green'}
+      className="flex h-screen w-screen bg-background p-5 lg:p-6 overflow-hidden gap-6 font-sans antialiased text-foreground transition-colors duration-200"
+    >
       {/* Sidebar Navigation */}
       <Sidebar />
 
-      {/* Main Content Area with matched symmetrical padding */}
-      <main className="flex-1 h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      {/* Main Content Area */}
+      <main className="flex-1 h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pr-1">
         {renderActiveView()}
       </main>
 
@@ -62,6 +70,7 @@ export const App: React.FC = () => {
       <CommitmentModal />
       <AiResultModal />
       <OverloadModal />
+      <BreathingModal />
     </div>
   );
 };

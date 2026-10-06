@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { AlertTriangle, X, Check, FastForward, Scissors, ArrowRight } from 'lucide-react';
+import { AlertTriangle, X, FastForward, Scissors } from 'lucide-react';
 
 export const OverloadModal: React.FC = () => {
   const { isOverloadModalOpen, closeOverloadModal, getDayCapacity, applySuggestion } = useAppStore();
@@ -13,66 +13,66 @@ export const OverloadModal: React.FC = () => {
   const overloadText = `${hours > 0 ? `${hours}h ` : ''}${mins > 0 ? `${mins}m` : ''}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05313A]/30 backdrop-blur-xs p-4 animate-fade-in">
-      <div className="bg-white w-full max-w-lg rounded-[20px] shadow-float p-6 select-none border border-[rgba(217,75,91,0.2)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none">
+      <div className="bg-card w-full max-w-lg rounded-[28px] shadow-float p-6 sm:p-7 border border-tag-important/30 transition-colors">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[rgba(5,49,58,0.06)]">
+        <div className="flex items-center justify-between pb-4 border-b border-borderToken">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[rgba(217,75,91,0.12)] flex items-center justify-center text-[#D94B5B]">
+            <div className="w-8 h-8 rounded-xl bg-tag-importantBg flex items-center justify-center text-tag-important">
               <AlertTriangle size={18} />
             </div>
             <div>
-              <h3 className="text-lg font-serif font-semibold text-[#05313A]">
+              <h3 className="text-[19px] font-serif font-semibold text-foreground">
                 Schedule Overload Detected
               </h3>
-              <p className="text-xs text-[rgba(5,49,58,0.6)]">
+              <p className="text-[12px] text-mutedText">
                 Your planned work exceeds available daytime capacity.
               </p>
             </div>
           </div>
           <button
             onClick={closeOverloadModal}
-            className="p-1 rounded-lg text-[rgba(5,49,58,0.4)] hover:text-[#05313A]"
+            className="w-8 h-8 rounded-full bg-card-subtle hover:bg-card-muted text-mutedText hover:text-foreground flex items-center justify-center transition-colors"
           >
-            <X size={18} />
+            <X size={17} />
           </button>
         </div>
 
         {/* Overload Alert Badge */}
-        <div className="mt-4 p-4 rounded-xl bg-[rgba(217,75,91,0.08)] border border-[rgba(217,75,91,0.2)]">
-          <span className="text-sm font-semibold text-[#c53030] block">
+        <div className="mt-4 p-4 rounded-2xl bg-tag-importantBg border border-tag-important/20">
+          <span className="text-[14px] font-semibold text-tag-important block">
             Your day is overloaded by {overloadText || '45m'}.
           </span>
-          <span className="text-xs text-[rgba(5,49,58,0.7)] mt-1 block">
-            To prevent fatigue and preserve sleep, consider accepting one of the recommendations below.
+          <span className="text-[12.5px] text-mutedText mt-1 block">
+            To prevent fatigue and preserve restful sleep, consider accepting one of the recommendations below.
           </span>
         </div>
 
         {/* Suggestions list */}
         <div className="mt-5 space-y-2.5">
-          <span className="text-xs font-semibold text-[rgba(5,49,58,0.65)] uppercase tracking-wider block">
+          <span className="text-[12px] font-semibold text-mutedText uppercase tracking-wider block">
             Recommended Adjustments
           </span>
 
           {capacity.suggestions.length === 0 ? (
-            <div className="p-3 text-xs text-[rgba(5,49,58,0.6)]">
+            <div className="p-3 text-[12.5px] text-mutedText">
               Try moving flexible tasks to tomorrow or shortening task durations.
             </div>
           ) : (
             capacity.suggestions.map((sug) => (
               <div
                 key={sug.id}
-                className="flex items-center justify-between p-3 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.08)] hover:border-[#328F9B] transition-all"
+                className="flex items-center justify-between p-3.5 rounded-2xl bg-card-subtle border border-borderToken hover:border-primary transition-all"
               >
                 <div className="flex items-center gap-2.5">
                   {sug.actionType === 'move' ? (
-                    <FastForward size={16} className="text-[#328F9B]" />
+                    <FastForward size={16} className="text-primary" />
                   ) : (
-                    <Scissors size={16} className="text-[#D88A2D]" />
+                    <Scissors size={16} className="text-tag-learning" />
                   )}
                   <div>
-                    <span className="text-xs font-semibold text-[#05313A] block">{sug.taskTitle}</span>
-                    <span className="text-[11px] text-[rgba(5,49,58,0.6)] block">{sug.explanation}</span>
+                    <span className="text-[13px] font-semibold text-foreground block">{sug.taskTitle}</span>
+                    <span className="text-[11.5px] text-mutedText block">{sug.explanation}</span>
                   </div>
                 </div>
 
@@ -81,7 +81,7 @@ export const OverloadModal: React.FC = () => {
                     applySuggestion(sug);
                     closeOverloadModal();
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-[#328F9B] hover:bg-[#287C87] text-white text-xs font-medium transition-all shadow-xs"
+                  className="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-[12px] font-medium transition-all shadow-xs"
                 >
                   Apply
                 </button>
@@ -91,10 +91,10 @@ export const OverloadModal: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2.5 pt-5 mt-4 border-t border-[rgba(5,49,58,0.06)]">
+        <div className="flex items-center justify-end gap-2.5 pt-5 mt-4 border-t border-borderToken">
           <button
             onClick={closeOverloadModal}
-            className="px-4 py-2 rounded-xl text-xs font-medium text-[rgba(5,49,58,0.6)] hover:text-[#05313A]"
+            className="px-4 py-2 rounded-2xl text-[13px] font-medium text-mutedText hover:text-foreground"
           >
             Keep Current Plan
           </button>

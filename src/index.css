@@ -2,79 +2,268 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* ==========================================================================
+   THEME 1: GREEN (Calming Sage & Forest - Default)
+   ========================================================================== */
+:root,
+[data-theme="green"],
+html[data-theme="green"],
+body[data-theme="green"],
+#root[data-theme="green"] {
+  --color-bg: #F2F5F2;
+  --color-card: #FFFFFF;
+  --color-card-subtle: #FAFBF9;
+  --color-card-muted: #EBF3EF;
+  
+  --color-primary: #24584C;
+  --color-primary-hover: #1B453C;
+  --color-primary-active: #15362F;
+  --color-primary-soft: rgba(36, 88, 76, 0.12);
+  --color-primary-text: #FFFFFF;
+  --color-focus: rgba(36, 88, 76, 0.25);
+
+  --color-text: #122824;
+  --color-text-secondary: #344C47;
+  --color-text-muted: #6B8580;
+
+  --color-border: rgba(36, 88, 76, 0.08);
+  --color-border-subtle: rgba(36, 88, 76, 0.04);
+
+  --shadow-soft: 0 8px 28px -6px rgba(26, 48, 44, 0.04), 0 2px 8px -2px rgba(26, 48, 44, 0.02);
+  --shadow-float: 0 16px 36px -8px rgba(26, 48, 44, 0.08), 0 4px 12px -2px rgba(26, 48, 44, 0.03);
+
+  --tag-health: #2D7A4D;
+  --tag-health-bg: #EBF6EF;
+  --tag-work: #24584C;
+  --tag-work-bg: #E7F2EE;
+  --tag-personal: #6D59A8;
+  --tag-personal-bg: #F2EEFA;
+  --tag-learning: #B86C28;
+  --tag-learning-bg: #FCF4EB;
+  --tag-important: #C44D4D;
+  --tag-important-bg: #FAEDED;
+  --tag-neutral: #5C7470;
+  --tag-neutral-bg: #EFF3F2;
+}
+
+/* ==========================================================================
+   THEME 2: TEAL (#328F9B)
+   ========================================================================== */
+[data-theme="teal"],
+html[data-theme="teal"],
+body[data-theme="teal"],
+#root[data-theme="teal"] {
+  --color-bg: #DEEFF6;
+  --color-card: #FFFFFF;
+  --color-card-subtle: #F4FAFC;
+  --color-card-muted: #DEF0F5;
+
   --color-primary: #328F9B;
   --color-primary-hover: #287C87;
   --color-primary-active: #216C76;
-  --color-primary-soft: rgba(50, 143, 155, 0.12);
+  --color-primary-soft: rgba(50, 143, 155, 0.14);
+  --color-primary-text: #FFFFFF;
   --color-focus: rgba(50, 143, 155, 0.30);
 
-  --color-background: #DEEFF6;
-  --color-card: #FFFFFF;
-  --color-foreground: #05313A;
+  --color-text: #05313A;
+  --color-text-secondary: #1B454E;
+  --color-text-muted: #527E86;
 
   --color-border: rgba(5, 49, 58, 0.10);
-  --color-muted: rgba(5, 49, 58, 0.60);
-  --color-subtle: rgba(5, 49, 58, 0.40);
+  --color-border-subtle: rgba(5, 49, 58, 0.05);
 
-  --tag-health: #35A853;
-  --tag-work: #328F9B;
-  --tag-personal: #8B5CF6;
-  --tag-learning: #D88A2D;
-  --tag-important: #D94B5B;
-  --tag-neutral: #6B7F84;
+  --shadow-soft: 0 8px 28px -6px rgba(5, 49, 58, 0.04), 0 2px 8px -2px rgba(5, 49, 58, 0.02);
+  --shadow-float: 0 16px 36px -8px rgba(5, 49, 58, 0.08), 0 4px 12px -2px rgba(5, 49, 58, 0.03);
+
+  --tag-health: #23854E;
+  --tag-health-bg: #E7F6ED;
+  --tag-work: #267E8A;
+  --tag-work-bg: #E3F3F6;
+  --tag-personal: #7555B6;
+  --tag-personal-bg: #F1EDFA;
+  --tag-learning: #BD6F23;
+  --tag-learning-bg: #FCF3E8;
+  --tag-important: #C84646;
+  --tag-important-bg: #FAECEC;
+  --tag-neutral: #5A7B82;
+  --tag-neutral-bg: #ECF3F5;
 }
 
+/* ==========================================================================
+   THEME 3: BLUE (#2D90E0)
+   ========================================================================== */
+[data-theme="blue"],
+html[data-theme="blue"],
+body[data-theme="blue"],
+#root[data-theme="blue"] {
+  --color-bg: #EDF4FC;
+  --color-card: #FFFFFF;
+  --color-card-subtle: #F6F9FE;
+  --color-card-muted: #E2EEFA;
+
+  --color-primary: #2D90E0;
+  --color-primary-hover: #207BC7;
+  --color-primary-active: #1867A8;
+  --color-primary-soft: rgba(45, 144, 224, 0.14);
+  --color-primary-text: #FFFFFF;
+  --color-focus: rgba(45, 144, 224, 0.30);
+
+  --color-text: #0B2338;
+  --color-text-secondary: #1E3F5E;
+  --color-text-muted: #5B7B9E;
+
+  --color-border: rgba(45, 144, 224, 0.12);
+  --color-border-subtle: rgba(45, 144, 224, 0.06);
+
+  --shadow-soft: 0 8px 28px -6px rgba(11, 35, 56, 0.04), 0 2px 8px -2px rgba(11, 35, 56, 0.02);
+  --shadow-float: 0 16px 36px -8px rgba(11, 35, 56, 0.08), 0 4px 12px -2px rgba(11, 35, 56, 0.03);
+
+  --tag-health: #1E8E56;
+  --tag-health-bg: #E6F7EE;
+  --tag-work: #257FCA;
+  --tag-work-bg: #E5F2FC;
+  --tag-personal: #7B4EB8;
+  --tag-personal-bg: #F3ECFA;
+  --tag-learning: #C27218;
+  --tag-learning-bg: #FCF3E6;
+  --tag-important: #CB4545;
+  --tag-important-bg: #FAECEC;
+  --tag-neutral: #5A728A;
+  --tag-neutral-bg: #EDF3F8;
+}
+
+/* ==========================================================================
+   THEME 4: MONOCHROME (Minimal Slate)
+   ========================================================================== */
+[data-theme="monochrome"],
+html[data-theme="monochrome"],
+body[data-theme="monochrome"],
+#root[data-theme="monochrome"] {
+  --color-bg: #F4F4F6;
+  --color-card: #FFFFFF;
+  --color-card-subtle: #FAFAFB;
+  --color-card-muted: #EAEAEF;
+
+  --color-primary: #1E293B;
+  --color-primary-hover: #0F172A;
+  --color-primary-active: #020617;
+  --color-primary-soft: rgba(30, 41, 59, 0.10);
+  --color-primary-text: #FFFFFF;
+  --color-focus: rgba(30, 41, 59, 0.25);
+
+  --color-text: #0F172A;
+  --color-text-secondary: #334155;
+  --color-text-muted: #64748B;
+
+  --color-border: rgba(15, 23, 42, 0.08);
+  --color-border-subtle: rgba(15, 23, 42, 0.04);
+
+  --shadow-soft: 0 8px 28px -6px rgba(15, 23, 42, 0.04), 0 2px 8px -2px rgba(15, 23, 42, 0.02);
+  --shadow-float: 0 16px 36px -8px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+
+  --tag-health: #15803D;
+  --tag-health-bg: #F0FDF4;
+  --tag-work: #1E293B;
+  --tag-work-bg: #F1F5F9;
+  --tag-personal: #6D28D9;
+  --tag-personal-bg: #F5F3FF;
+  --tag-learning: #B45309;
+  --tag-learning-bg: #FFFBEB;
+  --tag-important: #B91C1C;
+  --tag-important-bg: #FEF2F2;
+  --tag-neutral: #475569;
+  --tag-neutral-bg: #F1F5F9;
+}
+
+/* ==========================================================================
+   THEME 5: DARK (Midnight Minimal)
+   ========================================================================== */
+[data-theme="dark"],
+html[data-theme="dark"],
+body[data-theme="dark"],
+#root[data-theme="dark"] {
+  --color-bg: #0A0F1D;
+  --color-card: #131B2E;
+  --color-card-subtle: #19233B;
+  --color-card-muted: #1F2D4A;
+
+  --color-primary: #0284C7;
+  --color-primary-hover: #0369A1;
+  --color-primary-active: #075985;
+  --color-primary-soft: rgba(56, 189, 248, 0.18);
+  --color-primary-text: #FFFFFF;
+  --color-focus: rgba(56, 189, 248, 0.35);
+
+  --color-text: #F8FAFC;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #94A3B8;
+
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-subtle: rgba(255, 255, 255, 0.04);
+
+  --shadow-soft: 0 8px 28px -6px rgba(0, 0, 0, 0.35), 0 2px 8px -2px rgba(0, 0, 0, 0.2);
+  --shadow-float: 0 16px 36px -8px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
+
+  --tag-health: #4ADE80;
+  --tag-health-bg: rgba(74, 222, 128, 0.15);
+  --tag-work: #38BDF8;
+  --tag-work-bg: rgba(56, 189, 248, 0.15);
+  --tag-personal: #C084FC;
+  --tag-personal-bg: rgba(192, 132, 252, 0.15);
+  --tag-learning: #FBBF24;
+  --tag-learning-bg: rgba(251, 191, 36, 0.15);
+  --tag-important: #F87171;
+  --tag-important-bg: rgba(248, 113, 113, 0.15);
+  --tag-neutral: #94A3B8;
+  --tag-neutral-bg: rgba(148, 163, 184, 0.15);
+}
+
+/* ==========================================================================
+   GLOBAL STYLES
+   ========================================================================== */
 body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 16px;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .font-serif {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Playfair Display', 'Lora', Georgia, serif;
 }
 
-/* Custom serene card styling matching DESIGN.md */
-.card-surface {
-  background: #FFFFFF;
-  border: none;
-  border-radius: 18px;
-  box-shadow: 0 4px 20px rgba(5, 49, 58, 0.03);
-}
-
-/* Category Badge Styles with exact 20% soft tint rule */
+/* Category Badges via CSS Variables */
 .badge-health {
-  color: #2e8b46;
-  background-color: rgba(53, 168, 83, 0.14);
+  color: var(--tag-health);
+  background-color: var(--tag-health-bg);
 }
 
 .badge-work {
-  color: #287c87;
-  background-color: rgba(50, 143, 155, 0.14);
+  color: var(--tag-work);
+  background-color: var(--tag-work-bg);
 }
 
 .badge-personal {
-  color: #7c3aed;
-  background-color: rgba(139, 92, 246, 0.14);
+  color: var(--tag-personal);
+  background-color: var(--tag-personal-bg);
 }
 
 .badge-learning {
-  color: #c2781e;
-  background-color: rgba(216, 138, 45, 0.14);
+  color: var(--tag-learning);
+  background-color: var(--tag-learning-bg);
 }
 
 .badge-important {
-  color: #c53030;
-  background-color: rgba(217, 75, 91, 0.14);
+  color: var(--tag-important);
+  background-color: var(--tag-important-bg);
 }
 
 .badge-neutral {
-  color: #556b70;
-  background-color: rgba(107, 127, 132, 0.14);
+  color: var(--tag-neutral);
+  background-color: var(--tag-neutral-bg);
 }
 
 /* Hide scrollbars globally while preserving smooth scrolling */
@@ -89,12 +278,28 @@ body {
   height: 0;
 }
 
+/* Breathing expand & contract animation */
+@keyframes breatheScale {
+  0%, 100% {
+    transform: scale(0.92);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+.animate-breathe {
+  animation: breatheScale 6s ease-in-out infinite;
+}
+
 /* Smooth micro-animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

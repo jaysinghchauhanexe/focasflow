@@ -59,23 +59,23 @@ export const HabitModal: React.FC = () => {
   const categories: Category[] = ['Health', 'Work', 'Personal', 'Learning', 'Neutral'];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05313A]/30 backdrop-blur-xs p-4 animate-fade-in">
-      <div className="bg-white w-full max-w-md rounded-[20px] shadow-float p-6 select-none border border-[rgba(5,49,58,0.06)]">
-        <div className="flex items-center justify-between pb-4 border-b border-[rgba(5,49,58,0.06)]">
-          <h3 className="text-xl font-serif font-medium text-[#05313A]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none">
+      <div className="bg-card w-full max-w-md rounded-[28px] shadow-float p-6 sm:p-7 border border-borderToken transition-colors">
+        <div className="flex items-center justify-between pb-4 border-b border-borderToken">
+          <h3 className="text-[20px] font-serif font-medium text-foreground">
             {editingHabit ? 'Edit Habit' : 'Create Recurring Habit'}
           </h3>
           <button
             onClick={closeHabitModal}
-            className="p-1 rounded-lg text-[rgba(5,49,58,0.4)] hover:text-[#05313A] hover:bg-[rgba(5,49,58,0.05)]"
+            className="w-8 h-8 rounded-full bg-card-subtle hover:bg-card-muted text-mutedText hover:text-foreground flex items-center justify-center transition-colors"
           >
-            <X size={18} />
+            <X size={17} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-[rgba(5,49,58,0.7)] uppercase tracking-wider mb-1.5">
+            <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
               Habit Name
             </label>
             <input
@@ -84,20 +84,20 @@ export const HabitModal: React.FC = () => {
               autoFocus
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. DSA Practice, Morning Workout, Reading"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.12)] text-sm text-[#05313A] focus:outline-none focus:border-[#328F9B]"
+              placeholder="e.g. Mindful Walking, DSA Practice, Reading"
+              className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle border border-borderToken text-[14px] text-foreground focus:outline-none focus:border-primary"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold text-[rgba(5,49,58,0.7)] uppercase tracking-wider mb-1.5">
+              <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
                 Category
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as Category)}
-                className="w-full px-3 py-2 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.12)] text-xs text-[#05313A]"
+                className="w-full px-3.5 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
               >
                 {categories.map((c) => (
                   <option key={c} value={c}>
@@ -108,7 +108,7 @@ export const HabitModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[rgba(5,49,58,0.7)] uppercase tracking-wider mb-1.5">
+              <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
                 Duration (mins)
               </label>
               <input
@@ -117,20 +117,20 @@ export const HabitModal: React.FC = () => {
                 max="240"
                 value={duration}
                 onChange={(e) => setDuration(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.12)] text-xs text-[#05313A]"
+                className="w-full px-3.5 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold text-[rgba(5,49,58,0.7)] uppercase tracking-wider mb-1.5">
+              <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
                 Frequency
               </label>
               <select
                 value={frequency}
                 onChange={(e) => setFrequency(e.target.value as any)}
-                className="w-full px-3 py-2 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.12)] text-xs text-[#05313A]"
+                className="w-full px-3.5 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
               >
                 <option value="daily">Daily</option>
                 <option value="weekdays">Monday–Friday</option>
@@ -140,13 +140,13 @@ export const HabitModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[rgba(5,49,58,0.7)] uppercase tracking-wider mb-1.5">
+              <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
                 Preferred Time
               </label>
               <select
                 value={preferredTime}
                 onChange={(e) => setPreferredTime(e.target.value as any)}
-                className="w-full px-3 py-2 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.12)] text-xs text-[#05313A]"
+                className="w-full px-3.5 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
               >
                 <option value="morning">Morning</option>
                 <option value="afternoon">Afternoon</option>
@@ -155,17 +155,17 @@ export const HabitModal: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-[rgba(5,49,58,0.06)]">
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-borderToken">
             <button
               type="button"
               onClick={closeHabitModal}
-              className="px-4 py-2 rounded-xl text-xs font-medium text-[rgba(5,49,58,0.6)] hover:text-[#05313A]"
+              className="px-4 py-2 rounded-2xl text-[13px] font-medium text-mutedText hover:text-foreground hover:bg-card-subtle"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-[#328F9B] hover:bg-[#287C87] text-white text-xs font-semibold shadow-sm"
+              className="px-5 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold shadow-xs"
             >
               {editingHabit ? 'Update Habit' : 'Save Habit'}
             </button>

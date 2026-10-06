@@ -1,13 +1,12 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { Plus, Check, Clock, Calendar, Flame, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Check, Clock, Trash2, Edit2 } from 'lucide-react';
 
 export const HabitsView: React.FC = () => {
   const { habits, toggleHabitDate, openHabitModal, deleteHabit, selectedDate } = useAppStore();
 
   const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  // Generate 7 days of current week
   const today = new Date(selectedDate);
   const currentDayOfWeek = (today.getDay() + 6) % 7;
   const startOfWeek = new Date(today);
@@ -20,21 +19,21 @@ export const HabitsView: React.FC = () => {
   });
 
   return (
-    <div className="space-y-4 animate-fade-in pb-6 select-none">
+    <div className="space-y-5 animate-fade-in pb-8 select-none max-w-[1600px] mx-auto">
       {/* Header */}
-      <div className="bg-white rounded-[20px] p-6 shadow-soft flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex flex-wrap items-center justify-between gap-4 border border-borderToken transition-colors">
         <div>
-          <h2 className="text-2xl font-serif font-medium text-[#05313A] tracking-tight">
-            Recurring Habits & Practices
+          <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
+            Recurring Habits & Mindful Practices
           </h2>
-          <p className="text-xs text-[rgba(5,49,58,0.6)] mt-0.5">
-            Build consistency without guilt or streak pressure.
+          <p className="text-[13px] text-mutedText mt-0.5">
+            Build calm consistency without guilt or streak anxiety.
           </p>
         </div>
 
         <button
           onClick={() => openHabitModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-[#328F9B] hover:bg-[#287C87] text-white text-xs font-semibold rounded-xl transition-all shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all shadow-xs"
         >
           <Plus size={15} />
           <span>New Habit</span>
@@ -42,24 +41,23 @@ export const HabitsView: React.FC = () => {
       </div>
 
       {/* Habits Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {habits.map((habit) => {
-          const completedCount = habit.completedDates.length;
-          const isDoneToday = habit.completedDates.includes(selectedDate);
+          const completedThisWeek = weekDates.filter(d => habit.completedDates.includes(d)).length;
 
           return (
             <div
               key={habit.id}
-              className="bg-white rounded-[20px] p-5 shadow-soft flex flex-col justify-between hover:shadow-float transition-all"
+              className="bg-card rounded-[26px] p-6 shadow-soft flex flex-col justify-between hover:shadow-float transition-all border border-borderToken"
             >
               <div>
                 {/* Habit Top Info */}
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div>
-                    <span className="text-[11px] font-semibold text-[#328F9B] uppercase tracking-wider">
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-wider">
                       {habit.category}
                     </span>
-                    <h4 className="text-lg font-serif font-medium text-[#05313A] mt-0.5">
+                    <h4 className="text-[19px] font-serif font-medium text-foreground mt-0.5">
                       {habit.title}
                     </h4>
                   </div>
@@ -67,13 +65,15 @@ export const HabitsView: React.FC = () => {
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => openHabitModal(habit)}
-                      className="p-1 rounded text-[rgba(5,49,58,0.4)] hover:text-[#05313A]"
+                      className="p-1.5 rounded-lg text-mutedText hover:text-foreground hover:bg-card-subtle"
+                      title="Edit habit"
                     >
                       <Edit2 size={14} />
                     </button>
                     <button
                       onClick={() => deleteHabit(habit.id)}
-                      className="p-1 rounded text-[rgba(5,49,58,0.4)] hover:text-[#D94B5B]"
+                      className="p-1.5 rounded-lg text-mutedText hover:text-tag-important hover:bg-tag-importantBg"
+                      title="Delete habit"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -81,44 +81,47 @@ export const HabitsView: React.FC = () => {
                 </div>
 
                 {/* Metadata Pills */}
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="px-2.5 py-0.5 rounded-md bg-[#F4F9FB] text-[11px] font-medium text-[rgba(5,49,58,0.7)] flex items-center gap-1">
+                <div className="flex items-center gap-2 mb-5">
+                  <span className="px-2.5 py-1 rounded-xl bg-card-subtle text-[12px] font-medium text-textSecondary flex items-center gap-1 border border-borderToken">
                     <Clock size={12} />
                     <span>{habit.duration} min</span>
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-md bg-[#F4F9FB] text-[11px] font-medium text-[rgba(5,49,58,0.7)] capitalize">
+                  <span className="px-2.5 py-1 rounded-xl bg-card-subtle text-[12px] font-medium text-textSecondary capitalize border border-borderToken">
                     {habit.frequency}
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-md bg-[#F4F9FB] text-[11px] font-medium text-[rgba(5,49,58,0.7)] capitalize">
+                  <span className="px-2.5 py-1 rounded-xl bg-card-subtle text-[12px] font-medium text-textSecondary capitalize border border-borderToken">
                     {habit.preferredTime}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-xl bg-primary-soft text-[12px] font-medium text-primary ml-auto">
+                    {completedThisWeek}/{habit.target || 5} this week
                   </span>
                 </div>
               </div>
 
               {/* 7-Day Completion Tracker Bar */}
-              <div className="pt-3 border-t border-[rgba(5,49,58,0.05)]">
-                <div className="flex items-center justify-between gap-1">
+              <div className="pt-4 border-t border-borderToken">
+                <div className="flex items-center justify-between gap-1.5">
                   {daysOfWeek.map((dayName, idx) => {
                     const dateStr = weekDates[idx];
                     const isCompleted = habit.completedDates.includes(dateStr);
                     const isToday = dateStr === selectedDate;
 
                     return (
-                      <div key={dayName} className="flex flex-col items-center gap-1 flex-1">
-                        <span className="text-[10px] text-[rgba(5,49,58,0.5)] font-medium">
+                      <div key={dayName} className="flex flex-col items-center gap-1.5 flex-1">
+                        <span className="text-[11px] text-mutedText font-medium">
                           {dayName}
                         </span>
                         <button
                           onClick={() => toggleHabitDate(habit.id, dateStr)}
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
                             isCompleted
-                              ? 'bg-[#328F9B] text-white shadow-xs'
+                              ? 'bg-primary text-white shadow-xs'
                               : isToday
-                              ? 'border-2 border-[#328F9B] bg-white text-[#328F9B]'
-                              : 'bg-[#F4F9FB] text-[rgba(5,49,58,0.3)] hover:bg-[#EAF3F7]'
+                              ? 'border-2 border-primary bg-card text-primary'
+                              : 'bg-card-subtle text-mutedText hover:bg-card-muted border border-borderToken'
                           }`}
                         >
-                          {isCompleted && <Check size={14} strokeWidth={3} />}
+                          {isCompleted && <Check size={14} strokeWidth={3} className="text-white" />}
                         </button>
                       </div>
                     );

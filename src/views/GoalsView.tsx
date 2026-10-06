@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { Target, Plus, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Compass, Plus, CheckCircle2 } from 'lucide-react';
 
 export const GoalsView: React.FC = () => {
   const { goals, addGoal } = useAppStore();
@@ -24,20 +24,20 @@ export const GoalsView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 animate-fade-in pb-6 select-none">
-      <div className="bg-white rounded-[20px] p-6 shadow-soft flex items-center justify-between">
+    <div className="space-y-5 animate-fade-in pb-8 select-none max-w-[1600px] mx-auto">
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex items-center justify-between border border-borderToken transition-colors">
         <div>
-          <h2 className="text-2xl font-serif font-medium text-[#05313A] tracking-tight">
-            High-Level Goals & Projects
+          <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
+            High-Level Vision & Milestones
           </h2>
-          <p className="text-xs text-[rgba(5,49,58,0.6)] mt-0.5">
-            Connect high-level intentions into tangible everyday milestones.
+          <p className="text-[13px] text-mutedText mt-0.5">
+            Connect your deep intentions into tangible, calm everyday milestones.
           </p>
         </div>
 
         <button
           onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#328F9B] hover:bg-[#287C87] text-white text-xs font-semibold rounded-xl transition-all shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all shadow-xs"
         >
           <Plus size={15} />
           <span>New Goal</span>
@@ -45,34 +45,34 @@ export const GoalsView: React.FC = () => {
       </div>
 
       {isAdding && (
-        <form onSubmit={handleCreate} className="bg-white rounded-[20px] p-5 shadow-soft space-y-3">
+        <form onSubmit={handleCreate} className="bg-card rounded-[26px] p-6 shadow-soft space-y-3.5 border border-borderToken transition-colors">
           <input
             type="text"
             required
             autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Goal Title (e.g. Master Cloud Architecture)"
-            className="w-full px-3.5 py-2 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.1)] text-xs text-[#05313A] outline-none"
+            placeholder="Goal Title (e.g. Master Full-Stack Architecture)"
+            className="w-full px-4 py-2.5 rounded-xl bg-card-subtle border border-borderToken text-[13.5px] text-foreground outline-none focus:border-primary"
           />
           <textarea
             rows={2}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Key milestones and desired outcomes..."
-            className="w-full px-3.5 py-2 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.1)] text-xs text-[#05313A] outline-none"
+            placeholder="Key milestones and desired peaceful outcomes..."
+            className="w-full px-4 py-2.5 rounded-xl bg-card-subtle border border-borderToken text-[13.5px] text-foreground outline-none focus:border-primary"
           />
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2.5 pt-1">
             <button
               type="button"
               onClick={() => setIsAdding(false)}
-              className="px-3 py-1.5 rounded-lg text-xs text-[rgba(5,49,58,0.6)]"
+              className="px-4 py-2 rounded-xl text-[12.5px] text-mutedText hover:bg-card-subtle"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 rounded-lg bg-[#328F9B] text-white text-xs font-semibold"
+              className="px-5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-[12.5px] font-semibold shadow-xs"
             >
               Save Goal
             </button>
@@ -80,44 +80,44 @@ export const GoalsView: React.FC = () => {
         </form>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {goals.map((goal) => (
-          <div key={goal.id} className="bg-white rounded-[20px] p-6 shadow-soft space-y-4">
+          <div key={goal.id} className="bg-card rounded-[26px] p-6 sm:p-7 shadow-soft space-y-4 border border-borderToken transition-colors">
             <div className="flex items-start justify-between">
               <div>
-                <span className="text-[11px] font-semibold text-[#328F9B] uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-primary uppercase tracking-wider">
                   {goal.category}
                 </span>
-                <h3 className="text-lg font-serif font-medium text-[#05313A] mt-0.5">{goal.title}</h3>
+                <h3 className="text-[20px] font-serif font-medium text-foreground mt-0.5">{goal.title}</h3>
                 {goal.description && (
-                  <p className="text-xs text-[rgba(5,49,58,0.6)] mt-1">{goal.description}</p>
+                  <p className="text-[13px] text-mutedText mt-1">{goal.description}</p>
                 )}
               </div>
-              <span className="text-sm font-serif font-semibold text-[#328F9B]">{goal.progress}%</span>
+              <span className="text-[15px] font-serif font-semibold text-primary">{goal.progress}%</span>
             </div>
 
             {/* Progress Track */}
-            <div className="w-full h-2 bg-[rgba(50,143,155,0.12)] rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-card-muted rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#328F9B] rounded-full transition-all duration-500"
+                className="h-full bg-primary rounded-full transition-all duration-500"
                 style={{ width: `${goal.progress}%` }}
               />
             </div>
 
             {/* Sub Projects */}
             {goal.projects && goal.projects.length > 0 && (
-              <div className="pt-2 border-t border-[rgba(5,49,58,0.05)] space-y-1.5">
-                <span className="text-[11px] font-semibold text-[rgba(5,49,58,0.5)] uppercase tracking-wider block">
-                  Active Projects
+              <div className="pt-3 border-t border-borderToken space-y-2">
+                <span className="text-[11px] font-bold text-mutedText uppercase tracking-wider block">
+                  Milestone Projects
                 </span>
                 {goal.projects.map((p) => (
                   <div
                     key={p.id}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-[#F8FCFD] text-xs text-[#05313A]"
+                    className="flex items-center justify-between p-3 rounded-xl bg-card-subtle text-[13px] text-foreground border border-borderToken"
                   >
                     <span>{p.title}</span>
-                    <span className="font-mono text-[11px] text-[rgba(5,49,58,0.6)]">
-                      {p.completedCount}/{p.tasksCount} Tasks
+                    <span className="font-mono text-[11.5px] text-mutedText">
+                      {p.completedCount}/{p.tasksCount} Done
                     </span>
                   </div>
                 ))}

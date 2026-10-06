@@ -1,58 +1,58 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { Sparkles, X, Check, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Sparkles, X, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export const AiResultModal: React.FC = () => {
-  const { isAiModalOpen, closeAiModal, lastAiResult, applySuggestion } = useAppStore();
+  const { isAiModalOpen, closeAiModal, lastAiResult } = useAppStore();
 
   if (!isAiModalOpen || !lastAiResult) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05313A]/30 backdrop-blur-xs p-4 animate-fade-in">
-      <div className="bg-white w-full max-w-lg rounded-[20px] shadow-float p-6 select-none border border-[rgba(5,49,58,0.06)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none">
+      <div className="bg-card w-full max-w-lg rounded-[28px] shadow-float p-6 sm:p-7 border border-borderToken transition-colors">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[rgba(5,49,58,0.06)]">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[rgba(50,143,155,0.12)] flex items-center justify-center text-[#328F9B]">
+        <div className="flex items-center justify-between pb-4 border-b border-borderToken">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-primary-soft flex items-center justify-center text-primary">
               <Sparkles size={16} />
             </div>
-            <h3 className="text-xl font-serif font-medium text-[#05313A]">
+            <h3 className="text-[20px] font-serif font-medium text-foreground">
               Assistant Plan Updates
             </h3>
           </div>
           <button
             onClick={closeAiModal}
-            className="p-1 rounded-lg text-[rgba(5,49,58,0.4)] hover:text-[#05313A]"
+            className="w-8 h-8 rounded-full bg-card-subtle hover:bg-card-muted text-mutedText hover:text-foreground flex items-center justify-center transition-colors"
           >
-            <X size={18} />
+            <X size={17} />
           </button>
         </div>
 
         {/* Message */}
-        <div className="mt-4 p-3.5 rounded-xl bg-[#F4F9FB] border border-[rgba(50,143,155,0.15)] text-sm text-[#05313A] font-medium leading-relaxed">
+        <div className="mt-4 p-4 rounded-2xl bg-primary-soft border border-primary/20 text-[14px] text-foreground font-medium leading-relaxed">
           {lastAiResult.message}
         </div>
 
         {/* Structured Operations Applied */}
         <div className="mt-4">
-          <span className="text-xs font-semibold text-[rgba(5,49,58,0.6)] uppercase tracking-wider block mb-2">
+          <span className="text-[12px] font-semibold text-mutedText uppercase tracking-wider block mb-2">
             Validated Actions Applied
           </span>
           <div className="space-y-1.5 max-h-40 overflow-y-auto">
             {lastAiResult.operations.map((op, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#FAFCFD] border border-[rgba(5,49,58,0.06)] text-xs text-[#05313A]"
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-card-subtle border border-borderToken text-[12.5px] text-foreground"
               >
                 <div className="flex items-center gap-2">
-                  <ShieldCheck size={14} className="text-[#328F9B]" />
+                  <ShieldCheck size={14} className="text-primary" />
                   <span className="font-semibold">{op.op_type}</span>
-                  <span className="text-[rgba(5,49,58,0.7)] truncate max-w-[200px]">
+                  <span className="text-mutedText truncate max-w-[200px]">
                     {op.title || op.notes}
                   </span>
                 </div>
                 {op.duration_minutes && (
-                  <span className="font-mono text-[rgba(5,49,58,0.6)]">{op.duration_minutes}m</span>
+                  <span className="font-mono text-mutedText">{op.duration_minutes}m</span>
                 )}
               </div>
             ))}
@@ -62,17 +62,17 @@ export const AiResultModal: React.FC = () => {
         {/* Suggestions if any */}
         {lastAiResult.suggestions && lastAiResult.suggestions.length > 0 && (
           <div className="mt-4">
-            <span className="text-xs font-semibold text-[rgba(5,49,58,0.6)] uppercase tracking-wider block mb-2">
+            <span className="text-[12px] font-semibold text-mutedText uppercase tracking-wider block mb-2">
               Optimization Suggestions
             </span>
             <div className="space-y-1.5">
               {lastAiResult.suggestions.map((sug, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-2.5 rounded-lg bg-[rgba(50,143,155,0.06)] text-xs text-[#05313A]"
+                  className="flex items-center justify-between p-3 rounded-xl bg-card-subtle text-[12.5px] text-foreground border border-borderToken"
                 >
                   <div className="flex items-center gap-2">
-                    <ArrowRight size={13} className="text-[#328F9B]" />
+                    <ArrowRight size={13} className="text-primary" />
                     <span>{sug}</span>
                   </div>
                 </div>
@@ -82,10 +82,10 @@ export const AiResultModal: React.FC = () => {
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2.5 pt-5 mt-4 border-t border-[rgba(5,49,58,0.06)]">
+        <div className="flex items-center justify-end gap-2.5 pt-5 mt-4 border-t border-borderToken">
           <button
             onClick={closeAiModal}
-            className="px-5 py-2 rounded-xl bg-[#328F9B] hover:bg-[#287C87] text-white text-xs font-semibold shadow-sm"
+            className="px-5 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold shadow-xs"
           >
             Done & View Plan
           </button>

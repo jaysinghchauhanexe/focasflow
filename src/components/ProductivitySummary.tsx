@@ -1,8 +1,24 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { 
+  Play, 
+  Pause, 
+  AlertCircle, 
+  CloudRain, 
+  Trees, 
+  Wind, 
+  Waves 
+} from 'lucide-react';
 
 export const ProductivitySummary: React.FC = () => {
-  const { getDayCapacity, openOverloadModal, tasks } = useAppStore();
+  const { 
+    getDayCapacity, 
+    openOverloadModal, 
+    activeSoundscape, 
+    isPlayingSoundscape, 
+    toggleSoundscape 
+  } = useAppStore();
+  
   const capacity = getDayCapacity();
 
   const totalFocusHours = Math.floor(capacity.focusMinutes / 60);
@@ -15,109 +31,174 @@ export const ProductivitySummary: React.FC = () => {
   const regularCount = capacity.regularTasksCount;
   const completedCount = capacity.completedTasksCount;
 
+  const soundscapes = [
+    { id: 'rain', label: 'Rain', icon: CloudRain },
+    { id: 'forest', label: 'Forest', icon: Trees },
+    { id: 'stream', label: 'Stream', icon: Wind },
+    { id: 'waves', label: 'Waves', icon: Waves },
+  ] as const;
+
   return (
-    <div className="w-full h-[350px] bg-white rounded-[26px] p-5 sm:p-7 shadow-soft select-none flex flex-col justify-between">
-      {/* Top Row: Tasks Remaining & Focus Time Progress */}
+    <div className="w-full h-[350px] bg-card rounded-[28px] p-6 sm:p-7 shadow-soft select-none flex flex-col justify-between border border-borderToken relative overflow-hidden transition-colors">
+      {/* Top Row: Tasks Remaining Counter & Focus Time Progress */}
       <div className="flex items-start justify-between gap-4 sm:gap-6">
         {/* Tasks Remaining Large Counter */}
         <div className="flex-shrink-0">
-          <div className="flex items-start leading-none">
+          <div className="flex items-baseline leading-none">
             <span
-              className="text-[#09223A] tracking-tight text-[46px] sm:text-[56px] md:text-[64px]"
+              className="text-foreground tracking-tight text-[44px] sm:text-[52px] md:text-[60px] font-medium"
               style={{ fontFamily: "'Lora', Georgia, serif" }}
             >
               {remainingCount}
             </span>
             <span
-              className="text-[20px] sm:text-[24px] md:text-[26px] font-light text-[#09223A]/70 ml-1 -mt-1"
+              className="text-[18px] sm:text-[22px] font-light text-primary ml-1.5"
               style={{ fontFamily: "'Lora', Georgia, serif" }}
             >
-              +
+              left
             </span>
           </div>
-          <p className="text-[12.5px] sm:text-[14px] text-[#556980] font-normal mt-1 sm:mt-1.5 tracking-tight">
-            Tasks Remaining
+          <p className="text-[13px] text-mutedText font-normal mt-1 tracking-tight">
+            Today's Outcomes
           </p>
         </div>
 
-        {/* Focus Time Indicator with expanded width */}
-        <div className="text-left flex-1 max-w-[340px]">
-          <span className="text-[12.5px] sm:text-[13.5px] text-[#556980] font-normal block mb-1.5">
-            Focus time
-          </span>
+        {/* Focus Time Indicator Capsule */}
+        <div className="text-left flex-1 max-w-[320px]">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[13px] text-mutedText font-medium">
+              Daily Focus Capacity
+            </span>
+            {capacity.isOverloaded && (
+              <span 
+                onClick={openOverloadModal}
+                className="text-[11.5px] font-semibold text-tag-important flex items-center gap-1 cursor-pointer hover:underline"
+              >
+                <AlertCircle size={13} />
+                <span>Overloaded</span>
+              </span>
+            )}
+          </div>
 
           {/* Capsule Track */}
-          <div className="w-full h-[46px] sm:h-[52px] rounded-[16px] bg-[#DEF0F5] p-1.5 flex items-center">
+          <div className="w-full h-[46px] rounded-[16px] bg-card-muted p-1.5 flex items-center transition-colors">
             <div
               onClick={capacity.isOverloaded ? openOverloadModal : undefined}
-              className={`h-full px-3 sm:px-5 rounded-[12px] flex items-center justify-center text-[12px] sm:text-[13.5px] font-medium text-white shadow-xs cursor-pointer transition-all ${
+              className={`h-full px-4 rounded-[12px] flex items-center justify-center text-[13px] font-medium text-white shadow-xs cursor-pointer transition-all ${
                 capacity.isOverloaded
-                  ? 'bg-[#D94B5B] hover:bg-[#c53030]'
-                  : 'bg-[#207581] hover:bg-[#1b646e]'
+                  ? 'bg-tag-important hover:opacity-90'
+                  : 'bg-primary hover:bg-primary-hover'
               }`}
               style={{
-                width: '45%',
+                width: `${Math.min(100, Math.max(35, Math.round((capacity.totalPlannedMinutes / (capacity.totalAvailableMinutes || 480)) * 100)))}%`,
                 backgroundImage:
-                  'repeating-linear-gradient(45deg, transparent, transparent 3.5px, rgba(255,255,255,0.12) 3.5px, rgba(255,255,255,0.12) 7px)',
+                  'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.12) 4px, rgba(255,255,255,0.12) 8px)',
               }}
             >
-              <span className="whitespace-nowrap font-sans">{focusTimeString}</span>
+              <span className="whitespace-nowrap font-sans text-white font-medium">{focusTimeString} planned</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Row: Expanded Light Blue Container with Tall 3 Metric Cards */}
-      <div className="bg-[#DEF0F5] rounded-[22px] p-2.5 sm:p-4 grid grid-cols-3 gap-2.5 sm:gap-4 h-[180px]">
+      {/* Middle Row: Ambient Soundscape Mini Player */}
+      <div className="bg-card-subtle rounded-[18px] p-2.5 px-3.5 border border-borderToken flex items-center justify-between gap-3 transition-colors">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => toggleSoundscape()}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+              isPlayingSoundscape
+                ? 'bg-primary text-white shadow-xs scale-105'
+                : 'bg-primary-soft text-primary hover:opacity-80'
+            }`}
+            title={isPlayingSoundscape ? 'Pause soundscape' : 'Play peaceful soundscape'}
+          >
+            {isPlayingSoundscape ? <Pause size={14} /> : <Play size={14} fill="currentColor" />}
+          </button>
+
+          <div>
+            <span className="text-[12.5px] font-semibold text-foreground block leading-tight">
+              Calm Soundscape
+            </span>
+            <span className="text-[11px] text-mutedText font-normal leading-tight">
+              {isPlayingSoundscape ? `Playing ${activeSoundscape} sounds` : 'Relax & focus ambient'}
+            </span>
+          </div>
+        </div>
+
+        {/* Soundscape Pills */}
+        <div className="flex items-center gap-1.5">
+          {soundscapes.map((s) => {
+            const Icon = s.icon;
+            const isSel = activeSoundscape === s.id && isPlayingSoundscape;
+            return (
+              <button
+                key={s.id}
+                onClick={() => toggleSoundscape(s.id as any)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11.5px] font-medium transition-all ${
+                  isSel
+                    ? 'bg-primary text-white shadow-xs'
+                    : 'bg-card-muted text-textSecondary hover:bg-primary-soft'
+                }`}
+              >
+                <Icon size={13} className={isSel ? 'text-white' : 'text-primary'} />
+                <span className="hidden sm:inline-block">{s.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Bottom Row: 3 Soft Metric Cards */}
+      <div className="bg-card-muted/60 rounded-[22px] p-3 grid grid-cols-3 gap-3 transition-colors">
         {/* Important Tasks */}
-        <div className="bg-white rounded-[18px] sm:rounded-[20px] py-4 sm:py-6 px-1.5 sm:px-3 text-center shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center h-full">
-          <div className="flex items-start justify-center leading-none">
+        <div className="bg-card rounded-[16px] py-3.5 px-2 text-center shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-borderToken flex flex-col items-center justify-center transition-colors">
+          <div className="flex items-center justify-center leading-none">
             <span
-              className="text-[#09223A] text-[28px] sm:text-[34px] md:text-[36px]"
+              className="text-foreground text-[26px] sm:text-[30px] font-medium"
               style={{ fontFamily: "'Lora', Georgia, serif" }}
             >
               {importantCount}
             </span>
-            <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#EF4444] ml-1 sm:ml-1.5 mt-1 flex-shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-tag-important ml-1.5 flex-shrink-0" />
           </div>
-          <span className="text-[11.5px] sm:text-[13px] leading-[1.3] text-[#556980] font-normal mt-2 sm:mt-3 block">
-            Important<br />Tasks
+          <span className="text-[11.5px] leading-[1.25] text-mutedText font-normal mt-1.5 block">
+            Important<br />Priority
           </span>
         </div>
 
         {/* Regular Tasks */}
-        <div className="bg-white rounded-[18px] sm:rounded-[20px] py-4 sm:py-6 px-1.5 sm:px-3 text-center shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center h-full">
-          <div className="flex items-start justify-center leading-none">
+        <div className="bg-card rounded-[16px] py-3.5 px-2 text-center shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-borderToken flex flex-col items-center justify-center transition-colors">
+          <div className="flex items-center justify-center leading-none">
             <span
-              className="text-[#09223A] text-[28px] sm:text-[34px] md:text-[36px]"
+              className="text-foreground text-[26px] sm:text-[30px] font-medium"
               style={{ fontFamily: "'Lora', Georgia, serif" }}
             >
               {regularCount}
             </span>
-            <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#F59E0B] ml-1 sm:ml-1.5 mt-1 flex-shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-tag-learning ml-1.5 flex-shrink-0" />
           </div>
-          <span className="text-[11.5px] sm:text-[13px] leading-[1.3] text-[#556980] font-normal mt-2 sm:mt-3 block">
-            Regular<br />Tasks
+          <span className="text-[11.5px] leading-[1.25] text-mutedText font-normal mt-1.5 block">
+            Flexible<br />Outcomes
           </span>
         </div>
 
         {/* Completed Tasks */}
-        <div className="bg-white rounded-[18px] sm:rounded-[20px] py-4 sm:py-6 px-1.5 sm:px-3 text-center shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center h-full">
-          <div className="flex items-start justify-center leading-none">
+        <div className="bg-card rounded-[16px] py-3.5 px-2 text-center shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-borderToken flex flex-col items-center justify-center transition-colors">
+          <div className="flex items-center justify-center leading-none">
             <span
-              className="text-[#09223A] text-[28px] sm:text-[34px] md:text-[36px]"
+              className="text-foreground text-[26px] sm:text-[30px] font-medium"
               style={{ fontFamily: "'Lora', Georgia, serif" }}
             >
               {completedCount}
             </span>
-            <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#22C55E] ml-1 sm:ml-1.5 mt-1 flex-shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-tag-health ml-1.5 flex-shrink-0" />
           </div>
-          <span className="text-[11.5px] sm:text-[13px] leading-[1.3] text-[#556980] font-normal mt-2 sm:mt-3 block">
-            Completed<br />tasks
+          <span className="text-[11.5px] leading-[1.25] text-mutedText font-normal mt-1.5 block">
+            Completed<br />Today
           </span>
         </div>
       </div>
     </div>
   );
 };
-

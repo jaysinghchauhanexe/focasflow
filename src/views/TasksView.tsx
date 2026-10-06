@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Task, Category, Priority } from '../types';
-import { Plus, Search, Filter, Check, MoreHorizontal, Edit2, Trash2, Calendar, FastForward } from 'lucide-react';
+import { Plus, Search, Check, MoreHorizontal, Edit2, Trash2, FastForward, CheckCircle2 } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
 
 export const TasksView: React.FC = () => {
@@ -30,29 +30,29 @@ export const TasksView: React.FC = () => {
 
   const getPriorityBadge = (p: Priority) => {
     switch (p) {
-      case 'critical': return 'bg-[rgba(217,75,91,0.14)] text-[#c53030]';
-      case 'important': return 'bg-[rgba(216,138,45,0.14)] text-[#c2781e]';
-      case 'flexible': return 'bg-[rgba(50,143,155,0.14)] text-[#287c87]';
-      default: return 'bg-[rgba(107,127,132,0.14)] text-[#556b70]';
+      case 'critical': return 'bg-tag-importantBg text-tag-important';
+      case 'important': return 'bg-tag-learningBg text-tag-learning';
+      case 'flexible': return 'bg-primary-soft text-primary';
+      default: return 'bg-tag-neutralBg text-tag-neutral';
     }
   };
 
   return (
-    <div className="space-y-4 animate-fade-in pb-6 select-none">
+    <div className="space-y-5 animate-fade-in pb-8 select-none max-w-[1600px] mx-auto">
       {/* Header with Search and New Task */}
-      <div className="bg-white rounded-[20px] p-6 shadow-soft flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex flex-wrap items-center justify-between gap-4 border border-borderToken transition-colors">
         <div>
-          <h2 className="text-2xl font-serif font-medium text-[#05313A] tracking-tight">
+          <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
             All Tasks & Backlog
           </h2>
-          <p className="text-xs text-[rgba(5,49,58,0.6)] mt-0.5">
-            Organize one-off outcomes and prioritize your work.
+          <p className="text-[13px] text-mutedText mt-0.5">
+            Organize one-off outcomes and prioritize your focus peacefully.
           </p>
         </div>
 
         <button
           onClick={() => openTaskModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-[#328F9B] hover:bg-[#287C87] text-white text-xs font-semibold rounded-xl transition-all shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all shadow-xs"
         >
           <Plus size={15} />
           <span>New Task</span>
@@ -60,16 +60,16 @@ export const TasksView: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-[20px] p-4 shadow-soft flex flex-wrap items-center gap-3">
+      <div className="bg-card rounded-[24px] p-4 shadow-soft flex flex-wrap items-center gap-3 border border-borderToken transition-colors">
         {/* Search */}
-        <div className="flex-1 min-w-[200px] flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.08)]">
-          <Search size={15} className="text-[rgba(5,49,58,0.4)]" />
+        <div className="flex-1 min-w-[220px] flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-card-subtle border border-borderToken">
+          <Search size={15} className="text-mutedText" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tasks..."
-            className="w-full bg-transparent text-xs text-[#05313A] placeholder-[rgba(5,49,58,0.4)] outline-none"
+            placeholder="Search outcomes..."
+            className="w-full bg-transparent text-[13.5px] text-foreground placeholder-mutedText outline-none"
           />
         </div>
 
@@ -77,7 +77,7 @@ export const TasksView: React.FC = () => {
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="px-3 py-1.5 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.08)] text-xs text-[#05313A] outline-none"
+          className="px-3.5 py-2 rounded-xl bg-card-subtle border border-borderToken text-[13px] text-foreground outline-none font-medium"
         >
           <option value="All">All Categories</option>
           <option value="Work">Work</option>
@@ -90,7 +90,7 @@ export const TasksView: React.FC = () => {
         <select
           value={selectedPriority}
           onChange={(e) => setSelectedPriority(e.target.value)}
-          className="px-3 py-1.5 rounded-xl bg-[#F8FCFD] border border-[rgba(5,49,58,0.08)] text-xs text-[#05313A] outline-none"
+          className="px-3.5 py-2 rounded-xl bg-card-subtle border border-borderToken text-[13px] text-foreground outline-none font-medium"
         >
           <option value="All">All Priorities</option>
           <option value="critical">Critical</option>
@@ -101,11 +101,11 @@ export const TasksView: React.FC = () => {
       </div>
 
       {/* Tasks Table */}
-      <div className="bg-white rounded-[20px] p-6 shadow-soft">
-        <div className="divide-y divide-[rgba(5,49,58,0.04)]">
+      <div className="bg-card rounded-[28px] p-6 shadow-soft border border-borderToken transition-colors">
+        <div className="divide-y divide-borderToken">
           {filteredTasks.length === 0 ? (
-            <div className="py-12 text-center text-xs text-[rgba(5,49,58,0.5)]">
-              No tasks found matching your filter.
+            <div className="py-12 text-center text-[13.5px] text-mutedText">
+              No outcomes found matching your filter.
             </div>
           ) : (
             filteredTasks.map((task) => {
@@ -113,33 +113,33 @@ export const TasksView: React.FC = () => {
               return (
                 <div
                   key={task.id}
-                  className="flex items-center justify-between py-3.5 px-2 hover:bg-[#F8FCFD] rounded-xl transition-all"
+                  className="flex items-center justify-between py-3.5 px-3 hover:bg-card-subtle rounded-2xl transition-all"
                 >
                   {/* Checkbox + Title */}
-                  <div className="flex items-center gap-3 min-w-0 pr-4">
+                  <div className="flex items-center gap-3.5 min-w-0 pr-4">
                     <button
                       onClick={() => toggleTaskStatus(task.id)}
-                      className={`w-5 h-5 rounded-[6px] flex items-center justify-center transition-all ${
+                      className={`w-5 h-5 rounded-[7px] flex items-center justify-center transition-all ${
                         isCompleted
-                          ? 'bg-[#328F9B] text-white'
-                          : 'border border-[rgba(5,49,58,0.2)] bg-white hover:border-[#328F9B]'
+                          ? 'bg-primary text-white'
+                          : 'border border-borderToken bg-card hover:border-primary'
                       }`}
                     >
-                      {isCompleted && <Check size={13} strokeWidth={3} />}
+                      {isCompleted && <Check size={13} strokeWidth={3} className="text-white" />}
                     </button>
                     <div>
                       <span
                         onClick={() => openTaskModal(task)}
-                        className={`text-sm font-medium cursor-pointer transition-colors block ${
+                        className={`text-[14.5px] font-medium cursor-pointer transition-colors block ${
                           isCompleted
-                            ? 'line-through text-[rgba(5,49,58,0.4)]'
-                            : 'text-[#05313A] hover:text-[#328F9B]'
+                            ? 'line-through text-mutedText'
+                            : 'text-foreground hover:text-primary'
                         }`}
                       >
                         {task.title}
                       </span>
                       {task.description && (
-                        <span className="text-[11px] text-[rgba(5,49,58,0.5)] truncate block max-w-md">
+                        <span className="text-[12px] text-mutedText truncate block max-w-md">
                           {task.description}
                         </span>
                       )}
@@ -147,9 +147,9 @@ export const TasksView: React.FC = () => {
                   </div>
 
                   {/* Badges & Meta */}
-                  <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="flex items-center gap-3.5 flex-shrink-0">
                     <span
-                      className={`px-2.5 py-0.5 rounded-[6px] text-[10.5px] font-medium ${getPriorityBadge(
+                      className={`px-2.5 py-0.5 rounded-lg text-[11px] font-semibold capitalize ${getPriorityBadge(
                         task.priority
                       )}`}
                     >
@@ -157,14 +157,14 @@ export const TasksView: React.FC = () => {
                     </span>
 
                     <span
-                      className={`px-2.5 py-0.5 rounded-[6px] text-[11px] font-medium ${getCategoryClass(
+                      className={`px-2.5 py-0.5 rounded-lg text-[11.5px] font-medium ${getCategoryClass(
                         task.category
                       )}`}
                     >
                       {task.category}
                     </span>
 
-                    <span className="text-xs text-[rgba(5,49,58,0.6)] font-mono min-w-[50px] text-right">
+                    <span className="text-[12.5px] text-mutedText font-sans min-w-[50px] text-right">
                       {task.duration}m
                     </span>
 
@@ -172,19 +172,19 @@ export const TasksView: React.FC = () => {
                     <div className="relative">
                       <button
                         onClick={() => setActiveMenuId(activeMenuId === task.id ? null : task.id)}
-                        className="p-1 rounded text-[rgba(5,49,58,0.4)] hover:text-[#05313A]"
+                        className="p-1.5 rounded-lg text-mutedText hover:text-foreground hover:bg-card-subtle"
                       >
                         <MoreHorizontal size={16} />
                       </button>
 
                       {activeMenuId === task.id && (
-                        <div className="absolute right-0 top-7 w-40 bg-white rounded-xl shadow-float py-1 z-20 border border-[rgba(5,49,58,0.08)] animate-fade-in">
+                        <div className="absolute right-0 top-7 w-40 bg-card rounded-2xl shadow-float py-1.5 z-20 border border-borderToken animate-fade-in">
                           <button
                             onClick={() => {
                               openTaskModal(task);
                               setActiveMenuId(null);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#05313A] hover:bg-[rgba(5,49,58,0.05)]"
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-card-subtle"
                           >
                             <Edit2 size={13} />
                             <span>Edit</span>
@@ -194,7 +194,7 @@ export const TasksView: React.FC = () => {
                               moveTaskToTomorrow(task.id);
                               setActiveMenuId(null);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#05313A] hover:bg-[rgba(5,49,58,0.05)]"
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-card-subtle"
                           >
                             <FastForward size={13} />
                             <span>Move tomorrow</span>
@@ -204,7 +204,7 @@ export const TasksView: React.FC = () => {
                               deleteTask(task.id);
                               setActiveMenuId(null);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#D94B5B] hover:bg-[rgba(217,75,91,0.08)]"
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-tag-important hover:bg-tag-importantBg"
                           >
                             <Trash2 size={13} />
                             <span>Delete</span>
