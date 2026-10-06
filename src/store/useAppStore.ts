@@ -103,6 +103,8 @@ interface AppState {
   skipTask: (id: string) => void;
   moveTaskToTomorrow: (id: string) => void;
   moveTaskLater: (id: string) => void;
+  lightenTodayLoad: () => number;
+  extendTaskDuration: (taskId: string, extraMinutes: number) => void;
 
   // Habit Actions
   addHabit: (habit: Omit<Habit, 'id' | 'completedDates' | 'createdAt'>) => void;
@@ -141,6 +143,9 @@ interface AppState {
   setLastAiResult: (res: AiResponsePayload | null) => void;
   openOverloadModal: () => void;
   closeOverloadModal: () => void;
+  isMoodModalOpen: boolean;
+  openMoodModal: () => void;
+  closeMoodModal: () => void;
 
   // Computed getters
   getDayCapacity: () => DayCapacity;
@@ -483,6 +488,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   lastAiResult: null,
   isOverloadModalOpen: false,
   isBreathingModalOpen: false,
+  isMoodModalOpen: false,
   isSidebarCollapsed: loadPersisted('sidebar_collapsed', false),
   toggleSidebar: () => set((state) => {
     const next = !state.isSidebarCollapsed;
@@ -531,10 +537,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   }),
 
   currentMood: loadPersisted('mood', 'calm' as const),
-  activeLofiStation: loadPersisted<LofiStationId>('lofi_station', 'study'),
+  activeLofiStation: loadPersisted<LofiStationId>('lofi_station', 'coffee'),
   isPlayingLofi: false,
   lofiVolume: loadPersisted<number>('lofi_volume', 45),
-  activeSoundscape: 'study',
+  activeSoundscape: 'coffee',
   isPlayingSoundscape: false,
 
   setCurrentTab: (tab) => set({ currentTab: tab }),
@@ -685,6 +691,50 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (!task) return state;
       const otherTasks = state.tasks.filter(t => t.id !== id);
       const updated = [...otherTasks, { ...task, priority: 'flexible' as const, movedCount: (task.movedCount || 0) + 1 }];
+      savePersisted('tasks', updated);
+      return { tasks: updated };
+    });
+    get().replanDay();
+  },
+
+  lightenTodayLoad: () => {
+    const todayStr = get().selectedDate || new Date().toISOString().split('T')[0];
+    const tomorrow = new Date(todayStr);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    let count = 0;
+    set((state) => {
+      const updated = state.tasks.map((t) => {
+        const isToday = t.scheduledDate === todayStr || (!t.scheduledDate && t.status !== 'completed' && t.status !== 'skipped');
+        const isFlexibleOrOptional = t.priority === 'flexible' || t.priority === 'optional';
+        if (isToday && isFlexibleOrOptional && t.status !== 'completed' && t.status !== 'skipped') {
+          count++;
+          return {
+            ...t,
+            scheduledDate: tomorrowStr,
+            movedCount: (t.movedCount || 0) + 1,
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return t;
+      });
+      savePersisted('tasks', updated);
+      return { tasks: updated };
+    });
+    get().replanDay();
+    return count;
+  },
+
+  extendTaskDuration: (taskId, extraMinutes) => {
+    set((state) => {
+      const updated = state.tasks.map((t) => {
+        if (t.id === taskId) {
+          const newDuration = Math.max(5, (t.duration || 45) + extraMinutes);
+          return { ...t, duration: newDuration, updatedAt: new Date().toISOString() };
+        }
+        return t;
+      });
       savePersisted('tasks', updated);
       return { tasks: updated };
     });
@@ -921,6 +971,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   setLastAiResult: (res) => set({ lastAiResult: res }),
   openOverloadModal: () => set({ isOverloadModalOpen: true }),
   closeOverloadModal: () => set({ isOverloadModalOpen: false }),
+  openMoodModal: () => set({ isMoodModalOpen: true }),
+  closeMoodModal: () => set({ isMoodModalOpen: false }),
 
   // Onboarding handlers
   openOnboarding: () => set({ isOnboardingOpen: true }),

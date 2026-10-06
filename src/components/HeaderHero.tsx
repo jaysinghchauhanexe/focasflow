@@ -4,45 +4,90 @@ interface FaceProps {
   size?: number;
   className?: string;
   strokeWidth?: number;
+  isActive?: boolean;
 }
 
-const StressedFace: React.FC<FaceProps> = ({ size = 26, className = '', strokeWidth = 2.3 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
-    {/* Tense squinting eyes > < */}
-    <path d="M 6 7.5 L 9 9.5 L 6 11.5" />
-    <path d="M 18 7.5 L 15 9.5 L 18 11.5" />
-    {/* Tense zig-zag mouth */}
+const StressedFace: React.FC<FaceProps> = ({ size = 26, className = '', strokeWidth = 2.3, isActive = false }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth={strokeWidth} 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={`${className} ${isActive ? 'animate-face-stressed' : 'group-hover:animate-face-stressed'}`}
+  >
+    {/* Tense squinting eyes > < with vibrating twitch */}
+    <path d="M 6 7.5 L 9 9.5 L 6 11.5" className={isActive ? 'animate-pulse' : ''} />
+    <path d="M 18 7.5 L 15 9.5 L 18 11.5" className={isActive ? 'animate-pulse' : ''} />
+    {/* Tense zig-zag stress mouth */}
     <path d="M 7 16.5 Q 9.5 14 12 16.5 Q 14.5 19 17 16.5" />
   </svg>
 );
 
-const AnxiousFace: React.FC<FaceProps> = ({ size = 26, className = '', strokeWidth = 2.3 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+const AnxiousFace: React.FC<FaceProps> = ({ size = 26, className = '', strokeWidth = 2.3, isActive = false }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth={strokeWidth} 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={`${className} ${isActive ? 'animate-face-anxious' : 'group-hover:animate-face-anxious'}`}
+  >
     {/* Worried slanted eyebrows */}
     <path d="M 6 6.5 L 9.5 8" />
     <path d="M 18 6.5 L 14.5 8" />
     {/* Wide worried dot eyes */}
-    <circle cx="8" cy="10" r="1.5" fill="currentColor" stroke="none" />
-    <circle cx="16" cy="10" r="1.5" fill="currentColor" stroke="none" />
-    {/* Nervous sweat drop */}
-    <path d="M 20.5 4.5 C 20.5 4.5 19.2 5.8 19.2 6.8 C 19.2 7.5 19.7 8 20.5 8 C 21.3 8 21.8 7.5 21.8 6.8 C 21.8 5.8 20.5 4.5 20.5 4.5 Z" fill="currentColor" stroke="none" />
+    <circle cx="8" cy="10" r="1.5" fill="currentColor" stroke="none" className={isActive ? 'animate-pulse' : ''} />
+    <circle cx="16" cy="10" r="1.5" fill="currentColor" stroke="none" className={isActive ? 'animate-pulse' : ''} />
+    {/* Animated dripping/pulsing sweat drop */}
+    <g className={isActive ? 'animate-sweat-drip' : 'group-hover:animate-sweat-drip'}>
+      <path d="M 20.5 4.5 C 20.5 4.5 19.2 5.8 19.2 6.8 C 19.2 7.5 19.7 8 20.5 8 C 21.3 8 21.8 7.5 21.8 6.8 C 21.8 5.8 20.5 4.5 20.5 4.5 Z" fill="currentColor" stroke="none" />
+    </g>
     {/* Nervous wobbly mouth */}
     <path d="M 8 16 Q 10 14.5 12 16 Q 14 17.5 16 16" />
   </svg>
 );
 
-const OkayFace: React.FC<FaceProps> = ({ size = 26, className = '', strokeWidth = 2.3 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
-    {/* Neutral round dot eyes */}
-    <circle cx="8" cy="8.5" r="1.6" fill="currentColor" stroke="none" />
-    <circle cx="16" cy="8.5" r="1.6" fill="currentColor" stroke="none" />
+const OkayFace: React.FC<FaceProps> = ({ size = 26, className = '', strokeWidth = 2.3, isActive = false }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth={strokeWidth} 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={`${className}`}
+  >
+    {/* Neutral round dot eyes with periodic soft blink */}
+    <g className={isActive ? 'animate-face-okay' : 'group-hover:animate-face-okay'}>
+      <circle cx="8" cy="8.5" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="8.5" r="1.6" fill="currentColor" stroke="none" />
+    </g>
     {/* Straight calm mouth */}
     <path d="M 8.5 15.5 H 15.5" />
   </svg>
 );
 
-const CalmFace: React.FC<FaceProps> = ({ size = 26, className = '', strokeWidth = 2.3 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+const CalmFace: React.FC<FaceProps> = ({ size = 26, className = '', strokeWidth = 2.3, isActive = false }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth={strokeWidth} 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={`${className} ${isActive ? 'animate-face-calm' : 'group-hover:animate-face-calm'}`}
+  >
     {/* Peaceful curved resting eyes ⌒ ⌒ */}
     <path d="M 6 8.5 Q 8 6.5 10 8.5" />
     <path d="M 14 8.5 Q 16 6.5 18 8.5" />
@@ -51,12 +96,22 @@ const CalmFace: React.FC<FaceProps> = ({ size = 26, className = '', strokeWidth 
   </svg>
 );
 
-const GreatFace: React.FC<FaceProps> = ({ size = 26, className = '', strokeWidth = 2.3 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
-    {/* Joyful arched eyes ⌒ ⌒ (matching reference) */}
+const GreatFace: React.FC<FaceProps> = ({ size = 26, className = '', strokeWidth = 2.3, isActive = false }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth={strokeWidth} 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={`${className} ${isActive ? 'animate-face-great' : 'group-hover:animate-face-great'}`}
+  >
+    {/* Joyful arched eyes ⌒ ⌒ */}
     <path d="M 6 8.5 C 6 6, 9.5 6, 9.5 8.5" />
     <path d="M 14.5 8.5 C 14.5 6, 18 6, 18 8.5" />
-    {/* Wide happy upward smile (matching reference) */}
+    {/* Wide happy upward smile */}
     <path d="M 6.5 13.5 C 6.5 20.5, 17.5 20.5, 17.5 13.5" />
   </svg>
 );
@@ -101,7 +156,25 @@ const ordinal = (n: number) => {
 };
 
 export const HeaderHero: React.FC = () => {
-  const { settings, selectedDate, currentMood, setMood } = useAppStore();
+  const { settings, selectedDate, currentMood, setMood, openMoodModal } = useAppStore();
+  const moodTimerRef = React.useRef<any>(null);
+
+  const handleSelectMood = (moodId: any) => {
+    setMood(moodId);
+    if (moodTimerRef.current) {
+      clearTimeout(moodTimerRef.current);
+    }
+    // After a 2-second delay, open the mood insight popup
+    moodTimerRef.current = setTimeout(() => {
+      openMoodModal();
+    }, 2000);
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (moodTimerRef.current) clearTimeout(moodTimerRef.current);
+    };
+  }, []);
 
   const theme = settings.theme || 'green';
   const isDark = theme === 'dark';
@@ -131,9 +204,21 @@ export const HeaderHero: React.FC = () => {
   }, [timeOfDay]);
 
   const quote = useMemo(() => {
+    if (currentMood === 'stressed') {
+      return 'Breathe deeply. You do not have to carry everything all at once.';
+    }
+    if (currentMood === 'anxious') {
+      return 'One peaceful step at a time. What single outcome matters most right now?';
+    }
+    if (currentMood === 'great') {
+      return 'High clarity & wonderful energy. Ride this wave into your key milestones!';
+    }
+    if (currentMood === 'calm') {
+      return 'Centered mind, steady momentum. Maintain your serene, mindful rhythm.';
+    }
     switch (timeOfDay) {
       case 'morning':
-        return 'A focused day brings a calm & peaceful mind.';
+        return 'A focused morning brings a calm & intentional day.';
       case 'afternoon':
         return 'Maintain steady momentum with mindful flow.';
       case 'evening':
@@ -142,7 +227,7 @@ export const HeaderHero: React.FC = () => {
       default:
         return 'Rest deeply to restore your energy for tomorrow.';
     }
-  }, [timeOfDay]);
+  }, [timeOfDay, currentMood]);
 
   const name = settings.userName || "Jay";
   const today = (d.getDay() + 6) % 7; // Mon = 0
@@ -381,54 +466,51 @@ export const HeaderHero: React.FC = () => {
         </div>
       </div>
 
-      {/* Bottom Row: Glassmorphic Feeling Bar */}
+      {/* Bottom Row: Glassmorphic Feeling Bar (Clean, Zero Layout Shift) */}
       <div className="relative z-10 p-5 pb-6 flex items-center justify-center w-full">
-        <div className={`flex items-center px-2.5 sm:px-3 py-1.5 rounded-full transition-all backdrop-blur-md ${isDark
+        <div className={`flex items-center px-3 py-1.5 rounded-full transition-colors backdrop-blur-md ${isDark
             ? 'bg-black/60 border border-white/15 shadow-xl'
             : 'bg-card/90 border border-borderToken shadow-sm'
           }`}>
-          <span className={`text-[12.5px] font-medium pl-2 pr-2.5 hidden sm:inline-block tracking-wide ${isDark ? 'text-white/70' : 'text-mutedText'
+          <span className={`text-[12.5px] font-medium pl-1 pr-3 hidden sm:inline-block tracking-wide select-none ${isDark ? 'text-white/70' : 'text-mutedText'
             }`}>
             Feeling:
           </span>
           <div className="flex items-center gap-1 sm:gap-1.5">
-            {MOODS.map((m, idx) => {
+            {MOODS.map((m) => {
               const Icon = m.icon;
               const isSelected = currentMood === m.id;
               return (
-                <React.Fragment key={m.id}>
-                  {idx > 0 && !isSelected && currentMood !== MOODS[idx - 1].id && (
-                    <div className={`w-[1px] h-5 hidden sm:block mx-0.5 ${isDark ? 'bg-white/15' : 'bg-borderToken'
-                      }`} />
-                  )}
-                  <button
-                    onClick={() => setMood(m.id as any)}
-                    className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer ${isSelected
+                <button
+                  key={m.id}
+                  onClick={() => handleSelectMood(m.id)}
+                  className={`w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 flex items-center justify-center rounded-full transition-spring cursor-pointer group ${isSelected
+                      ? isDark
+                        ? 'bg-white text-black shadow-lg scale-105'
+                        : 'bg-primary text-white shadow-md scale-105'
+                      : isDark
+                        ? 'text-white/75 hover:text-white hover:bg-white/15'
+                        : 'text-textSecondary hover:text-foreground hover:bg-card-subtle'
+                    }`}
+                  title={m.label}
+                  aria-label={m.label}
+                >
+                  <Icon
+                    key={`${m.id}-${isSelected ? 'active' : 'idle'}`}
+                    size={24}
+                    isActive={isSelected}
+                    className={
+                      isSelected
                         ? isDark
-                          ? 'bg-white text-black shadow-lg scale-105'
-                          : 'bg-primary text-white shadow-md'
+                          ? 'text-black'
+                          : 'text-white'
                         : isDark
-                          ? 'text-white/75 hover:text-white hover:bg-white/15'
-                          : 'text-textSecondary hover:text-foreground hover:bg-card-subtle'
-                      }`}
-                    title={m.label}
-                    aria-label={m.label}
-                  >
-                    <Icon
-                      size={isSelected ? 27 : 25}
-                      className={
-                        isSelected
-                          ? isDark
-                            ? 'text-black'
-                            : 'text-white'
-                          : isDark
-                            ? 'text-white/80'
-                            : 'text-textSecondary'
-                      }
-                      strokeWidth={2.3}
-                    />
-                  </button>
-                </React.Fragment>
+                          ? 'text-white/80 group-hover:text-white'
+                          : 'text-textSecondary group-hover:text-foreground'
+                    }
+                    strokeWidth={2.3}
+                  />
+                </button>
               );
             })}
           </div>

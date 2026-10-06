@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { Check, Play, Pause, FastForward } from 'lucide-react';
+import { Check, Play, Pause, FastForward, Plus } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
 import { DoodleZenStones } from './DoodleIllustrations';
 
@@ -41,6 +41,7 @@ export const CurrentTaskBanner: React.FC = () => {
     isFocusTimerRunning,
     focusElapsedSeconds,
     toggleFocusTask,
+    extendTaskDuration,
     setFocusElapsedSeconds
   } = useAppStore();
 
@@ -149,6 +150,20 @@ export const CurrentTaskBanner: React.FC = () => {
       <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0 self-end lg:self-center pl-0 lg:pl-2">
         {/* Subtle Vertical Divider */}
         <div className="w-[1px] h-10 bg-borderToken hidden lg:block mr-2" />
+
+        {/* 1-Click Overtime Extension Button */}
+        {isOvertime && (
+          <button
+            onClick={() => {
+              if (currentTask) extendTaskDuration(currentTask.id, 15);
+            }}
+            className="flex items-center gap-1 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl bg-tag-importantBg text-tag-important hover:bg-tag-important/20 text-[12.5px] sm:text-[13px] font-semibold transition-spring hover:scale-105 active:scale-95 shadow-xs border border-tag-important/25 cursor-pointer animate-enter-up"
+            title="Add 15 minutes to this task's planned duration"
+          >
+            <Plus size={14} className="text-tag-important" />
+            <span>+15m Extension</span>
+          </button>
+        )}
 
         {/* Start Focus / Pause Button */}
         <button

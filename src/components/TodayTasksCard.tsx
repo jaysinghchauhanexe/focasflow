@@ -4,6 +4,7 @@ import { Task, Category } from '../types';
 import { Plus, Check, Play, Pause, MoreHorizontal, ArrowRight, Clock, Trash2, Edit2, FastForward } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
 import { DoodleCup } from './DoodleIllustrations';
+import { SmoothAutoHeight } from './SmoothAutoHeight';
 
 export const TodayTasksCard: React.FC = () => {
   const {
@@ -22,18 +23,24 @@ export const TodayTasksCard: React.FC = () => {
     isFocusTimerRunning,
     focusElapsedSeconds,
     taskElapsedSeconds,
-    toggleFocusTask
+    toggleFocusTask,
+    extendTaskDuration
   } = useAppStore();
 
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [activeOvertimeMenuId, setActiveOvertimeMenuId] = useState<string | null>(null);
   const menuContainerRef = React.useRef<HTMLDivElement>(null);
+  const overtimeContainerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!activeMenuId) return;
+    if (!activeMenuId && !activeOvertimeMenuId) return;
 
     const handlePointerDown = (e: MouseEvent | TouchEvent) => {
       if (menuContainerRef.current && !menuContainerRef.current.contains(e.target as Node)) {
         setActiveMenuId(null);
+      }
+      if (overtimeContainerRef.current && !overtimeContainerRef.current.contains(e.target as Node)) {
+        setActiveOvertimeMenuId(null);
       }
     };
 
@@ -44,7 +51,7 @@ export const TodayTasksCard: React.FC = () => {
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('touchstart', handlePointerDown);
     };
-  }, [activeMenuId]);
+  }, [activeMenuId, activeOvertimeMenuId]);
 
   const formatTimer = (totalSeconds: number) => {
     const m = Math.floor(totalSeconds / 60);
@@ -124,8 +131,9 @@ export const TodayTasksCard: React.FC = () => {
           </div>
         </div>
 
-        {/* Task Rows List with divider line under each task */}
-        <div className="divide-y divide-borderToken mt-2">
+        {/* Task Rows List with divider line under each task and smooth auto-height */}
+        <SmoothAutoHeight duration={360} className="mt-2">
+          <div className="divide-y divide-borderToken">
           {displayedTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <DoodleCup size={72} className="mb-2 transform hover:scale-105 transition-transform" />
@@ -199,26 +207,81 @@ export const TodayTasksCard: React.FC = () => {
 
                     {/* Live Task Timer (between Time and Play button) */}
                     {!isCompleted && (
-                      <div
-                        className={`flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-mono text-[11.5px] tracking-tight tabular-nums transition-all select-none ${
-                          isOvertime
-                            ? 'bg-tag-importantBg text-tag-important font-bold border border-tag-important/30 shadow-xs animate-pulse'
-                            : isThisTaskRunning
-                              ? 'bg-primary-soft text-primary font-semibold border border-primary/25'
-                              : elapsedSeconds > 0
-                                ? 'bg-card-muted text-foreground font-medium border border-borderToken'
-                                : 'bg-card-subtle text-mutedText font-normal border border-borderToken/40'
-                        }`}
-                        title={
-                          isOvertime
-                            ? `Overtime: estimated ${task.duration || 45}m, current time ${formatTimer(elapsedSeconds)}`
-                            : isThisTaskRunning
-                              ? 'Task timer is running'
-                              : 'Task timer'
-                        }
+                      <div 
+                        className="relative"
+                        ref={activeOvertimeMenuId === task.id ? overtimeContainerRef : null}
                       >
-                        <Clock size={11} className={`flex-shrink-0 ${isOvertime ? 'text-tag-important' : isThisTaskRunning ? 'text-primary' : 'text-mutedText'}`} />
-                        <span>{formatTimer(elapsedSeconds)}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            if (isOvertime) {
+                              e.stopPropagation();
+                              setActiveOvertimeMenuId(activeOvertimeMenuId === task.id ? null : task.id);
+                            }
+                          }}
+                          className={`flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-mono text-[11.5px] tracking-tight tabular-nums transition-all select-none ${
+                            isOvertime
+                              ? 'bg-tag-importantBg text-tag-important font-bold border border-tag-important/30 shadow-xs animate-pulse cursor-pointer hover:scale-105'
+                              : isThisTaskRunning
+                                ? 'bg-primary-soft text-primary font-semibold border border-primary/25 cursor-default'
+                                : elapsedSeconds > 0
+                                  ? 'bg-card-muted text-foreground font-medium border border-borderToken cursor-default'
+                                  : 'bg-card-subtle text-mutedText font-normal border border-borderToken/40 cursor-default'
+                          }`}
+                          title={
+                            isOvertime
+                              ? `Overtime limit exceeded (+${Math.floor((elapsedSeconds - estimatedSeconds)/60)}m). Click for options.`
+                              : isThisTaskRunning
+                                ? 'Task timer is running'
+                                : 'Task timer'
+                          }
+                        >
+                          <Clock size={11} className={`flex-shrink-0 ${isOvertime ? 'text-tag-important' : isThisTaskRunning ? 'text-primary' : 'text-mutedText'}`} />
+                          <span>{formatTimer(elapsedSeconds)}</span>
+                        </button>
+
+                        {/* Overtime Smart Action Popover */}
+                        {isOvertime && activeOvertimeMenuId === task.id && (
+                          <div 
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute right-0 top-7 w-52 bg-card rounded-2xl shadow-float py-2 px-1 z-50 border border-borderToken animate-fade-in text-left"
+                          >
+                            <div className="px-3 py-1 mb-1 border-b border-borderToken text-[11px] font-semibold text-tag-important flex items-center justify-between">
+                              <span>Overtime (+{Math.floor((elapsedSeconds - estimatedSeconds) / 60)}m)</span>
+                              <span className="text-[10px] text-mutedText">Recovery</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                extendTaskDuration(task.id, 15);
+                                setActiveOvertimeMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-card-subtle transition-colors cursor-pointer rounded-xl font-medium"
+                            >
+                              <Plus size={13} className="text-primary" />
+                              <span>+15 Min Extension</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                toggleTaskStatus(task.id);
+                                setActiveOvertimeMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-tag-health hover:bg-tag-healthBg transition-colors cursor-pointer rounded-xl font-medium"
+                            >
+                              <Check size={13} strokeWidth={2.5} />
+                              <span>Mark Done & Log {Math.ceil(elapsedSeconds / 60)}m</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                moveTaskToTomorrow(task.id);
+                                setActiveOvertimeMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-mutedText hover:bg-card-subtle hover:text-foreground transition-colors cursor-pointer rounded-xl"
+                            >
+                              <FastForward size={13} />
+                              <span>Move Remainder Tomorrow</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -319,7 +382,8 @@ export const TodayTasksCard: React.FC = () => {
               );
             })
           )}
-        </div>
+          </div>
+        </SmoothAutoHeight>
       </div>
 
       {/* Bottom Link: "View all tasks" */}

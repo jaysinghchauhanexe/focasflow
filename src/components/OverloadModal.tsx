@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { AlertTriangle, X, FastForward, Scissors } from 'lucide-react';
+import { SmoothAutoHeight } from './SmoothAutoHeight';
 
 export const OverloadModal: React.FC = () => {
   const { isOverloadModalOpen, closeOverloadModal, getDayCapacity, applySuggestion } = useAppStore();
@@ -54,46 +55,50 @@ export const OverloadModal: React.FC = () => {
           </span>
         </div>
 
-        {/* Suggestions list */}
+        {/* Suggestions list with smooth height */}
         <div className="mt-5 space-y-2.5">
           <span className="text-[12px] font-semibold text-mutedText uppercase tracking-wider block">
             Recommended Adjustments
           </span>
 
-          {capacity.suggestions.length === 0 ? (
-            <div className="p-3 text-[12.5px] text-mutedText">
-              Try moving flexible tasks to tomorrow or shortening task durations.
-            </div>
-          ) : (
-            capacity.suggestions.map((sug) => (
-              <div
-                key={sug.id}
-                className="flex items-center justify-between p-3.5 rounded-2xl bg-card-subtle transition-all"
-              >
-                <div className="flex items-center gap-2.5">
-                  {sug.actionType === 'move' ? (
-                    <FastForward size={16} className="text-primary" />
-                  ) : (
-                    <Scissors size={16} className="text-tag-learning" />
-                  )}
-                  <div>
-                    <span className="text-[13px] font-semibold text-foreground block">{sug.taskTitle}</span>
-                    <span className="text-[11.5px] text-mutedText block">{sug.explanation}</span>
-                  </div>
+          <SmoothAutoHeight duration={360}>
+            <div className="space-y-2">
+              {capacity.suggestions.length === 0 ? (
+                <div className="p-3 text-[12.5px] text-mutedText">
+                  Try moving flexible tasks to tomorrow or shortening task durations.
                 </div>
+              ) : (
+                capacity.suggestions.map((sug) => (
+                  <div
+                    key={sug.id}
+                    className="flex items-center justify-between p-3.5 rounded-2xl bg-card-subtle transition-all duration-200"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      {sug.actionType === 'move' ? (
+                        <FastForward size={16} className="text-primary" />
+                      ) : (
+                        <Scissors size={16} className="text-tag-learning" />
+                      )}
+                      <div>
+                        <span className="text-[13px] font-semibold text-foreground block">{sug.taskTitle}</span>
+                        <span className="text-[11.5px] text-mutedText block">{sug.explanation}</span>
+                      </div>
+                    </div>
 
-                <button
-                  onClick={() => {
-                    applySuggestion(sug);
-                    closeOverloadModal();
-                  }}
-                  className="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-[12px] font-medium transition-all shadow-xs"
-                >
-                  Apply
-                </button>
-              </div>
-            ))
-          )}
+                    <button
+                      onClick={() => {
+                        applySuggestion(sug);
+                        closeOverloadModal();
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-[12px] font-medium transition-all shadow-xs"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </SmoothAutoHeight>
         </div>
 
         {/* Footer */}

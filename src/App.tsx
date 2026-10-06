@@ -16,6 +16,7 @@ import { AiResultModal } from './components/AiResultModal';
 import { OverloadModal } from './components/OverloadModal';
 import { BreathingModal } from './components/BreathingModal';
 import { OnboardingModal } from './components/OnboardingModal';
+import { MoodInsightModal } from './components/MoodInsightModal';
 import { LofiBackgroundPlayer } from './components/LofiBackgroundPlayer';
 
 export const App: React.FC = () => {
@@ -89,6 +90,7 @@ export const App: React.FC = () => {
       <OverloadModal />
       <BreathingModal />
       <OnboardingModal />
+      <MoodInsightModal />
 
       {/* Persistent Background Lofi Player */}
       <LofiBackgroundPlayer />
