@@ -94,7 +94,7 @@ export const RoutinesView: React.FC = () => {
                       </span>
                     </div>
 
-                    <span className="text-[11.5px] text-mutedText font-mono">
+                    <span className="text-[11.5px] text-mutedText font-sans">
                       {step.duration}m
                     </span>
                   </div>

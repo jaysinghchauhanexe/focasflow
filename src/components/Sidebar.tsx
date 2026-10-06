@@ -40,9 +40,9 @@ export const Sidebar: React.FC = () => {
       <div className="flex flex-col flex-1">
         {/* Brand Header */}
         <div className="flex items-center gap-3 px-2 pt-1 pb-5">
-          {/* Stylized FocusFlow Logo */}
-          <div className="w-9 h-9 rounded-2xl bg-primary flex items-center justify-center text-white shadow-xs">
-            <Leaf size={19} className="transform -rotate-12" />
+          {/* FocusFlow App Icon */}
+          <div className="w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 shadow-xs">
+            <img src="/app-icon.png" alt="FocusFlow Icon" className="w-full h-full object-cover" />
           </div>
           <div>
             <span className="text-[20px] font-serif font-semibold tracking-tight text-foreground block leading-none">

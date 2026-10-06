@@ -52,7 +52,7 @@ export const AiResultModal: React.FC = () => {
                   </span>
                 </div>
                 {op.duration_minutes && (
-                  <span className="font-mono text-mutedText">{op.duration_minutes}m</span>
+                  <span className="font-sans text-mutedText">{op.duration_minutes}m</span>
                 )}
               </div>
             ))}

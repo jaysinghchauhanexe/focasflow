@@ -1,8 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { Check, ArrowRight, Play, Pause, FastForward, Sparkles, Clock } from 'lucide-react';
+import { Check, Play, Pause, FastForward } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
 import { DoodleZenStones } from './DoodleIllustrations';
+
+/* Clean Vector Calendar-Clock Icon for Left Squircle */
+const TaskCalendarIcon: React.FC<{ size?: number; className?: string }> = ({ size = 26, className = '' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    {/* Calendar Top Binders */}
+    <path d="M 8 2 V 5" />
+    <path d="M 16 2 V 5" />
+    {/* Calendar Header Line */}
+    <path d="M 3 8.5 H 21" />
+    {/* Calendar Outline */}
+    <rect x="3" y="4" width="18" height="18" rx="4" />
+    {/* Bottom Right Clock Overlay */}
+    <circle cx="16.5" cy="16.5" r="4.2" fill="var(--color-card, #FFFFFF)" stroke="currentColor" strokeWidth="1.8" />
+    <polyline points="16.5 14.5 16.5 16.5 18 16.5" stroke="currentColor" strokeWidth="1.8" />
+  </svg>
+);
 
 export const CurrentTaskBanner: React.FC = () => {
   const { tasks, selectedDate, toggleTaskStatus, skipTask, moveTaskToTomorrow, openTaskModal } = useAppStore();
@@ -55,88 +81,107 @@ export const CurrentTaskBanner: React.FC = () => {
     return `${m}:${String(s).padStart(2, '0')}`;
   };
 
+  const timeString = currentTask.scheduledStart && currentTask.scheduledEnd
+    ? `${formatTime12h(currentTask.scheduledStart)} – ${formatTime12h(currentTask.scheduledEnd)}`
+    : `${currentTask.duration || 45}m planned`;
+
   return (
-    <div className="w-full bg-card rounded-[28px] p-6 shadow-soft select-none border-l-[6px] border-primary flex flex-col md:flex-row items-start md:items-center justify-between gap-5 transition-colors">
-      {/* Left info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2.5 mb-1.5">
-          <span className="px-2.5 py-0.5 rounded-lg bg-primary-soft text-primary text-[11px] font-bold tracking-wider uppercase flex items-center gap-1">
-            <Sparkles size={11} />
-            <span>{isRunning ? 'FOCUSING NOW' : "WHAT'S NEXT"}</span>
-          </span>
-          <span className="text-[12.5px] text-mutedText font-medium flex items-center gap-1">
-            <Clock size={12} />
-            <span>
-              {currentTask.scheduledStart && currentTask.scheduledEnd
-                ? `${formatTime12h(currentTask.scheduledStart)} – ${formatTime12h(currentTask.scheduledEnd)}`
-                : `${currentTask.duration}m planned`}
-            </span>
-          </span>
+    <div className="w-full bg-card rounded-[28px] p-4 sm:p-5 md:px-7 md:py-4.5 shadow-soft select-none flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 lg:gap-6 relative overflow-hidden transition-colors">
+      
+      {/* Left Block: Squircle Icon + Text + Progress */}
+      <div className="flex items-center gap-4 sm:gap-5 flex-1 min-w-0">
+        {/* Rounded Squircle Icon Box */}
+        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[18px] bg-primary-soft flex items-center justify-center text-primary flex-shrink-0 transition-colors">
+          <TaskCalendarIcon size={26} className="text-primary" />
         </div>
 
-        <h4 className="text-[17px] sm:text-[19px] font-sans font-semibold text-foreground truncate">
-          {currentTask.title}
-        </h4>
-
-        {/* Progress Bar */}
-        <div className="mt-3 flex items-center gap-3.5 max-w-md">
-          <div className="flex-1 h-2 bg-card-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-300 rounded-full"
-              style={{ width: `${Math.max(5, progressPercent)}%` }}
-            />
+        {/* Text & Inline/Under Progress */}
+        <div className="flex-1 min-w-0">
+          {/* Header Row: WHAT'S NEXT + Time */}
+          <div className="flex items-center gap-2.5 mb-0.5">
+            <span className="px-2.5 py-0.5 rounded-lg bg-primary-soft text-primary text-[10.5px] sm:text-[11px] font-bold tracking-wider uppercase">
+              {isRunning ? 'FOCUSING NOW' : "WHAT'S NEXT"}
+            </span>
+            <span className="text-[12px] sm:text-[12.5px] text-mutedText font-normal">
+              {timeString}
+            </span>
           </div>
-          <span className="text-[12.5px] font-semibold text-foreground font-mono min-w-[55px] text-right">
-            {isRunning ? formatElapsed(elapsedSeconds) : `${remainingMins}m left`}
-          </span>
+
+          {/* Title & Progress Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 mt-1">
+            <h4 className="text-[18px] sm:text-[20px] font-sans font-bold text-foreground tracking-tight truncate min-w-0">
+              {currentTask.title}
+            </h4>
+
+            {/* Clean Progress Pill Track */}
+            <div className="flex items-center gap-3 w-full sm:w-[180px] md:w-[220px] flex-shrink-0">
+              <div className="flex-1 h-2 sm:h-2.5 bg-primary-soft rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-300 rounded-full"
+                  style={{ width: `${Math.max(6, progressPercent)}%` }}
+                />
+              </div>
+              <span className="text-[11.5px] sm:text-[12px] font-medium text-textSecondary font-sans whitespace-nowrap min-w-[45px] text-right">
+                {isRunning ? formatElapsed(elapsedSeconds) : `${remainingMins}m left`}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex items-center gap-2 flex-shrink-0 self-end md:self-center">
+      {/* Right Block: Action Buttons with Subtle Divider */}
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0 self-end lg:self-center pl-0 lg:pl-2">
+        {/* Subtle Vertical Divider */}
+        <div className="w-[1px] h-10 bg-borderToken hidden lg:block mr-2" />
+
+        {/* Start Focus / Pause Button */}
         <button
           onClick={() => setIsRunning(!isRunning)}
-          className={`px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-1.5 transition-all shadow-xs ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl text-[13px] sm:text-[13.5px] font-semibold transition-all shadow-xs ${
             isRunning
-              ? 'bg-primary-soft text-primary hover:opacity-80'
+              ? 'bg-primary-soft text-primary hover:opacity-85'
               : 'bg-primary hover:bg-primary-hover text-white'
           }`}
         >
-          {isRunning ? <Pause size={15} /> : <Play size={15} fill="currentColor" />}
+          {isRunning ? <Pause size={14} /> : <Play size={14} fill="currentColor" />}
           <span>{isRunning ? 'Pause' : 'Start Focus'}</span>
         </button>
 
+        {/* Complete Button */}
         <button
           onClick={() => {
             toggleTaskStatus(currentTask.id);
             setIsRunning(false);
             setElapsedSeconds(0);
           }}
-          className="px-4 py-2 rounded-xl bg-tag-healthBg text-tag-health hover:opacity-80 text-[13px] font-semibold flex items-center gap-1.5 transition-all"
+          className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-tag-healthBg text-tag-health hover:bg-[#D5EFE1] text-[13px] sm:text-[13.5px] font-semibold transition-all"
         >
-          <Check size={15} strokeWidth={2.5} />
+          <Check size={16} strokeWidth={2.5} />
           <span>Complete</span>
         </button>
 
+        {/* Skip Button */}
         <button
           onClick={() => {
             skipTask(currentTask.id);
             setIsRunning(false);
           }}
-          className="px-3 py-2 rounded-xl text-mutedText hover:text-foreground hover:bg-card-subtle text-[13px] font-medium transition-all"
+          className="px-2.5 sm:px-3 py-2 rounded-xl text-mutedText hover:text-foreground text-[12.5px] sm:text-[13px] font-medium transition-all"
           title="Skip task"
         >
-          <span>Skip</span>
+          Skip
         </button>
 
+        {/* Move to Tomorrow Button */}
         <button
           onClick={() => moveTaskToTomorrow(currentTask.id)}
-          className="p-2 rounded-xl text-mutedText hover:text-foreground hover:bg-card-subtle text-[13px] font-medium transition-all"
+          className="p-2 rounded-xl text-mutedText hover:text-foreground text-[13px] font-medium transition-all"
           title="Move to tomorrow"
         >
           <FastForward size={16} />
         </button>
       </div>
+
     </div>
   );
 };

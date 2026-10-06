@@ -6,7 +6,196 @@ interface DoodleProps {
 }
 
 /**
- * 1. DoodleCalendar — Whimsical hand-drawn calendar with refined borders matching the mountain aesthetic
+ * 1a. DoodleTasks — Hand-drawn checklist clipboard with pencil, sparkles & checkmarks in doodle style
+ */
+export const DoodleTasks: React.FC<DoodleProps> = ({ size = 64, className = '' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 100 100"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={`inline-block ${className}`}
+  >
+    {/* Twinkle Stars & Sparkles */}
+    <path
+      d="M16 22L18 25L21 26.5L18 28L16 31L14 28L11 26.5L14 25Z"
+      fill="var(--tag-learning, #F59E0B)"
+    />
+    <path
+      d="M82 18L83.5 21L86.5 22.5L83.5 24L82 27L80.5 24L77.5 22.5L80.5 21Z"
+      fill="var(--tag-personal, #EC4899)"
+    />
+
+    {/* Left Yellow / Orange Squiggle Doodle */}
+    <path
+      d="M14 42C16 45 12 48 14 52C16 55 12 58 14 62"
+      stroke="var(--tag-learning, #F59E0B)"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      fill="none"
+    />
+
+    {/* Back Clipboard Pad */}
+    <rect
+      x="22"
+      y="20"
+      width="54"
+      height="66"
+      rx="12"
+      fill="var(--color-primary)"
+      fillOpacity="0.85"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.5"
+      strokeLinejoin="round"
+    />
+
+    {/* Top Metal Clip Clamp */}
+    <rect
+      x="36"
+      y="16"
+      width="26"
+      height="10"
+      rx="4"
+      fill="#FFFFFF"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.5"
+    />
+    {/* Clip Loop */}
+    <path
+      d="M44 16V12C44 9.5 54 9.5 54 12V16"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      fill="none"
+    />
+
+    {/* Main White Sheet */}
+    <rect
+      x="26"
+      y="24"
+      width="46"
+      height="58"
+      rx="8"
+      fill="#FFFFFF"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.5"
+    />
+
+    {/* Row 1: Green Checked Box */}
+    <rect
+      x="32"
+      y="35"
+      width="9"
+      height="9"
+      rx="3"
+      fill="var(--tag-health, #10B981)"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2"
+    />
+    <path
+      d="M34 39.5L36.5 42L40.5 37"
+      stroke="#FFFFFF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M46 39.5H64"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+    />
+
+    {/* Row 2: In-Progress Box with Dot */}
+    <rect
+      x="32"
+      y="49"
+      width="9"
+      height="9"
+      rx="3"
+      fill="var(--color-primary)"
+      fillOpacity="0.25"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2"
+    />
+    <circle cx="36.5" cy="53.5" r="2.2" fill="var(--color-primary)" />
+    <path
+      d="M46 53.5H60"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+    />
+
+    {/* Row 3: Empty Box */}
+    <rect
+      x="32"
+      y="63"
+      width="9"
+      height="9"
+      rx="3"
+      fill="none"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2"
+    />
+    <path
+      d="M46 67.5H55"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      opacity="0.6"
+    />
+
+    {/* Tilted Doodle Pencil on Right */}
+    <g transform="rotate(28 78 68)">
+      {/* Pencil Body */}
+      <rect
+        x="72"
+        y="50"
+        width="7"
+        height="22"
+        rx="2"
+        fill="var(--tag-learning, #F59E0B)"
+        stroke="var(--color-text, #111827)"
+        strokeWidth="2"
+      />
+      {/* Eraser Top */}
+      <rect
+        x="72"
+        y="45"
+        width="7"
+        height="5"
+        rx="1.5"
+        fill="var(--tag-personal, #EC4899)"
+        stroke="var(--color-text, #111827)"
+        strokeWidth="2"
+      />
+      {/* Pencil Tip */}
+      <polygon
+        points="72,72 79,72 75.5,78"
+        fill="#FFFFFF"
+        stroke="var(--color-text, #111827)"
+        strokeWidth="2"
+      />
+      <polygon
+        points="74,75 77,75 75.5,78"
+        fill="var(--color-text, #111827)"
+      />
+    </g>
+
+    {/* Playful Dashed Curve Underneath */}
+    <path
+      d="M26 88C38 95 62 95 74 88"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeDasharray="4 4"
+    />
+  </svg>
+);
+
+/**
+ * 1. DoodleCalendar — Whimsical hand-drawn calendar matching the doodle illustration system
  */
 export const DoodleCalendar: React.FC<DoodleProps> = ({ size = 64, className = '' }) => (
   <svg

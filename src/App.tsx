@@ -15,6 +15,7 @@ import { CommitmentModal } from './components/CommitmentModal';
 import { AiResultModal } from './components/AiResultModal';
 import { OverloadModal } from './components/OverloadModal';
 import { BreathingModal } from './components/BreathingModal';
+import { OnboardingModal } from './components/OnboardingModal';
 
 export const App: React.FC = () => {
   const { currentTab, replanDay, settings } = useAppStore();
@@ -29,7 +30,7 @@ export const App: React.FC = () => {
   }, [settings.theme]);
 
   useEffect(() => {
-    applyFont(settings.fontHeading || 'Newsreader');
+    applyFont(settings.fontHeading || 'Gilda Display');
   }, [settings.fontHeading]);
 
   const renderActiveView = () => {
@@ -75,6 +76,7 @@ export const App: React.FC = () => {
       <AiResultModal />
       <OverloadModal />
       <BreathingModal />
+      <OnboardingModal />
     </div>
   );
 };

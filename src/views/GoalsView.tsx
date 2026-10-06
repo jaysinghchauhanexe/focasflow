@@ -120,7 +120,7 @@ export const GoalsView: React.FC = () => {
                     className="flex items-center justify-between p-3 rounded-xl bg-card-subtle text-[13px] text-foreground"
                   >
                     <span>{p.title}</span>
-                    <span className="font-mono text-[11.5px] text-mutedText">
+                    <span className="font-sans text-[11.5px] text-mutedText">
                       {p.completedCount}/{p.tasksCount} Done
                     </span>
                   </div>

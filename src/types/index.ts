@@ -95,6 +95,8 @@ export interface AppSettings {
   autoReschedule: boolean;
   theme: AppTheme;
   fontHeading?: string;
+  hasCompletedOnboarding?: boolean;
+  focusPriority?: 'tasks' | 'habits' | 'balance';
 }
 
 export interface AiOperation {

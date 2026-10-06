@@ -3,7 +3,7 @@ import { useAppStore } from '../store/useAppStore';
 import { Task, Category, Priority } from '../types';
 import { Plus, Search, Check, MoreHorizontal, Edit2, Trash2, FastForward, CheckCircle2 } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
-import { DoodleCalendar } from '../components/DoodleIllustrations';
+import { DoodleTasks } from '../components/DoodleIllustrations';
 
 export const TasksView: React.FC = () => {
   const { tasks, toggleTaskStatus, deleteTask, openTaskModal, moveTaskToTomorrow } = useAppStore();
@@ -43,7 +43,7 @@ export const TasksView: React.FC = () => {
       {/* Header with Search and New Task */}
       <div className="bg-card rounded-[28px] p-6 sm:p-7 flex flex-wrap items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-4">
-          <DoodleCalendar size={58} className="flex-shrink-0" />
+          <DoodleTasks size={58} className="flex-shrink-0" />
           <div>
             <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
               All Tasks & Backlog
@@ -109,7 +109,7 @@ export const TasksView: React.FC = () => {
         <div className="divide-y divide-borderToken">
           {filteredTasks.length === 0 ? (
             <div className="py-12 text-center text-[13.5px] text-mutedText flex flex-col items-center justify-center">
-              <DoodleCalendar size={68} className="mb-2 opacity-80" />
+              <DoodleTasks size={68} className="mb-2 opacity-80" />
               <span className="font-serif text-[15px] font-medium text-foreground">No outcomes found matching your filter</span>
               <span className="text-xs text-mutedText mt-0.5">Try resetting search or create a new peaceful task.</span>
             </div>

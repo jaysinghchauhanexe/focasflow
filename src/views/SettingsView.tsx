@@ -4,7 +4,7 @@ import { AppTheme } from '../types';
 import { User, Clock, Sparkles, Check, Palette, Type } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
-  const { settings, updateSettings } = useAppStore();
+  const { settings, updateSettings, openOnboarding } = useAppStore();
 
   const [theme, setTheme] = useState<AppTheme>(settings.theme || 'green');
   const [fontHeading, setFontHeading] = useState(settings.fontHeading || 'Newsreader');
@@ -393,7 +393,7 @@ export const SettingsView: React.FC = () => {
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="sk-or-v1-..."
-              className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13px] font-mono text-foreground outline-none focus:ring-1 focus:ring-primary"
+              className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13px] font-sans text-foreground outline-none focus:ring-1 focus:ring-primary"
             />
             <p className="text-[11.5px] text-mutedText mt-1.5">
               Keys are stored securely in your local environment. If left blank, offline heuristic parsing is used.
@@ -418,20 +418,31 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Submit */}
-        <div className="flex items-center justify-end gap-3 pt-2">
-          {saved && (
-            <span className="text-[13px] text-tag-health font-semibold flex items-center gap-1.5">
-              <Check size={15} />
-              <span>Preferences & Theme Saved</span>
-            </span>
-          )}
+        {/* Submit & Onboarding Actions */}
+        <div className="flex items-center justify-between gap-3 pt-2">
           <button
-            type="submit"
-            className="px-6 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold shadow-xs transition-all"
+            type="button"
+            onClick={openOnboarding}
+            className="px-5 py-2.5 rounded-2xl bg-card-subtle hover:bg-card-muted text-textSecondary text-[13px] font-medium transition-all flex items-center gap-1.5"
           >
-            Save Preferences
+            <Sparkles size={14} className="text-primary" />
+            <span>Launch Onboarding Setup</span>
           </button>
+
+          <div className="flex items-center gap-3">
+            {saved && (
+              <span className="text-[13px] text-tag-health font-semibold flex items-center gap-1.5">
+                <Check size={15} />
+                <span>Preferences & Theme Saved</span>
+              </span>
+            )}
+            <button
+              type="submit"
+              className="px-6 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold shadow-xs transition-all"
+            >
+              Save Preferences
+            </button>
+          </div>
         </div>
       </form>
     </div>

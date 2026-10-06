@@ -41,7 +41,8 @@ export default {
       },
       fontFamily: {
         serif: ['var(--font-heading)', '"Gilda Display"', 'serif'],
-        sans: ['var(--font-sans)', '"DM Sans"', '"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+        sans: ['var(--font-sans)', 'Inter', '"DM Sans"', '"Plus Jakarta Sans"', 'sans-serif'],
+        mono: ['Inter', 'sans-serif'],
       },
       borderRadius: {
         'card': '24px',

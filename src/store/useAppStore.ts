@@ -1,5 +1,20 @@
 import { create } from 'zustand';
-import { Task, Habit, Routine, Goal, ScheduleBlock, HistoryLog, AppSettings, DayCapacity, AiResponsePayload, SchedulerSuggestion, TaskStatus } from '../types';
+import { 
+  Task, 
+  Habit, 
+  Routine, 
+  Goal, 
+  ScheduleBlock, 
+  HistoryLog, 
+  AppSettings, 
+  DayCapacity, 
+  AiResponsePayload, 
+  SchedulerSuggestion, 
+  TaskStatus,
+  Priority,
+  Category,
+  AppTheme
+} from '../types';
 import { calculateDayCapacity, buildDaySchedule } from '../engine/scheduler';
 
 interface AppState {
@@ -31,6 +46,23 @@ interface AppState {
   currentMood: 'stressed' | 'anxious' | 'okay' | 'calm' | 'great';
   activeSoundscape: 'rain' | 'stream' | 'waves' | 'forest';
   isPlayingSoundscape: boolean;
+
+  // Onboarding
+  isOnboardingOpen: boolean;
+  openOnboarding: () => void;
+  closeOnboarding: () => void;
+  completeOnboarding: (payload: {
+    userName: string;
+    focusPriority: 'tasks' | 'habits' | 'balance';
+    theme: AppTheme;
+    fontHeading: string;
+    wakeTime?: string;
+    sleepTime?: string;
+    initialTaskTitle?: string;
+    initialTaskDuration?: number;
+    initialTaskPriority?: Priority;
+    initialTaskCategory?: Category;
+  }) => void;
 
   // Actions
   setCurrentTab: (tab: AppState['currentTab']) => void;
@@ -338,6 +370,8 @@ const initialSettings: AppSettings = {
   autoReschedule: true,
   theme: 'green',
   fontHeading: 'Gilda Display',
+  hasCompletedOnboarding: false,
+  focusPriority: 'balance',
 };
 
 export const applyTheme = (theme: string) => {
@@ -417,6 +451,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   history: loadPersisted('history', initialHistory),
   settings: loadedSettings,
 
+  isOnboardingOpen: !loadedSettings.hasCompletedOnboarding,
   isTaskModalOpen: false,
   editingTask: null,
   isHabitModalOpen: false,
@@ -777,6 +812,70 @@ export const useAppStore = create<AppState>((set, get) => ({
   setLastAiResult: (res) => set({ lastAiResult: res }),
   openOverloadModal: () => set({ isOverloadModalOpen: true }),
   closeOverloadModal: () => set({ isOverloadModalOpen: false }),
+
+  // Onboarding handlers
+  openOnboarding: () => set({ isOnboardingOpen: true }),
+  closeOnboarding: () => set({ isOnboardingOpen: false }),
+  completeOnboarding: (payload) => {
+    const {
+      userName,
+      focusPriority,
+      theme,
+      fontHeading,
+      wakeTime,
+      sleepTime,
+      initialTaskTitle,
+      initialTaskDuration,
+      initialTaskPriority,
+      initialTaskCategory,
+    } = payload;
+
+    applyTheme(theme);
+    applyFont(fontHeading);
+
+    set((state) => {
+      const updatedSettings: AppSettings = {
+        ...state.settings,
+        userName: userName?.trim() || state.settings.userName,
+        focusPriority: focusPriority || state.settings.focusPriority,
+        theme,
+        fontHeading,
+        wakeTime: wakeTime || state.settings.wakeTime,
+        sleepTime: sleepTime || state.settings.sleepTime,
+        hasCompletedOnboarding: true,
+      };
+      savePersisted('settings', updatedSettings);
+
+      let updatedTasks = state.tasks;
+      if (initialTaskTitle && initialTaskTitle.trim()) {
+        const newTask: Task = {
+          id: `task-onboard-${Date.now()}`,
+          title: initialTaskTitle.trim(),
+          duration: initialTaskDuration || 45,
+          priority: initialTaskPriority || 'important',
+          category: initialTaskCategory || 'Work',
+          status: 'pending',
+          scheduledDate: getTodayDate(),
+          scheduledStart: '10:00',
+          scheduledEnd: '10:45',
+          flexibility: 'flexible',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        updatedTasks = [newTask, ...state.tasks];
+        savePersisted('tasks', updatedTasks);
+      }
+
+      return {
+        settings: updatedSettings,
+        tasks: updatedTasks,
+        isOnboardingOpen: false,
+        currentTab: focusPriority === 'habits' ? 'habits' : 'today',
+      };
+    });
+
+    get().replanDay();
+  },
 
   getDayCapacity: () => {
     const { selectedDate, tasks, habits, settings } = get();
