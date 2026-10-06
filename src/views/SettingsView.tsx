@@ -172,10 +172,10 @@ export const SettingsView: React.FC = () => {
                     <div
                       key={f.id}
                       onClick={() => handleSelectFont(f.id)}
-                      className={`p-4 rounded-2xl cursor-pointer transition-all duration-150 flex flex-col justify-between ${
+                      className={`p-4 rounded-2xl cursor-pointer transition-all duration-150 flex flex-col justify-between border-2 ${
                         isSelected
-                          ? 'bg-primary-soft ring-2 ring-primary/40 shadow-xs'
-                          : 'bg-card-subtle hover:bg-card-muted'
+                          ? 'bg-primary-soft border-primary shadow-xs'
+                          : 'bg-card-subtle border-transparent hover:bg-card-muted'
                       }`}
                     >
                       <div>
@@ -235,10 +235,10 @@ export const SettingsView: React.FC = () => {
                     <div
                       key={t.id}
                       onClick={() => handleSelectTheme(t.id)}
-                      className={`p-3.5 rounded-2xl cursor-pointer transition-all duration-150 flex flex-col justify-between ${
+                      className={`p-3.5 rounded-2xl cursor-pointer transition-all duration-150 flex flex-col justify-between border-2 ${
                         isSelected
-                          ? 'bg-primary-soft ring-2 ring-primary/40 shadow-xs'
-                          : 'bg-card-subtle hover:bg-card-muted'
+                          ? 'bg-primary-soft border-primary shadow-xs'
+                          : 'bg-card-subtle border-transparent hover:bg-card-muted'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-3">
@@ -305,7 +305,7 @@ export const SettingsView: React.FC = () => {
                   type="text"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground border border-borderToken focus:border-primary focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -328,7 +328,7 @@ export const SettingsView: React.FC = () => {
                     type="time"
                     value={wakeTime}
                     onChange={(e) => setWakeTime(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground border border-borderToken focus:border-primary focus:outline-none transition-colors"
                   />
                 </div>
 
@@ -340,7 +340,7 @@ export const SettingsView: React.FC = () => {
                     type="time"
                     value={sleepTime}
                     onChange={(e) => setSleepTime(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground border border-borderToken focus:border-primary focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -354,7 +354,7 @@ export const SettingsView: React.FC = () => {
                     type="time"
                     value={workStart}
                     onChange={(e) => setWorkStart(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground border border-borderToken focus:border-primary focus:outline-none transition-colors"
                   />
                 </div>
 
@@ -366,7 +366,7 @@ export const SettingsView: React.FC = () => {
                     type="time"
                     value={workEnd}
                     onChange={(e) => setWorkEnd(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground border border-borderToken focus:border-primary focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -381,7 +381,7 @@ export const SettingsView: React.FC = () => {
                   max="60"
                   value={breakDuration}
                   onChange={(e) => setBreakDuration(Number(e.target.value))}
-                  className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground border border-borderToken focus:border-primary focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -406,7 +406,7 @@ export const SettingsView: React.FC = () => {
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder="sk-or-v1-..."
-                  className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13px] font-sans text-foreground outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13px] font-sans text-foreground border border-borderToken focus:border-primary focus:outline-none transition-colors"
                 />
                 <p className="text-[11.5px] text-mutedText mt-1.5">
                   Keys are stored securely in your local environment. If left blank, offline heuristic parsing is used.
@@ -420,7 +420,7 @@ export const SettingsView: React.FC = () => {
                 <select
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13px] text-foreground outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13px] text-foreground border border-borderToken focus:border-primary focus:outline-none transition-colors"
                 >
                   {models.map((m) => (
                     <option key={m.id} value={m.id}>

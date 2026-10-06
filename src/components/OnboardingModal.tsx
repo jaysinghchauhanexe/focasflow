@@ -201,7 +201,7 @@ export const OnboardingModal: React.FC = () => {
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
                     placeholder="Enter your name..."
-                    className="w-full px-4 py-3 rounded-2xl bg-card-subtle text-foreground text-[14px] font-medium outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                    className="w-full px-4 py-3 rounded-2xl bg-card-subtle text-foreground text-[14px] font-medium border border-borderToken focus:border-primary focus:outline-none transition-all"
                   />
                 </div>
 
@@ -252,10 +252,10 @@ export const OnboardingModal: React.FC = () => {
                 {/* Option 1: Tasks */}
                 <div
                   onClick={() => setFocusPriority('tasks')}
-                  className={`p-4 rounded-[22px] cursor-pointer transition-all duration-200 flex flex-col justify-between relative overflow-hidden ${
+                  className={`p-4 rounded-[22px] cursor-pointer transition-all duration-200 flex flex-col justify-between relative overflow-hidden border-2 ${
                     focusPriority === 'tasks'
-                      ? 'bg-primary-soft ring-2 ring-primary shadow-xs'
-                      : 'bg-card-subtle hover:bg-card-muted'
+                      ? 'bg-primary-soft border-primary shadow-xs'
+                      : 'bg-card-subtle border-transparent hover:bg-card-muted'
                   }`}
                 >
                   <div>
@@ -280,10 +280,10 @@ export const OnboardingModal: React.FC = () => {
                 {/* Option 2: Habits */}
                 <div
                   onClick={() => setFocusPriority('habits')}
-                  className={`p-4 rounded-[22px] cursor-pointer transition-all duration-200 flex flex-col justify-between relative overflow-hidden ${
+                  className={`p-4 rounded-[22px] cursor-pointer transition-all duration-200 flex flex-col justify-between relative overflow-hidden border-2 ${
                     focusPriority === 'habits'
-                      ? 'bg-primary-soft ring-2 ring-primary shadow-xs'
-                      : 'bg-card-subtle hover:bg-card-muted'
+                      ? 'bg-primary-soft border-primary shadow-xs'
+                      : 'bg-card-subtle border-transparent hover:bg-card-muted'
                   }`}
                 >
                   <div>
@@ -308,10 +308,10 @@ export const OnboardingModal: React.FC = () => {
                 {/* Option 3: Balance */}
                 <div
                   onClick={() => setFocusPriority('balance')}
-                  className={`p-4 rounded-[22px] cursor-pointer transition-all duration-200 flex flex-col justify-between relative overflow-hidden ${
+                  className={`p-4 rounded-[22px] cursor-pointer transition-all duration-200 flex flex-col justify-between relative overflow-hidden border-2 ${
                     focusPriority === 'balance'
-                      ? 'bg-primary-soft ring-2 ring-primary shadow-xs'
-                      : 'bg-card-subtle hover:bg-card-muted'
+                      ? 'bg-primary-soft border-primary shadow-xs'
+                      : 'bg-card-subtle border-transparent hover:bg-card-muted'
                   }`}
                 >
                   <div>
@@ -362,10 +362,10 @@ export const OnboardingModal: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div
                     onClick={() => setSelectedFont('Gilda Display')}
-                    className={`p-3.5 rounded-2xl cursor-pointer transition-all ${
+                    className={`p-3.5 rounded-2xl cursor-pointer transition-all border-2 ${
                       selectedFont === 'Gilda Display'
-                        ? 'bg-primary-soft ring-2 ring-primary'
-                        : 'bg-card-subtle hover:bg-card-muted'
+                        ? 'bg-primary-soft border-primary shadow-xs'
+                        : 'bg-card-subtle border-transparent hover:bg-card-muted'
                     }`}
                   >
                     <span className="text-[18px] font-['Gilda_Display'] font-normal text-foreground block">
@@ -378,10 +378,10 @@ export const OnboardingModal: React.FC = () => {
 
                   <div
                     onClick={() => setSelectedFont('DM Sans')}
-                    className={`p-3.5 rounded-2xl cursor-pointer transition-all ${
+                    className={`p-3.5 rounded-2xl cursor-pointer transition-all border-2 ${
                       selectedFont === 'DM Sans'
-                        ? 'bg-primary-soft ring-2 ring-primary'
-                        : 'bg-card-subtle hover:bg-card-muted'
+                        ? 'bg-primary-soft border-primary shadow-xs'
+                        : 'bg-card-subtle border-transparent hover:bg-card-muted'
                     }`}
                   >
                     <span className="text-[18px] font-['DM_Sans'] font-medium text-foreground block">
@@ -405,10 +405,10 @@ export const OnboardingModal: React.FC = () => {
                     <div
                       key={t.id}
                       onClick={() => setSelectedTheme(t.id)}
-                      className={`p-3 rounded-2xl cursor-pointer transition-all flex items-center justify-between ${
+                      className={`p-3 rounded-2xl cursor-pointer transition-all flex items-center justify-between border-2 ${
                         selectedTheme === t.id
-                          ? 'bg-primary-soft ring-2 ring-primary'
-                          : 'bg-card-subtle hover:bg-card-muted'
+                          ? 'bg-primary-soft border-primary shadow-xs'
+                          : 'bg-card-subtle border-transparent hover:bg-card-muted'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
@@ -476,7 +476,7 @@ export const OnboardingModal: React.FC = () => {
                   value={taskTitle}
                   onChange={(e) => setTaskTitle(e.target.value)}
                   placeholder="e.g. Design app architecture..."
-                  className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-foreground text-[14px] font-medium outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-foreground text-[14px] font-medium border border-borderToken focus:border-primary focus:outline-none transition-colors"
                 />
               </div>
 

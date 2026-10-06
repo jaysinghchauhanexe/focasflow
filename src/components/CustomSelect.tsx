@@ -57,7 +57,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-card-subtle hover:bg-card-muted border border-borderToken text-[13px] text-foreground font-medium transition-all duration-150 cursor-pointer text-left ${
-          isOpen ? 'ring-2 ring-primary/30 border-primary bg-card' : ''
+          isOpen ? 'border-primary bg-card shadow-xs' : ''
         } ${buttonClassName}`}
       >
         <span className={`truncate ${!selectedOption ? 'text-mutedText' : 'text-foreground'}`}>
