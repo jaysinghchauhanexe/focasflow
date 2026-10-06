@@ -13,9 +13,9 @@ const W = 1000;
 const H = 350;
 
 // Quadratic arc: P0 -> P1 (control) -> P2
-const P0 = [-20, 305];
-const P1 = [500, 85];
-const P2 = [1020, 305];
+const P0 = [-40, 310];
+const P1 = [500, 78];
+const P2 = [1040, 310];
 
 const at = (t: number): [number, number] => {
   const u = 1 - t;
@@ -50,6 +50,8 @@ const MOODS = [
 export const HeaderHero: React.FC = () => {
   const { settings, selectedDate, currentMood, setMood } = useAppStore();
 
+  const theme = settings.theme || 'green';
+
   const d = selectedDate ? new Date(selectedDate) : new Date();
   const hour = d.getHours();
   const greeting = hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
@@ -59,10 +61,61 @@ export const HeaderHero: React.FC = () => {
   const day = d.getDate();
   const monthYear = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
+  const themeConfig = useMemo(() => {
+    switch (theme) {
+      case 'teal':
+        return {
+          bgImage: '/cyan-theme-bg.jpg',
+          overlayGrad: 'from-[#04242b]/90 via-[#04242b]/35 to-[#04242b]/15',
+          sideGrad: 'from-[#04242b]/40 via-transparent to-[#04242b]/25',
+          arcStopMid: '#67E8F9',
+          arcStopEnd: '#328F9B',
+          pillBg: 'bg-[#042329]/85',
+        };
+      case 'blue':
+        return {
+          bgImage: '/blue-theme-bg.png',
+          overlayGrad: 'from-[#061e38]/90 via-[#061e38]/35 to-[#061e38]/15',
+          sideGrad: 'from-[#061e38]/40 via-transparent to-[#061e38]/25',
+          arcStopMid: '#93C5FD',
+          arcStopEnd: '#2D90E0',
+          pillBg: 'bg-[#061a30]/85',
+        };
+      case 'monochrome':
+        return {
+          bgImage: '/monochrome-theme-bg.jpg',
+          overlayGrad: 'from-[#0f172a]/90 via-[#0f172a]/35 to-[#0f172a]/15',
+          sideGrad: 'from-[#0f172a]/40 via-transparent to-[#0f172a]/25',
+          arcStopMid: '#CBD5E1',
+          arcStopEnd: '#64748B',
+          pillBg: 'bg-[#111827]/85',
+        };
+      case 'dark':
+        return {
+          bgImage: '/dark-theme-bg.jpg',
+          overlayGrad: 'from-[#030712]/95 via-[#030712]/55 to-[#030712]/30',
+          sideGrad: 'from-[#030712]/50 via-transparent to-[#030712]/30',
+          arcStopMid: '#7DD3FC',
+          arcStopEnd: '#0284C7',
+          pillBg: 'bg-[#030712]/90',
+        };
+      case 'green':
+      default:
+        return {
+          bgImage: '/calm_landscape.jpg',
+          overlayGrad: 'from-[#0e211d]/90 via-[#0e211d]/35 to-[#0e211d]/15',
+          sideGrad: 'from-[#0e211d]/40 via-transparent to-[#0e211d]/25',
+          arcStopMid: '#78C2AD',
+          arcStopEnd: '#5EAB96',
+          pillBg: 'bg-[#0c1e1a]/85',
+        };
+    }
+  }, [theme]);
+
   const points = useMemo(
     () =>
       DAYS.map((label, i) => {
-        const t = 0.095 + i * (0.81 / 6);
+        const t = 0.088 + i * (0.824 / 6);
         const [x, y] = at(t);
         const [tx, ty] = tangent(t);
         const len = Math.hypot(tx, ty);
@@ -75,9 +128,9 @@ export const HeaderHero: React.FC = () => {
           x,
           y,
           tickA: [x + nx * flip * 3, y + ny * flip * 3],
-          tickB: [x + nx * flip * 16, y + ny * flip * 16],
-          lx: x + nx * flip * 36,
-          ly: y + ny * flip * 36,
+          tickB: [x + nx * flip * 18, y + ny * flip * 18],
+          lx: x + nx * flip * 38,
+          ly: y + ny * flip * 38,
           angle: (Math.atan2(ty, tx) * 180) / Math.PI,
         };
       }),
@@ -90,17 +143,18 @@ export const HeaderHero: React.FC = () => {
   const fadeEnd = Math.min(1, (knob.x + 10) / W);
 
   return (
-    <div className="relative w-full h-[350px] rounded-[28px] overflow-hidden select-none shadow-soft flex flex-col justify-between border border-[rgba(36,88,76,0.08)] group">
-      {/* Serene Watercolor Mountain Background Image */}
+    <div className="relative w-full h-[350px] rounded-[28px] overflow-hidden select-none flex flex-col justify-between border border-borderToken group">
+      {/* Dynamic Serene Theme Background Image */}
       <img
-        src="/calm_landscape.jpg"
-        alt="Serene landscape"
-        className="absolute inset-0 w-full h-full object-cover object-center transform scale-105 group-hover:scale-100 transition-transform duration-700 ease-out"
+        src={themeConfig.bgImage}
+        alt="Theme hero landscape"
+        key={themeConfig.bgImage}
+        className="absolute inset-0 w-full h-full object-cover object-center transform scale-105 group-hover:scale-100 transition-all duration-700 ease-out"
       />
 
       {/* Atmospheric Soft Light & Mist Gradients */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0e211d]/90 via-[#0e211d]/35 to-[#0e211d]/15 pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#0e211d]/40 via-transparent to-[#0e211d]/25 pointer-events-none" />
+      <div className={`absolute inset-0 bg-gradient-to-t ${themeConfig.overlayGrad} pointer-events-none transition-colors duration-500`} />
+      <div className={`absolute inset-0 bg-gradient-to-r ${themeConfig.sideGrad} pointer-events-none transition-colors duration-500`} />
 
       {/* Dynamic SVG Vector Arc Layer */}
       <svg
@@ -112,13 +166,13 @@ export const HeaderHero: React.FC = () => {
           <linearGradient id="calm-arc-grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={W} y2="0">
             <stop offset="0" stopColor="#FFFFFF" />
             <stop offset={fadeStart} stopColor="#FFFFFF" />
-            <stop offset={fadeEnd} stopColor="#78C2AD" />
-            <stop offset="1" stopColor="#5EAB96" />
+            <stop offset={fadeEnd} stopColor={themeConfig.arcStopMid} />
+            <stop offset="1" stopColor={themeConfig.arcStopEnd} />
           </linearGradient>
         </defs>
 
-        {/* Refined Smooth Arc Stroke */}
-        <path d={arc} fill="none" stroke="url(#calm-arc-grad)" strokeWidth="5.5" strokeLinecap="round" />
+        {/* Refined Smooth Arc Stroke with enhanced width */}
+        <path d={arc} fill="none" stroke="url(#calm-arc-grad)" strokeWidth="8" strokeLinecap="round" />
 
         {/* Ticks + Refined Serif Weekday Labels */}
         {points.map((p, i) => (
@@ -129,9 +183,9 @@ export const HeaderHero: React.FC = () => {
               x2={p.tickB[0]}
               y2={p.tickB[1]}
               stroke="#FFFFFF"
-              strokeWidth="2.2"
+              strokeWidth="2.8"
               strokeLinecap="round"
-              opacity={i === today ? 1 : 0.6}
+              opacity={i === today ? 1 : 0.65}
             />
             <text
               x={p.lx}
@@ -149,8 +203,8 @@ export const HeaderHero: React.FC = () => {
         ))}
 
         {/* Refined Active Day Knob */}
-        <circle cx={knob.x} cy={knob.y} r="14" fill="#FFFFFF" />
-        <circle cx={knob.x} cy={knob.y} r="24" fill="#FFFFFF" opacity=".25" />
+        <circle cx={knob.x} cy={knob.y} r="15" fill="#FFFFFF" />
+        <circle cx={knob.x} cy={knob.y} r="26" fill="#FFFFFF" opacity=".25" />
       </svg>
 
       {/* Top Header: Greeting on Left & Clean Date on Right (No Box) */}
@@ -187,7 +241,7 @@ export const HeaderHero: React.FC = () => {
 
       {/* Bottom Row: Center-aligned Feelings Pill Bar with clean vector icons */}
       <div className="relative z-10 p-6 pb-6 flex items-center justify-center w-full">
-        <div className="flex items-center gap-1.5 sm:gap-2 bg-[#0c1e1a]/70 p-1.5 rounded-full shadow-lg border border-white/10">
+        <div className={`flex items-center gap-1.5 sm:gap-2 ${themeConfig.pillBg} p-1.5 rounded-full border border-white/10 transition-colors`}>
           <span className="text-[12px] font-medium text-white/75 pl-3 pr-1.5 hidden sm:inline-block">
             Feeling:
           </span>
@@ -200,7 +254,7 @@ export const HeaderHero: React.FC = () => {
                 onClick={() => setMood(m.id as any)}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12.5px] font-medium transition-all duration-150 ${
                   isSelected
-                    ? 'bg-white text-[#122824] font-semibold shadow-xs scale-105'
+                    ? 'bg-white text-[#122824] font-semibold scale-105'
                     : 'text-white/80 hover:text-white hover:bg-white/15'
                 }`}
                 title={m.label}

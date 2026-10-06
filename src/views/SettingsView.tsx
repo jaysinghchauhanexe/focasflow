@@ -89,9 +89,9 @@ export const SettingsView: React.FC = () => {
       name: 'Midnight Dark',
       desc: 'Deep obsidian & glowing cyan accents',
       primary: '#38BDF8',
-      bg: '#0A0F1D',
-      card: '#131B2E',
-      text: '#F8FAFC',
+      bg: '#030712',
+      card: '#0B0F19',
+      text: '#F9FAFB',
     },
   ];
 

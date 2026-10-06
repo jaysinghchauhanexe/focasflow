@@ -49,9 +49,9 @@ export default {
         'subcard': '18px',
       },
       boxShadow: {
-        'soft': 'var(--shadow-soft)',
-        'float': 'var(--shadow-float)',
-        'glow': '0 0 24px var(--color-primary-soft)',
+        'soft': 'none',
+        'float': 'none',
+        'glow': 'none',
       }
     },
   },
