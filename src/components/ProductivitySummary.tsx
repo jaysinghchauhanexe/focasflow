@@ -1,10 +1,10 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { LOFI_STATIONS, LOFI_STATION_LIST } from '../engine/lofiStations';
-import { 
-  Play, 
-  Pause, 
-  AlertCircle, 
+import {
+  Play,
+  Pause,
+  AlertCircle,
   Flag,
   Calendar,
   Check,
@@ -26,14 +26,14 @@ const stationIcons: Record<string, any> = {
 /* Dynamic Time-of-Day Serene Sky Illustration (Morning, Afternoon, Evening/Sunset, Night) */
 const DiurnalSkyIllustration: React.FC<{ className?: string }> = ({ className = '' }) => {
   const hour = new Date().getHours();
-  
-  const timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night' = 
+
+  const timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night' =
     hour >= 5 && hour < 12 ? 'morning' :
-    hour >= 12 && hour < 17 ? 'afternoon' :
-    hour >= 17 && hour < 21 ? 'evening' : 'night';
+      hour >= 12 && hour < 17 ? 'afternoon' :
+        hour >= 17 && hour < 21 ? 'evening' : 'night';
 
   return (
-    <div 
+    <div
       className={`relative select-none pointer-events-none flex items-center overflow-visible transition-all duration-700 ${className}`}
       style={{
         maskImage: 'linear-gradient(to right, transparent 0%, black 14%, black 82%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 22%, black 72%, transparent 100%)',
@@ -124,7 +124,7 @@ const DiurnalSkyIllustration: React.FC<{ className?: string }> = ({ className = 
             <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.16" />
           </linearGradient>
         </defs>
-        
+
         {/* TIME SPECIFIC CELESTIAL BODIES WITH GENTLE LAYER BLUR */}
         {timeOfDay === 'morning' && (
           <>
@@ -173,9 +173,9 @@ const DiurnalSkyIllustration: React.FC<{ className?: string }> = ({ className = 
             {/* Spreading Lunar Atmosphere Blur */}
             <circle cx="120" cy="25" r="42" fill="url(#nightSpreadGlow)" filter="url(#atmosphericSpread)" />
             {/* Crescent Moon */}
-            <path 
-              d="M 115 15 A 15 15 0 0 0 128 35 A 13 13 0 1 1 115 15 Z" 
-              fill="url(#nightMoon)" 
+            <path
+              d="M 115 15 A 15 15 0 0 0 128 35 A 13 13 0 1 1 115 15 Z"
+              fill="url(#nightMoon)"
               filter="drop-shadow(0 0 5px rgba(255,255,255,0.45))"
             />
             {/* Twinkling Stars */}
@@ -187,13 +187,13 @@ const DiurnalSkyIllustration: React.FC<{ className?: string }> = ({ className = 
             <circle cx="92" cy="12" r="1" fill="#FFFFFF" opacity="0.6" style={{ animationDelay: '1s' }} className="animate-pulse" />
           </>
         )}
-        
+
         {/* Background Mountain Layer */}
         <path d="M 0 85 L 0 58 Q 40 28 80 52 T 165 44 L 240 66 L 240 85 Z" fill="url(#mountBack)" />
-        
+
         {/* Middle Mountain Layer */}
         <path d="M 10 85 L 48 52 Q 82 28 116 54 T 195 46 L 240 72 L 240 85 Z" fill="url(#mountMid)" />
-        
+
         {/* Foreground Mountain Layer with crisp peaks */}
         <path d="M 25 85 L 68 42 L 92 58 L 126 32 L 158 62 L 186 48 L 225 78 L 240 85 Z" fill="url(#mountFront)" />
       </svg>
@@ -213,22 +213,75 @@ const CornerBlob: React.FC<{ className?: string }> = ({ className = '' }) => (
 );
 
 export const ProductivitySummary: React.FC = () => {
-  const { 
-    getDayCapacity, 
-    openOverloadModal, 
-    activeLofiStation, 
-    isPlayingLofi, 
+  const {
+    getDayCapacity,
+    openOverloadModal,
+    activeLofiStation,
+    isPlayingLofi,
     toggleLofi,
     setLofiStation,
     lofiVolume,
     setLofiVolume
   } = useAppStore();
-  
+
   const capacity = getDayCapacity();
 
-  const totalFocusHours = Math.floor(capacity.focusMinutes / 60);
-  const totalFocusMins = capacity.focusMinutes % 60;
-  const focusTimeString = `${totalFocusHours}h ${totalFocusMins > 0 ? `${totalFocusMins}m` : '00m'}`;
+  const totalFocusMinutes = capacity.focusMinutes || 795;
+  const capacityPercent = Math.min(100, Math.round((capacity.totalPlannedMinutes / (capacity.totalAvailableMinutes || 480)) * 100)) || 76;
+  const targetBarWidth = Math.max(45, Math.min(80, capacityPercent));
+
+  // Ultra-Smooth Jitter-Free Animations
+  const [isBarExpanded, setIsBarExpanded] = React.useState(false);
+  const [animatedPercent, setAnimatedPercent] = React.useState(0);
+  const [animatedFocusMins, setAnimatedFocusMins] = React.useState(0);
+
+  React.useEffect(() => {
+    // 1. Trigger hardware-accelerated CSS bar expansion on next frame
+    const expandTimer = setTimeout(() => {
+      setIsBarExpanded(true);
+    }, 50);
+
+    // 2. Smooth Quintic Ease-Out Number Count-Up
+    let startTimestamp: number | null = null;
+    const duration = 1300; // 1.3s synchronized with CSS transition
+
+    let prevPercent = -1;
+    let prevMins = -1;
+
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      // Quintic ease out for silky deceleration
+      const ease = 1 - Math.pow(1 - progress, 4);
+
+      const nextPercent = Math.round(capacityPercent * ease);
+      const nextMins = Math.round(totalFocusMinutes * ease);
+
+      if (nextPercent !== prevPercent) {
+        setAnimatedPercent(nextPercent);
+        prevPercent = nextPercent;
+      }
+      if (nextMins !== prevMins) {
+        setAnimatedFocusMins(nextMins);
+        prevMins = nextMins;
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      }
+    };
+
+    const animFrame = requestAnimationFrame(step);
+
+    return () => {
+      clearTimeout(expandTimer);
+      cancelAnimationFrame(animFrame);
+    };
+  }, [totalFocusMinutes, capacityPercent]);
+
+  const animHours = Math.floor(animatedFocusMins / 60);
+  const animMins = animatedFocusMins % 60;
+  const focusTimeString = `${animHours}h ${animMins > 0 ? `${animMins < 10 ? `0${animMins}` : animMins}m` : '00m'}`;
 
   // Task metrics
   const remainingCount = capacity.remainingTasksCount || 13;
@@ -236,13 +289,11 @@ export const ProductivitySummary: React.FC = () => {
   const regularCount = capacity.regularTasksCount;
   const completedCount = capacity.completedTasksCount;
 
-  const capacityPercent = Math.min(100, Math.round((capacity.totalPlannedMinutes / (capacity.totalAvailableMinutes || 480)) * 100)) || 72;
-
   const currentStation = LOFI_STATIONS[activeLofiStation] || LOFI_STATIONS.study;
 
   return (
     <div className="w-full min-h-[350px] bg-card rounded-[28px] p-4 sm:p-5 md:p-6 shadow-soft select-none flex flex-col justify-between gap-3 sm:gap-3.5 relative overflow-hidden transition-colors">
-      
+
       {/* 1. TOP ROW: Counter + Adaptive Sunset Illustration + Responsive Daily Focus Capacity */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
         {/* Left: Outcomes Remaining + Fading Sunset Illustration */}
@@ -272,7 +323,7 @@ export const ProductivitySummary: React.FC = () => {
               Daily Focus Capacity
             </span>
             {capacity.isOverloaded && (
-              <span 
+              <span
                 onClick={openOverloadModal}
                 className="text-[11px] font-semibold text-tag-important flex items-center gap-1 cursor-pointer hover:underline"
               >
@@ -287,65 +338,66 @@ export const ProductivitySummary: React.FC = () => {
             {/* Filled Progress Pill */}
             <div
               onClick={capacity.isOverloaded ? openOverloadModal : undefined}
-              className={`h-full rounded-full relative overflow-hidden flex items-center pl-3.5 sm:pl-4 pr-3 cursor-pointer transition-all duration-500 shadow-xs ${
-                capacity.isOverloaded
+              className={`h-full rounded-full relative overflow-hidden flex items-center pl-3.5 sm:pl-4 pr-3 cursor-pointer shadow-xs ${capacity.isOverloaded
                   ? 'bg-tag-important'
                   : 'bg-primary'
-              }`}
+                }`}
               style={{
-                width: `${Math.max(45, Math.min(80, capacityPercent))}%`,
-                background: capacity.isOverloaded 
-                  ? undefined 
+                width: isBarExpanded ? `${targetBarWidth}%` : '0%',
+                transition: 'width 1.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                background: capacity.isOverloaded
+                  ? undefined
                   : 'linear-gradient(90deg, var(--color-primary-hover) 0%, var(--color-primary) 55%, var(--color-primary-active) 100%)'
               }}
             >
               {/* Organic Silk Waves SVG Overlay */}
-              <svg 
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none" 
-                viewBox="0 0 320 44" 
+              <svg
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                viewBox="0 0 320 44"
                 preserveAspectRatio="none"
                 fill="none"
               >
                 {/* Top highlight wave */}
-                <path 
-                  d="M 0 0 C 80 18 160 32 240 12 C 275 3 295 10 320 22 L 320 0 Z" 
-                  fill="rgba(255, 255, 255, 0.18)" 
+                <path
+                  d="M 0 0 C 80 18 160 32 240 12 C 275 3 295 10 320 22 L 320 0 Z"
+                  fill="rgba(255, 255, 255, 0.18)"
                 />
                 {/* Center sweeping silk curve */}
-                <path 
-                  d="M 0 44 C 60 22 130 14 200 28 C 260 40 290 32 320 18 L 320 44 Z" 
-                  fill="rgba(255, 255, 255, 0.14)" 
+                <path
+                  d="M 0 44 C 60 22 130 14 200 28 C 260 40 290 32 320 18 L 320 44 Z"
+                  fill="rgba(255, 255, 255, 0.14)"
                 />
                 {/* Soft ambient depth shade */}
-                <path 
-                  d="M 0 35 Q 90 8 180 22 T 320 12 L 320 44 L 0 44 Z" 
-                  fill="rgba(0, 0, 0, 0.10)" 
+                <path
+                  d="M 0 35 Q 90 8 180 22 T 320 12 L 320 44 L 0 44 Z"
+                  fill="rgba(0, 0, 0, 0.10)"
                 />
                 {/* Crest light accent */}
-                <path 
-                  d="M 40 0 Q 140 38 280 8" 
-                  stroke="rgba(255, 255, 255, 0.22)" 
-                  strokeWidth="2.5" 
-                  strokeLinecap="round" 
-                  fill="none" 
+                <path
+                  d="M 40 0 Q 140 38 280 8"
+                  stroke="rgba(255, 255, 255, 0.22)"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  fill="none"
                 />
               </svg>
 
-              <span className="relative z-10 text-[12.5px] sm:text-[13.5px] font-sans font-medium text-white tracking-tight whitespace-nowrap drop-shadow-xs">
+              <span 
+                className="relative z-10 text-[12.5px] sm:text-[13.5px] font-sans font-medium text-white tracking-tight whitespace-nowrap drop-shadow-xs"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
+              >
                 {focusTimeString}
               </span>
             </div>
 
             {/* Right Leaf + Percentage Badge */}
-            <div className="flex items-center gap-1.5 sm:gap-2 pr-3 sm:pr-4 pl-1.5 sm:pl-2 text-primary flex-shrink-0 relative z-10">
-              {/* Filled Twin-Leaf Sprout Icon */}
-              <svg viewBox="0 0 24 24" className="w-4 h-4 sm:w-5 sm:h-5 text-primary opacity-80" fill="currentColor">
-                <path d="M 12 21 C 12 17 12 13.5 12 10" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" fill="none" />
-                <path d="M 12 15 C 13.8 11.5 17 9 20.5 8 C 21.2 11.8 19.2 15.5 14.5 16.5 C 13.2 16.8 12 15.8 12 15 Z" fill="currentColor" />
-                <path d="M 6.5 15 C 5.8 11.8 7.8 8.8 11.5 9.5 C 11.8 12.8 10 16 6.5 15 Z" fill="currentColor" opacity="0.9" />
-              </svg>
-              <span className="text-[12.5px] sm:text-[13.5px] font-sans font-medium text-primary">
-                {capacityPercent}%
+            <div className="flex items-center gap-1.5 pr-3 sm:pr-4 pl-1.5 sm:pl-2 text-primary flex-shrink-0 relative z-10 self-center">
+              <Leaf size={14} strokeWidth={2.3} className="text-primary flex-shrink-0" />
+              <span 
+                className="text-[12.5px] sm:text-[13.5px] font-sans font-medium text-primary leading-none"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
+              >
+                {animatedPercent}%
               </span>
             </div>
           </div>
@@ -356,14 +408,14 @@ export const ProductivitySummary: React.FC = () => {
       <div className="bg-background rounded-[20px] p-2 sm:p-2.5 px-2.5 sm:px-3 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5 transition-colors">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
           {/* Photo Thumbnail with Centered Play Button & Equalizer */}
-          <div 
+          <div
             onClick={() => toggleLofi()}
             className="relative w-11 sm:w-12 md:w-14 h-9 sm:h-10 md:h-11 rounded-xl overflow-hidden shadow-xs cursor-pointer group flex-shrink-0"
             title={isPlayingLofi ? 'Pause Lofi Music' : 'Play Lofi Music'}
           >
-            <img 
-              src={currentStation.thumbnail} 
-              alt={currentStation.label} 
+            <img
+              src={currentStation.thumbnail}
+              alt={currentStation.label}
               className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-500"
             />
             <div className="absolute inset-0 bg-black/35 flex items-center justify-center transition-colors group-hover:bg-black/45">
@@ -424,13 +476,12 @@ export const ProductivitySummary: React.FC = () => {
                     }
                   }}
                   title={`${s.label}: ${s.subLabel}`}
-                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-[11.5px] font-medium transition-all cursor-pointer ${
-                    isCurrentPlaying
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-[11.5px] font-medium transition-all cursor-pointer ${isCurrentPlaying
                       ? 'bg-primary text-white font-semibold shadow-xs'
                       : isSel
-                      ? 'bg-primary-soft text-primary font-semibold'
-                      : 'bg-card text-textSecondary hover:text-foreground hover:bg-card-subtle'
-                  }`}
+                        ? 'bg-primary-soft text-primary font-semibold'
+                        : 'bg-card text-textSecondary hover:text-foreground hover:bg-card-subtle'
+                    }`}
                 >
                   <Icon size={12} className={isCurrentPlaying ? 'text-white' : isSel ? 'text-primary' : 'text-mutedText'} />
                   <span>{s.label.split(' ')[0]}</span>
@@ -474,19 +525,19 @@ export const ProductivitySummary: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. BOTTOM ROW: 3 Distinct Taller Metric Cards with Top-Aligned Icons & Centered Flow */}
+      {/* 3. BOTTOM ROW: 3 Distinct Taller Metric Cards with Vertically Centered Flow */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {/* Card 1: Important Priority */}
-        <div className="bg-[#E5484D]/[0.08] rounded-[20px] sm:rounded-[22px] p-2.5 sm:p-3.5 md:p-4 min-h-[86px] sm:min-h-[96px] relative overflow-hidden flex items-start gap-2 sm:gap-3.5 transition-all">
+        <div className="bg-[#E5484D]/[0.08] rounded-[20px] sm:rounded-[22px] p-2.5 sm:p-3.5 md:p-4 min-h-[86px] sm:min-h-[96px] relative overflow-hidden flex items-center gap-2 sm:gap-3.5 transition-all">
           <CornerBlob className="text-[#E5484D]/[0.12]" />
-          
-          {/* Top-aligned Icon Badge */}
-          <div className="relative z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#E5484D]/[0.12] flex items-center justify-center text-[#E5484D] flex-shrink-0 mt-0.5">
+
+          {/* Centered Icon Badge */}
+          <div className="relative z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#E5484D]/[0.12] flex items-center justify-center text-[#E5484D] flex-shrink-0">
             <Flag size={15} fill="currentColor" />
           </div>
 
           {/* Content Block */}
-          <div className="relative z-10 flex flex-col justify-start min-w-0">
+          <div className="relative z-10 flex flex-col justify-center min-w-0">
             <div className="flex items-center gap-1 sm:gap-1.5 leading-none">
               <span className="text-foreground text-[22px] sm:text-[26px] md:text-[29px] font-serif font-semibold">
                 {importantCount}
@@ -500,16 +551,16 @@ export const ProductivitySummary: React.FC = () => {
         </div>
 
         {/* Card 2: Flexible Outcomes */}
-        <div className="bg-[#D97706]/[0.08] rounded-[20px] sm:rounded-[22px] p-2.5 sm:p-3.5 md:p-4 min-h-[86px] sm:min-h-[96px] relative overflow-hidden flex items-start gap-2 sm:gap-3.5 transition-all">
+        <div className="bg-[#D97706]/[0.08] rounded-[20px] sm:rounded-[22px] p-2.5 sm:p-3.5 md:p-4 min-h-[86px] sm:min-h-[96px] relative overflow-hidden flex items-center gap-2 sm:gap-3.5 transition-all">
           <CornerBlob className="text-[#D97706]/[0.12]" />
-          
-          {/* Top-aligned Icon Badge */}
-          <div className="relative z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#D97706]/[0.12] flex items-center justify-center text-[#D97706] flex-shrink-0 mt-0.5">
+
+          {/* Centered Icon Badge */}
+          <div className="relative z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#D97706]/[0.12] flex items-center justify-center text-[#D97706] flex-shrink-0">
             <Calendar size={15} />
           </div>
 
           {/* Content Block */}
-          <div className="relative z-10 flex flex-col justify-start min-w-0">
+          <div className="relative z-10 flex flex-col justify-center min-w-0">
             <div className="flex items-center gap-1 sm:gap-1.5 leading-none">
               <span className="text-foreground text-[22px] sm:text-[26px] md:text-[29px] font-serif font-semibold">
                 {regularCount}
@@ -523,16 +574,16 @@ export const ProductivitySummary: React.FC = () => {
         </div>
 
         {/* Card 3: Completed Today */}
-        <div className="bg-[#16A34A]/[0.08] rounded-[20px] sm:rounded-[22px] p-2.5 sm:p-3.5 md:p-4 min-h-[86px] sm:min-h-[96px] relative overflow-hidden flex items-start gap-2 sm:gap-3.5 transition-all">
+        <div className="bg-[#16A34A]/[0.08] rounded-[20px] sm:rounded-[22px] p-2.5 sm:p-3.5 md:p-4 min-h-[86px] sm:min-h-[96px] relative overflow-hidden flex items-center gap-2 sm:gap-3.5 transition-all">
           <CornerBlob className="text-[#16A34A]/[0.12]" />
-          
-          {/* Top-aligned Icon Badge */}
-          <div className="relative z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#16A34A]/[0.12] flex items-center justify-center text-[#16A34A] flex-shrink-0 mt-0.5">
+
+          {/* Centered Icon Badge */}
+          <div className="relative z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#16A34A]/[0.12] flex items-center justify-center text-[#16A34A] flex-shrink-0">
             <Check size={16} strokeWidth={2.8} />
           </div>
 
           {/* Content Block */}
-          <div className="relative z-10 flex flex-col justify-start min-w-0">
+          <div className="relative z-10 flex flex-col justify-center min-w-0">
             <div className="flex items-center gap-1 sm:gap-1.5 leading-none">
               <span className="text-foreground text-[22px] sm:text-[26px] md:text-[29px] font-serif font-semibold">
                 {completedCount}

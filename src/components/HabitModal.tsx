@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Category } from '../types';
 import { X } from 'lucide-react';
+import { CustomSelect } from './CustomSelect';
 
 export const HabitModal: React.FC = () => {
   const { isHabitModalOpen, closeHabitModal, editingHabit, addHabit, updateHabit } = useAppStore();
@@ -59,8 +60,14 @@ export const HabitModal: React.FC = () => {
   const categories: Category[] = ['Health', 'Work', 'Personal', 'Learning', 'Neutral'];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none">
-      <div className="bg-card w-full max-w-md rounded-[28px] shadow-float p-6 sm:p-7 transition-colors">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none cursor-pointer"
+      onClick={closeHabitModal}
+    >
+      <div 
+        className="bg-card w-full max-w-md rounded-[28px] shadow-2xl p-6 sm:p-7 transition-colors cursor-default border border-borderToken"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between pb-4 border-b border-borderToken">
           <h3 className="text-[20px] font-serif font-medium text-foreground">
             {editingHabit ? 'Edit Habit' : 'Create Recurring Habit'}
@@ -94,17 +101,11 @@ export const HabitModal: React.FC = () => {
               <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
                 Category
               </label>
-              <select
+              <CustomSelect
                 value={category}
-                onChange={(e) => setCategory(e.target.value as Category)}
-                className="w-full px-3.5 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
-              >
-                {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setCategory(val as Category)}
+                options={categories}
+              />
             </div>
 
             <div>
@@ -117,7 +118,7 @@ export const HabitModal: React.FC = () => {
                 max="240"
                 value={duration}
                 onChange={(e) => setDuration(Number(e.target.value))}
-                className="w-full px-3.5 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
               />
             </div>
           </div>
@@ -127,31 +128,31 @@ export const HabitModal: React.FC = () => {
               <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
                 Frequency
               </label>
-              <select
+              <CustomSelect
                 value={frequency}
-                onChange={(e) => setFrequency(e.target.value as any)}
-                className="w-full px-3.5 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
-              >
-                <option value="daily">Daily</option>
-                <option value="weekdays">Monday–Friday</option>
-                <option value="weekends">Weekends</option>
-                <option value="weekly">Weekly</option>
-              </select>
+                onChange={(val) => setFrequency(val as any)}
+                options={[
+                  { value: 'daily', label: 'Daily' },
+                  { value: 'weekdays', label: 'Monday–Friday' },
+                  { value: 'weekends', label: 'Weekends' },
+                  { value: 'weekly', label: 'Weekly' },
+                ]}
+              />
             </div>
 
             <div>
               <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
                 Preferred Time
               </label>
-              <select
+              <CustomSelect
                 value={preferredTime}
-                onChange={(e) => setPreferredTime(e.target.value as any)}
-                className="w-full px-3.5 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
-              >
-                <option value="morning">Morning</option>
-                <option value="afternoon">Afternoon</option>
-                <option value="evening">Evening</option>
-              </select>
+                onChange={(val) => setPreferredTime(val as any)}
+                options={[
+                  { value: 'morning', label: 'Morning' },
+                  { value: 'afternoon', label: 'Afternoon' },
+                  { value: 'evening', label: 'Evening' },
+                ]}
+              />
             </div>
           </div>
 

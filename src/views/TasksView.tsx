@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Task, Category, Priority } from '../types';
-import { Plus, Search, Check, MoreHorizontal, Edit2, Trash2, FastForward, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, Check, MoreHorizontal, Edit2, Trash2, FastForward } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
 import { DoodleTasks } from '../components/DoodleIllustrations';
+import { CustomSelect } from '../components/CustomSelect';
 
 export const TasksView: React.FC = () => {
   const { tasks, toggleTaskStatus, deleteTask, openTaskModal, moveTaskToTomorrow } = useAppStore();
@@ -11,6 +12,25 @@ export const TasksView: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedPriority, setSelectedPriority] = useState<string>('All');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const menuContainerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!activeMenuId) return;
+
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
+      if (menuContainerRef.current && !menuContainerRef.current.contains(e.target as Node)) {
+        setActiveMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [activeMenuId]);
 
   const filteredTasks = tasks.filter((t) => {
     if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
@@ -78,30 +98,32 @@ export const TasksView: React.FC = () => {
         </div>
 
         {/* Category Filter */}
-        <select
+        <CustomSelect
           value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="px-3.5 py-2 rounded-xl bg-card-subtle text-[13px] text-foreground outline-none font-medium"
-        >
-          <option value="All">All Categories</option>
-          <option value="Work">Work</option>
-          <option value="Health">Health</option>
-          <option value="Personal">Personal</option>
-          <option value="Learning">Learning</option>
-        </select>
+          onChange={(val) => setSelectedCategory(val)}
+          className="w-44"
+          options={[
+            { value: 'All', label: 'All Categories' },
+            { value: 'Work', label: 'Work' },
+            { value: 'Health', label: 'Health' },
+            { value: 'Personal', label: 'Personal' },
+            { value: 'Learning', label: 'Learning' },
+          ]}
+        />
 
         {/* Priority Filter */}
-        <select
+        <CustomSelect
           value={selectedPriority}
-          onChange={(e) => setSelectedPriority(e.target.value)}
-          className="px-3.5 py-2 rounded-xl bg-card-subtle text-[13px] text-foreground outline-none font-medium"
-        >
-          <option value="All">All Priorities</option>
-          <option value="critical">Critical</option>
-          <option value="important">Important</option>
-          <option value="flexible">Flexible</option>
-          <option value="optional">Optional</option>
-        </select>
+          onChange={(val) => setSelectedPriority(val)}
+          className="w-44"
+          options={[
+            { value: 'All', label: 'All Priorities' },
+            { value: 'critical', label: 'Critical' },
+            { value: 'important', label: 'Important' },
+            { value: 'flexible', label: 'Flexible' },
+            { value: 'optional', label: 'Optional' },
+          ]}
+        />
       </div>
 
       {/* Tasks Table */}
@@ -114,24 +136,27 @@ export const TasksView: React.FC = () => {
               <span className="text-xs text-mutedText mt-0.5">Try resetting search or create a new peaceful task.</span>
             </div>
           ) : (
-            filteredTasks.map((task) => {
+            filteredTasks.map((task, idx) => {
               const isCompleted = task.status === 'completed';
               return (
                 <div
                   key={task.id}
-                  className="flex items-center justify-between py-3.5 px-3 hover:bg-card-subtle rounded-2xl transition-all"
+                  style={{ animationDelay: `${idx * 40}ms` }}
+                  className={`group flex items-center justify-between py-3.5 px-3 hover:bg-card-subtle rounded-2xl transition-spring animate-enter-up relative ${
+                    activeMenuId === task.id ? 'z-30' : 'z-0'
+                  }`}
                 >
                   {/* Checkbox + Title */}
                   <div className="flex items-center gap-3.5 min-w-0 pr-4">
                     <button
                       onClick={() => toggleTaskStatus(task.id)}
-                      className={`w-5 h-5 rounded-[7px] flex items-center justify-center transition-all ${
+                      className={`w-5 h-5 rounded-[7px] flex items-center justify-center transition-spring cursor-pointer active:scale-75 hover:scale-115 ${
                         isCompleted
-                          ? 'bg-primary text-white'
+                          ? 'bg-primary text-white shadow-xs'
                           : 'border border-borderToken bg-card hover:border-primary'
                       }`}
                     >
-                      {isCompleted && <Check size={13} strokeWidth={3} className="text-white" />}
+                      {isCompleted && <Check size={13} strokeWidth={3} className="text-white animate-check-pop" />}
                     </button>
                     <div>
                       <span
@@ -155,7 +180,7 @@ export const TasksView: React.FC = () => {
                   {/* Badges & Meta */}
                   <div className="flex items-center gap-3.5 flex-shrink-0">
                     <span
-                      className={`px-2.5 py-0.5 rounded-lg text-[11px] font-semibold capitalize ${getPriorityBadge(
+                      className={`px-2.5 py-0.5 rounded-lg text-[11px] font-semibold capitalize transition-transform group-hover:scale-105 duration-200 ${getPriorityBadge(
                         task.priority
                       )}`}
                     >
@@ -163,7 +188,7 @@ export const TasksView: React.FC = () => {
                     </span>
 
                     <span
-                      className={`px-2.5 py-0.5 rounded-lg text-[11.5px] font-medium ${getCategoryClass(
+                      className={`px-2.5 py-0.5 rounded-lg text-[11.5px] font-medium transition-transform group-hover:scale-105 duration-200 ${getCategoryClass(
                         task.category
                       )}`}
                     >
@@ -175,22 +200,28 @@ export const TasksView: React.FC = () => {
                     </span>
 
                     {/* Actions */}
-                    <div className="relative">
+                    <div className="relative" ref={activeMenuId === task.id ? menuContainerRef : null}>
                       <button
-                        onClick={() => setActiveMenuId(activeMenuId === task.id ? null : task.id)}
-                        className="p-1.5 rounded-lg text-mutedText hover:text-foreground hover:bg-card-subtle"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuId(activeMenuId === task.id ? null : task.id);
+                        }}
+                        className="p-1.5 rounded-lg text-mutedText hover:text-foreground hover:bg-card-subtle transition-spring hover:scale-115 active:scale-90 cursor-pointer"
                       >
                         <MoreHorizontal size={16} />
                       </button>
 
                       {activeMenuId === task.id && (
-                        <div className="absolute right-0 top-7 w-40 bg-card rounded-2xl shadow-float py-1.5 z-20 border border-borderToken animate-fade-in">
+                        <div 
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute right-0 top-8 w-44 bg-card rounded-2xl shadow-float py-1.5 z-50 border border-borderToken animate-fade-in opacity-100"
+                        >
                           <button
                             onClick={() => {
                               openTaskModal(task);
                               setActiveMenuId(null);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-card-subtle"
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
                           >
                             <Edit2 size={13} />
                             <span>Edit</span>
@@ -200,7 +231,7 @@ export const TasksView: React.FC = () => {
                               moveTaskToTomorrow(task.id);
                               setActiveMenuId(null);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-card-subtle"
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
                           >
                             <FastForward size={13} />
                             <span>Move tomorrow</span>
@@ -210,7 +241,7 @@ export const TasksView: React.FC = () => {
                               deleteTask(task.id);
                               setActiveMenuId(null);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-tag-important hover:bg-tag-importantBg"
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-tag-important hover:bg-tag-importantBg transition-colors cursor-pointer"
                           >
                             <Trash2 size={13} />
                             <span>Delete</span>

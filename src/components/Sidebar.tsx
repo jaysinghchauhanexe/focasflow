@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { 
-  Home, 
-  CheckSquare, 
+import {
+  Home,
+  CheckSquare,
   Calendar,
-  Target, 
-  Compass, 
+  Target,
+  Compass,
   Repeat,
-  BarChart2, 
+  BarChart2,
   Sparkles,
   Settings,
   Wind,
@@ -16,11 +16,11 @@ import {
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
-  const { 
-    currentTab, 
-    setCurrentTab, 
-    openAiModal, 
-    openBreathingModal, 
+  const {
+    currentTab,
+    setCurrentTab,
+    openAiModal,
+    openBreathingModal,
     tasks,
     isSidebarCollapsed,
     toggleSidebar
@@ -57,7 +57,7 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside 
+    <aside
       className="h-full bg-card rounded-[28px] p-3.5 flex flex-col justify-between shadow-soft select-none flex-shrink-0 transition-[width,min-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
       style={{
         width: isSidebarCollapsed ? '76px' : '285px',
@@ -70,11 +70,11 @@ export const Sidebar: React.FC = () => {
           <div className="flex items-center justify-between h-10 px-1 relative w-full">
             {/* Logo & Animated App Name */}
             <div className="flex items-center gap-2.5 min-w-0">
-              <button 
+              <button
                 type="button"
                 onClick={() => isSidebarCollapsed && toggleSidebar()}
-                className={`w-9 h-9 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 shadow-xs transition-transform duration-200 ${
-                  isSidebarCollapsed ? 'cursor-pointer hover:scale-105 ring-1 ring-primary/20' : ''
+                className={`w-9 h-9 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 transition-transform duration-200 ${
+                  isSidebarCollapsed ? 'cursor-pointer hover:scale-105' : ''
                 }`}
                 title={isSidebarCollapsed ? 'Click to expand sidebar (Ctrl+B)' : undefined}
               >
@@ -82,7 +82,7 @@ export const Sidebar: React.FC = () => {
               </button>
 
               {/* App Title & Subtitle with smooth slide & fade animation */}
-              <div 
+              <div
                 className="flex flex-col overflow-hidden whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
                 style={{
                   maxWidth: isSidebarCollapsed ? '0px' : '150px',
@@ -118,7 +118,7 @@ export const Sidebar: React.FC = () => {
           </div>
 
           {/* Collapsed Expand Button (Smooth drop-in directly below the logo) */}
-          <div 
+          <div
             className="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex justify-center w-full"
             style={{
               maxHeight: isSidebarCollapsed ? '38px' : '0px',
@@ -159,25 +159,23 @@ export const Sidebar: React.FC = () => {
                   }
                 }}
                 title={isSidebarCollapsed ? `${item.label}${item.badge !== undefined ? ` (${item.badge})` : ''}` : undefined}
-                className={`w-full h-11 flex items-center px-2.5 rounded-2xl text-[14px] font-medium transition-all duration-150 relative overflow-hidden group cursor-pointer ${
-                  isActive
+                className={`w-full h-11 flex items-center px-2.5 rounded-2xl text-[14px] font-medium transition-all duration-150 relative overflow-hidden group cursor-pointer ${isActive
                     ? 'bg-primary-soft text-primary font-semibold'
                     : 'text-textSecondary hover:text-foreground hover:bg-card-subtle'
-                }`}
+                  }`}
               >
                 {/* Fixed Icon container - Perfectly stationary during expand & collapse */}
                 <div className="w-7 h-7 flex items-center justify-center flex-shrink-0 relative">
-                  <Icon 
-                    size={19} 
-                    className={`transition-colors duration-150 ${
-                      isActive ? 'text-primary' : 'text-mutedText group-hover:text-foreground'
-                    }`} 
+                  <Icon
+                    size={19}
+                    className={`transition-colors duration-150 ${isActive ? 'text-primary' : 'text-mutedText group-hover:text-foreground'
+                      }`}
                     strokeWidth={isActive ? 2.3 : 1.9}
                   />
-                  
+
                   {/* Compact notification badge dot when collapsed */}
                   {item.badge !== undefined && (
-                    <span 
+                    <span
                       className="absolute -top-1.5 -right-2 bg-primary text-white text-[9px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center shadow-xs transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
                       style={{
                         opacity: isSidebarCollapsed ? 1 : 0,
@@ -191,7 +189,7 @@ export const Sidebar: React.FC = () => {
                 </div>
 
                 {/* Animated Text Label and Expanded Badge container */}
-                <div 
+                <div
                   className="flex items-center justify-between flex-1 min-w-0 ml-3 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap overflow-hidden"
                   style={{
                     maxWidth: isSidebarCollapsed ? '0px' : '190px',
@@ -205,11 +203,10 @@ export const Sidebar: React.FC = () => {
                   </span>
 
                   {item.badge !== undefined && (
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ml-2 flex-shrink-0 transition-colors ${
-                      isActive 
-                        ? 'bg-primary/20 text-primary' 
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ml-2 flex-shrink-0 transition-colors ${isActive
+                        ? 'bg-primary/20 text-primary'
                         : 'bg-primary-soft text-primary'
-                    }`}>
+                      }`}>
                       {item.badge}
                     </span>
                   )}
@@ -234,22 +231,20 @@ export const Sidebar: React.FC = () => {
                 type="button"
                 onClick={() => setCurrentTab(item.id as any)}
                 title={isSidebarCollapsed ? item.label : undefined}
-                className={`w-full h-10 flex items-center px-2.5 rounded-2xl text-[14px] font-medium transition-all duration-150 relative overflow-hidden group cursor-pointer ${
-                  isActive
+                className={`w-full h-10 flex items-center px-2.5 rounded-2xl text-[14px] font-medium transition-all duration-150 relative overflow-hidden group cursor-pointer ${isActive
                     ? 'bg-primary-soft text-primary font-semibold'
                     : 'text-textSecondary hover:text-foreground hover:bg-card-subtle'
-                }`}
+                  }`}
               >
                 <div className="w-7 h-7 flex items-center justify-center flex-shrink-0">
-                  <Icon 
-                    size={19} 
-                    className={`transition-colors duration-150 ${
-                      isActive ? 'text-primary' : 'text-mutedText group-hover:text-foreground'
-                    }`} 
-                    strokeWidth={1.9} 
+                  <Icon
+                    size={19}
+                    className={`transition-colors duration-150 ${isActive ? 'text-primary' : 'text-mutedText group-hover:text-foreground'
+                      }`}
+                    strokeWidth={1.9}
                   />
                 </div>
-                <div 
+                <div
                   className="flex-1 min-w-0 ml-3 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap overflow-hidden text-left"
                   style={{
                     maxWidth: isSidebarCollapsed ? '0px' : '180px',
@@ -268,20 +263,20 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* User Profile Card */}
-        <div 
+        <div
           className="h-12 w-full px-2 rounded-2xl bg-card-subtle flex items-center transition-all duration-300 relative overflow-hidden"
           title={isSidebarCollapsed ? 'Jay (Active)' : undefined}
         >
           <div className="relative flex-shrink-0 w-8 h-8 rounded-full overflow-hidden border border-card shadow-xs">
-            <img 
-              src="/avatar_jay.jpg" 
-              alt="Jay" 
+            <img
+              src="/avatar_jay.jpg"
+              alt="Jay"
               className="w-full h-full object-cover"
             />
           </div>
 
           {/* Sliding & Fading user details */}
-          <div 
+          <div
             className="flex items-center justify-between flex-1 min-w-0 ml-2.5 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] whitespace-nowrap overflow-hidden"
             style={{
               maxWidth: isSidebarCollapsed ? '0px' : '180px',
@@ -298,7 +293,7 @@ export const Sidebar: React.FC = () => {
           </div>
 
           {/* Active status indicator on avatar in collapsed mode */}
-          <span 
+          <span
             className="absolute bottom-1.5 left-7 w-2.5 h-2.5 rounded-full bg-tag-health border-2 border-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
             style={{
               opacity: isSidebarCollapsed ? 1 : 0,

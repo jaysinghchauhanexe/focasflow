@@ -73,10 +73,10 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const W = 1000;
 const H = 350;
 
-// Perfectly Symmetric Quadratic arc moved down: P0 -> P1 (Apex control) -> P2
-const P0 = [-30, 310];
-const P1 = [500, 30];
-const P2 = [1030, 310];
+// Symmetrically spaced points along the parabolic arch
+const P0 = [-45, 315];
+const P1 = [500, 25];
+const P2 = [1045, 315];
 
 const at = (t: number): [number, number] => {
   const u = 1 - t;
@@ -104,10 +104,11 @@ export const HeaderHero: React.FC = () => {
   const { settings, selectedDate, currentMood, setMood } = useAppStore();
 
   const theme = settings.theme || 'green';
+  const isDark = theme === 'dark';
 
   const d = selectedDate ? new Date(selectedDate) : new Date();
   const currentHour = new Date().getHours();
-  
+
   const timeOfDay = useMemo(() => {
     if (currentHour >= 5 && currentHour < 12) return 'morning';
     if (currentHour >= 12 && currentHour < 17) return 'afternoon';
@@ -153,33 +154,33 @@ export const HeaderHero: React.FC = () => {
       case 'teal':
         return {
           bgImage: '/cyan-theme-bg.jpg',
-          overlayGrad: 'from-[#04242b]/90 via-[#04242b]/35 to-[#04242b]/15',
-          sideGrad: 'from-[#04242b]/40 via-transparent to-[#04242b]/25',
+          overlayGrad: 'from-white/60 via-white/30 to-white/10',
+          sideGrad: 'from-white/30 via-transparent to-white/20',
         };
       case 'blue':
         return {
           bgImage: '/blue-theme-bg.png',
-          overlayGrad: 'from-[#061e38]/90 via-[#061e38]/35 to-[#061e38]/15',
-          sideGrad: 'from-[#061e38]/40 via-transparent to-[#061e38]/25',
+          overlayGrad: 'from-white/60 via-white/30 to-white/10',
+          sideGrad: 'from-white/30 via-transparent to-white/20',
         };
       case 'monochrome':
         return {
           bgImage: '/monochrome-theme-bg.jpg',
-          overlayGrad: 'from-[#0f172a]/90 via-[#0f172a]/35 to-[#0f172a]/15',
-          sideGrad: 'from-[#0f172a]/40 via-transparent to-[#0f172a]/25',
+          overlayGrad: 'from-white/60 via-white/30 to-white/10',
+          sideGrad: 'from-white/30 via-transparent to-white/20',
         };
       case 'dark':
         return {
           bgImage: '/dark-theme-bg.jpg',
-          overlayGrad: 'from-[#030712]/95 via-[#030712]/55 to-[#030712]/30',
-          sideGrad: 'from-[#030712]/50 via-transparent to-[#030712]/30',
+          overlayGrad: 'from-black/70 via-black/30 to-transparent',
+          sideGrad: 'from-black/40 via-transparent to-black/25',
         };
       case 'green':
       default:
         return {
           bgImage: '/calm_landscape.jpg',
-          overlayGrad: 'from-[#0e211d]/90 via-[#0e211d]/35 to-[#0e211d]/15',
-          sideGrad: 'from-[#0e211d]/40 via-transparent to-[#0e211d]/25',
+          overlayGrad: 'from-white/60 via-white/30 to-white/10',
+          sideGrad: 'from-white/30 via-transparent to-white/20',
         };
     }
   }, [theme]);
@@ -188,7 +189,7 @@ export const HeaderHero: React.FC = () => {
   const points = useMemo(
     () =>
       DAYS.map((label, i) => {
-        const t = 0.08 + i * (0.84 / 6);
+        const t = 0.075 + i * (0.85 / 6);
         const [x, y] = at(t);
         const [tx, ty] = tangent(t);
         const len = Math.hypot(tx, ty);
@@ -200,8 +201,8 @@ export const HeaderHero: React.FC = () => {
           t,
           x,
           y,
-          lx: x + nx * flip * 38,
-          ly: y + ny * flip * 38,
+          lx: x + nx * flip * 43,
+          ly: y + ny * flip * 43,
           angle: (Math.atan2(ty, tx) * 180) / Math.PI,
         };
       }),
@@ -213,16 +214,18 @@ export const HeaderHero: React.FC = () => {
   const splitOffset = Math.max(0.05, Math.min(0.95, knob.t));
 
   return (
-    <div className="relative w-full h-[350px] rounded-[28px] overflow-hidden select-none flex flex-col justify-between group shadow-soft transition-all">
+    <div className={`relative w-full h-[350px] bg-card rounded-[28px] overflow-hidden select-none flex flex-col justify-between group transition-all ${isDark ? 'border border-white/10 shadow-2xl' : 'border border-borderToken/40'
+      }`}>
       {/* Dynamic Serene Theme Background Image */}
       <img
         src={themeConfig.bgImage}
         alt="Theme hero landscape"
         key={themeConfig.bgImage}
-        className="absolute inset-0 w-full h-full object-cover object-center transform scale-105 group-hover:scale-100 transition-all duration-700 ease-out"
+        className={`absolute inset-0 w-full h-full object-cover object-center transform scale-[1.08] transition-opacity duration-700 ease-out ${isDark ? 'opacity-95' : 'opacity-90'
+          }`}
       />
 
-      {/* Atmospheric Soft Light & Mist Gradients */}
+      {/* Atmospheric Ambient Gradients */}
       <div className={`absolute inset-0 bg-gradient-to-t ${themeConfig.overlayGrad} pointer-events-none transition-colors duration-500`} />
       <div className={`absolute inset-0 bg-gradient-to-r ${themeConfig.sideGrad} pointer-events-none transition-colors duration-500`} />
 
@@ -233,28 +236,28 @@ export const HeaderHero: React.FC = () => {
         aria-hidden="true"
       >
         <defs>
-          {/* Luminous Arc Gradient with 25-30% Primary overlay on White on the right */}
+          {/* Arc Gradient in Theme Dark Primary Tone or Luminous Sky Blue for Dark Theme */}
           <linearGradient id="calm-arch-glow" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={W} y2="0">
             {/* Left Edge Fade */}
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0" />
-            <stop offset="5%" stopColor="#FFFFFF" stopOpacity="0.85" />
-            <stop offset="9%" stopColor="#FFFFFF" stopOpacity="1" />
+            <stop offset="0%" stopColor={isDark ? "#38BDF8" : "var(--color-primary)"} stopOpacity="0" />
+            <stop offset="4%" stopColor={isDark ? "#38BDF8" : "var(--color-primary)"} stopOpacity="0.95" />
+            <stop offset="8%" stopColor={isDark ? "#38BDF8" : "var(--color-primary)"} stopOpacity="1" />
 
-            {/* Crisp luminous white up to active node */}
-            <stop offset={`${Math.max(9, (splitOffset - 0.06) * 100)}%`} stopColor="#FFFFFF" stopOpacity="1" />
+            {/* Deep Theme Primary Color up to active node */}
+            <stop offset={`${Math.max(8, (splitOffset - 0.04) * 100)}%`} stopColor={isDark ? "#38BDF8" : "var(--color-primary)"} stopOpacity="1" />
 
-            {/* 25-30% Theme Primary Color on top of White Background */}
-            <stop offset={`${Math.max(10, splitOffset * 100 + 3)}%`} stopColor="color-mix(in srgb, var(--color-primary) 28%, #FFFFFF)" stopOpacity="0.95" />
+            {/* Future trail - distinctly visible */}
+            <stop offset={`${Math.max(9, splitOffset * 100 + 2)}%`} stopColor={isDark ? "#38BDF8" : "var(--color-primary)"} stopOpacity={isDark ? "0.68" : "0.62"} />
 
             {/* Right Edge Fade */}
-            <stop offset="88%" stopColor="color-mix(in srgb, var(--color-primary) 28%, #FFFFFF)" stopOpacity="0.95" />
-            <stop offset="94%" stopColor="color-mix(in srgb, var(--color-primary) 28%, #FFFFFF)" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="color-mix(in srgb, var(--color-primary) 28%, #FFFFFF)" stopOpacity="0" />
+            <stop offset="90%" stopColor={isDark ? "#38BDF8" : "var(--color-primary)"} stopOpacity={isDark ? "0.68" : "0.62"} />
+            <stop offset="96%" stopColor={isDark ? "#38BDF8" : "var(--color-primary)"} stopOpacity={isDark ? "0.35" : "0.28"} />
+            <stop offset="100%" stopColor={isDark ? "#38BDF8" : "var(--color-primary)"} stopOpacity="0" />
           </linearGradient>
 
           {/* Soft Drop Glow Filter for Active Node */}
           <filter id="nodeGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000000" floodOpacity="0.35" />
+            <feDropShadow dx="0" dy="2" stdDeviation={isDark ? 5 : 3} floodColor={isDark ? "#38BDF8" : "var(--color-primary)"} floodOpacity={isDark ? "0.6" : "0.35"} />
           </filter>
         </defs>
 
@@ -263,7 +266,7 @@ export const HeaderHero: React.FC = () => {
           d={arcPath}
           fill="none"
           stroke="url(#calm-arch-glow)"
-          strokeWidth="8"
+          strokeWidth="11"
           strokeLinecap="round"
         />
 
@@ -274,59 +277,70 @@ export const HeaderHero: React.FC = () => {
 
           return (
             <g key={p.label} className="pointer-events-auto cursor-pointer">
-              {/* Active Day: Clean Ring Node (Theme center + Crisp white outer ring) */}
+              {/* Active Day: Clean Ring Node */}
               {isSelected && (
                 <>
-                  {/* Outer soft diffuse glow halo */}
-                  <circle cx={p.x} cy={p.y} r="28" fill="#FFFFFF" opacity="0.18" />
+                  {/* Outer soft diffuse halo */}
+                  <circle
+                    cx={p.x}
+                    cy={p.y}
+                    r="32"
+                    fill={isDark ? "#38BDF8" : "var(--color-primary)"}
+                    opacity={isDark ? 0.35 : 0.22}
+                  />
                   {/* Crisp ring node */}
                   <circle
                     cx={p.x}
                     cy={p.y}
-                    r="16"
-                    fill="var(--color-primary)"
+                    r="19"
+                    fill={isDark ? "#0E7490" : "var(--color-primary)"}
                     stroke="#FFFFFF"
-                    strokeWidth="4.5"
+                    strokeWidth="5"
                     filter="url(#nodeGlow)"
                   />
                 </>
               )}
 
-              {/* Past Days: Soft White Node */}
+              {/* Past Days: Solid Primary Node with white accent border */}
               {isPast && (
                 <circle
                   cx={p.x}
                   cy={p.y}
-                  r="10"
-                  fill="#FFFFFF"
-                  opacity="0.95"
+                  r="13.5"
+                  fill={isDark ? "#38BDF8" : "var(--color-primary)"}
+                  stroke="#FFFFFF"
+                  strokeWidth="3"
+                  opacity="1"
                 />
               )}
 
-              {/* Future Days (Right of current day): 25% Primary Color over White */}
+              {/* Future Days: Distinct Node with white rim */}
               {!isSelected && !isPast && (
                 <circle
                   cx={p.x}
                   cy={p.y}
-                  r="10"
-                  fill="color-mix(in srgb, var(--color-primary) 25%, #FFFFFF)"
-                  opacity="0.95"
+                  r="13"
+                  fill={isDark ? "rgba(56, 189, 248, 0.45)" : "var(--color-primary)"}
+                  stroke={isDark ? "rgba(255, 255, 255, 0.75)" : "#FFFFFF"}
+                  strokeWidth="3"
+                  opacity={isDark ? 0.92 : 0.8}
                 />
               )}
 
-              {/* Day Label */}
+              {/* Day Label in Clean Typography */}
               <text
                 x={p.lx}
                 y={p.ly}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 transform={`rotate(${p.angle * 0.75} ${p.lx} ${p.ly})`}
-                fill="#FFFFFF"
-                opacity={isSelected ? 1 : isPast ? 0.95 : 0.8}
+                fill={isDark ? "#FFFFFF" : "var(--color-text)"}
+                opacity={isSelected ? 1 : 0.9}
                 style={{
                   fontFamily: "'Gilda Display', serif",
-                  fontSize: isSelected ? '20px' : '18.5px',
+                  fontSize: isSelected ? '24px' : '22px',
                   fontWeight: isSelected ? 600 : 400,
+                  textShadow: isDark ? '0 1px 4px rgba(0,0,0,0.6)' : 'none',
                 }}
               >
                 {p.label}
@@ -336,36 +350,45 @@ export const HeaderHero: React.FC = () => {
         })}
       </svg>
 
-      {/* Top Header: Greeting on Left & Clean Date on Right */}
+      {/* Top Header: Greeting on Left & Date on Right */}
       <div className="relative z-10 p-6 sm:p-8 flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0 pr-2">
-          <h2 className="m-0 text-white tracking-tight leading-tight text-[26px] sm:text-[30px] md:text-[34px] font-medium font-serif drop-shadow-sm">
+          <h2 className={`m-0 tracking-tight leading-tight text-[26px] sm:text-[30px] md:text-[34px] font-medium font-serif ${isDark ? 'text-white drop-shadow-sm' : 'text-foreground'
+            }`}>
             {greeting}, {name}
           </h2>
 
-          <p className="m-0 mt-2 text-[13.5px] sm:text-[14.5px] text-white/90 font-light font-sans max-w-md drop-shadow-xs">
+          <p className={`m-0 mt-2 text-[13.5px] sm:text-[14.5px] font-light font-sans max-w-md ${isDark ? 'text-white/80' : 'text-textSecondary'
+            }`}>
             “{quote}”
           </p>
         </div>
 
         {/* Clean Date Display */}
         <div className="text-right flex-shrink-0">
-          <div className="text-white leading-none text-[42px] sm:text-[50px] md:text-[58px] font-serif drop-shadow-sm">
+          <div className={`leading-none text-[42px] sm:text-[50px] md:text-[58px] font-serif ${isDark ? 'text-white' : 'text-foreground'
+            }`}>
             {day}
-            <sup className="text-[17px] sm:text-[19px] md:text-[22px] align-top relative -top-[4px] ml-[2px] font-light">
+            <sup className={`text-[17px] sm:text-[19px] md:text-[22px] align-top relative -top-[4px] ml-[2px] font-light ${isDark ? 'text-white/75' : 'text-textSecondary'
+              }`}>
               {ordinal(day)}
             </sup>
           </div>
-          <p className="mt-1.5 mb-0 text-[13px] sm:text-[14px] text-white/90 font-light font-sans tracking-wide whitespace-nowrap drop-shadow-xs">
+          <p className={`mt-1.5 mb-0 text-[13px] sm:text-[14px] font-light font-sans tracking-wide whitespace-nowrap ${isDark ? 'text-white/80' : 'text-textSecondary'
+            }`}>
             {monthYear.replace(" ", ", ")}
           </p>
         </div>
       </div>
 
-      {/* Bottom Row: Lighter Glassmorphic Feeling Bar (Pure illustration faces) */}
+      {/* Bottom Row: Glassmorphic Feeling Bar */}
       <div className="relative z-10 p-5 pb-6 flex items-center justify-center w-full">
-        <div className="flex items-center bg-black/20 backdrop-blur-md border border-white/15 px-2.5 sm:px-3 py-1.5 rounded-full shadow-2xl transition-all">
-          <span className="text-[12.5px] font-medium text-white/65 pl-2 pr-2.5 hidden sm:inline-block tracking-wide">
+        <div className={`flex items-center px-2.5 sm:px-3 py-1.5 rounded-full transition-all backdrop-blur-md ${isDark
+            ? 'bg-black/60 border border-white/15 shadow-xl'
+            : 'bg-card/90 border border-borderToken shadow-sm'
+          }`}>
+          <span className={`text-[12.5px] font-medium pl-2 pr-2.5 hidden sm:inline-block tracking-wide ${isDark ? 'text-white/70' : 'text-mutedText'
+            }`}>
             Feeling:
           </span>
           <div className="flex items-center gap-1 sm:gap-1.5">
@@ -375,20 +398,33 @@ export const HeaderHero: React.FC = () => {
               return (
                 <React.Fragment key={m.id}>
                   {idx > 0 && !isSelected && currentMood !== MOODS[idx - 1].id && (
-                    <div className="w-[1px] h-5 bg-white/15 hidden sm:block mx-0.5" />
+                    <div className={`w-[1px] h-5 hidden sm:block mx-0.5 ${isDark ? 'bg-white/15' : 'bg-borderToken'
+                      }`} />
                   )}
                   <button
                     onClick={() => setMood(m.id as any)}
-                    className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all duration-200 ${isSelected
-                      ? 'bg-white text-[#15463D] shadow-xl'
-                      : 'text-white/80'
+                    className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer ${isSelected
+                        ? isDark
+                          ? 'bg-white text-black shadow-lg scale-105'
+                          : 'bg-primary text-white shadow-md'
+                        : isDark
+                          ? 'text-white/75 hover:text-white hover:bg-white/15'
+                          : 'text-textSecondary hover:text-foreground hover:bg-card-subtle'
                       }`}
                     title={m.label}
                     aria-label={m.label}
                   >
                     <Icon
-                      size={isSelected ? 28 : 26}
-                      className={isSelected ? 'text-[#15463D]' : 'text-white'}
+                      size={isSelected ? 27 : 25}
+                      className={
+                        isSelected
+                          ? isDark
+                            ? 'text-black'
+                            : 'text-white'
+                          : isDark
+                            ? 'text-white/80'
+                            : 'text-textSecondary'
+                      }
                       strokeWidth={2.3}
                     />
                   </button>

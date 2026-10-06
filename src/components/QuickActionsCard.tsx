@@ -3,10 +3,10 @@ import { useAppStore } from '../store/useAppStore';
 import { Plus, Wind, Target, Sparkles, Check } from 'lucide-react';
 
 export const QuickActionsCard: React.FC = () => {
-  const { 
-    openTaskModal, 
-    openHabitModal, 
-    openBreathingModal, 
+  const {
+    openTaskModal,
+    openHabitModal,
+    openBreathingModal,
     openAiModal,
     habits,
     toggleHabitDate,
@@ -71,18 +71,16 @@ export const QuickActionsCard: React.FC = () => {
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
-                      className={`w-5 h-5 rounded-lg flex items-center justify-center transition-all ${
-                        isDone
+                      className={`w-5 h-5 rounded-lg flex items-center justify-center transition-all ${isDone
                           ? 'bg-primary text-white shadow-xs'
                           : 'border border-borderToken bg-card'
-                      }`}
+                        }`}
                     >
                       {isDone && <Check size={13} strokeWidth={3} className="text-white" />}
                     </div>
                     <span
-                      className={`text-[13px] truncate ${
-                        isDone ? 'line-through text-mutedText' : 'text-foreground font-medium'
-                      }`}
+                      className={`text-[13px] truncate ${isDone ? 'line-through text-mutedText' : 'text-foreground font-medium'
+                        }`}
                     >
                       {habit.title}
                     </span>

@@ -31,25 +31,34 @@ const TaskCalendarIcon: React.FC<{ size?: number; className?: string }> = ({ siz
 );
 
 export const CurrentTaskBanner: React.FC = () => {
-  const { tasks, selectedDate, toggleTaskStatus, skipTask, moveTaskToTomorrow, openTaskModal } = useAppStore();
-  const [isRunning, setIsRunning] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const { 
+    tasks, 
+    selectedDate, 
+    toggleTaskStatus, 
+    skipTask, 
+    openTaskModal,
+    activeFocusTaskId,
+    isFocusTimerRunning,
+    focusElapsedSeconds,
+    toggleFocusTask,
+    setFocusElapsedSeconds
+  } = useAppStore();
 
   const activeTasks = tasks.filter(
     (t) => (t.scheduledDate === selectedDate || !t.scheduledDate) && t.status !== 'completed' && t.status !== 'skipped'
   );
 
-  const currentTask = activeTasks[0];
+  const currentTask = (activeFocusTaskId ? activeTasks.find(t => t.id === activeFocusTaskId) : null) || activeTasks[0];
 
   useEffect(() => {
     let interval: any = null;
-    if (isRunning) {
+    if (isFocusTimerRunning && currentTask) {
       interval = setInterval(() => {
-        setElapsedSeconds((prev) => prev + 1);
+        setFocusElapsedSeconds((prev) => prev + 1);
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isRunning]);
+  }, [isFocusTimerRunning, currentTask?.id]);
 
   if (!currentTask) {
     return (
@@ -72,8 +81,8 @@ export const CurrentTaskBanner: React.FC = () => {
   }
 
   const durationSeconds = (currentTask.duration || 45) * 60;
-  const progressPercent = Math.min(100, Math.round((elapsedSeconds / durationSeconds) * 100));
-  const remainingMins = Math.max(0, Math.ceil((durationSeconds - elapsedSeconds) / 60));
+  const progressPercent = Math.min(100, Math.round((focusElapsedSeconds / durationSeconds) * 100));
+  const remainingMins = Math.max(0, Math.ceil((durationSeconds - focusElapsedSeconds) / 60));
 
   const formatElapsed = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -99,8 +108,8 @@ export const CurrentTaskBanner: React.FC = () => {
         <div className="flex-1 min-w-0">
           {/* Header Row: WHAT'S NEXT + Time */}
           <div className="flex items-center gap-2.5 mb-0.5">
-            <span className="px-2.5 py-0.5 rounded-lg bg-primary-soft text-primary text-[10.5px] sm:text-[11px] font-bold tracking-wider uppercase">
-              {isRunning ? 'FOCUSING NOW' : "WHAT'S NEXT"}
+            <span className="px-2.5 py-0.5 rounded-lg bg-primary-soft text-primary text-[10.5px] sm:text-[11px] font-medium tracking-wide uppercase">
+              {isFocusTimerRunning ? 'FOCUSING NOW' : "WHAT'S NEXT"}
             </span>
             <span className="text-[12px] sm:text-[12.5px] text-mutedText font-normal">
               {timeString}
@@ -109,7 +118,7 @@ export const CurrentTaskBanner: React.FC = () => {
 
           {/* Title & Progress Row */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 mt-1">
-            <h4 className="text-[18px] sm:text-[20px] font-sans font-bold text-foreground tracking-tight truncate min-w-0">
+            <h4 className="text-[17px] sm:text-[19px] font-sans font-medium text-foreground tracking-normal truncate min-w-0">
               {currentTask.title}
             </h4>
 
@@ -122,7 +131,7 @@ export const CurrentTaskBanner: React.FC = () => {
                 />
               </div>
               <span className="text-[11.5px] sm:text-[12px] font-medium text-textSecondary font-sans whitespace-nowrap min-w-[45px] text-right">
-                {isRunning ? formatElapsed(elapsedSeconds) : `${remainingMins}m left`}
+                {isFocusTimerRunning ? formatElapsed(focusElapsedSeconds) : `${remainingMins}m left`}
               </span>
             </div>
           </div>
@@ -136,23 +145,23 @@ export const CurrentTaskBanner: React.FC = () => {
 
         {/* Start Focus / Pause Button */}
         <button
-          onClick={() => setIsRunning(!isRunning)}
+          onClick={() => {
+            if (currentTask) toggleFocusTask(currentTask.id);
+          }}
           className={`flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl text-[13px] sm:text-[13.5px] font-semibold transition-all shadow-xs ${
-            isRunning
+            isFocusTimerRunning
               ? 'bg-primary-soft text-primary hover:opacity-85'
               : 'bg-primary hover:bg-primary-hover text-white'
           }`}
         >
-          {isRunning ? <Pause size={14} /> : <Play size={14} fill="currentColor" />}
-          <span>{isRunning ? 'Pause' : 'Start Focus'}</span>
+          {isFocusTimerRunning ? <Pause size={14} /> : <Play size={14} fill="currentColor" />}
+          <span>{isFocusTimerRunning ? 'Pause' : 'Start Focus'}</span>
         </button>
 
         {/* Complete Button */}
         <button
           onClick={() => {
             toggleTaskStatus(currentTask.id);
-            setIsRunning(false);
-            setElapsedSeconds(0);
           }}
           className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-tag-healthBg text-tag-health hover:bg-[#D5EFE1] text-[13px] sm:text-[13.5px] font-semibold transition-all"
         >
@@ -160,25 +169,16 @@ export const CurrentTaskBanner: React.FC = () => {
           <span>Complete</span>
         </button>
 
-        {/* Skip Button */}
+        {/* Skip / Next Task Button */}
         <button
           onClick={() => {
             skipTask(currentTask.id);
-            setIsRunning(false);
           }}
-          className="px-2.5 sm:px-3 py-2 rounded-xl text-mutedText hover:text-foreground text-[12.5px] sm:text-[13px] font-medium transition-all"
-          title="Skip task"
+          className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl bg-card-subtle hover:bg-card-muted text-textSecondary hover:text-foreground text-[13px] sm:text-[13.5px] font-medium transition-all"
+          title="Skip to next task"
         >
-          Skip
-        </button>
-
-        {/* Move to Tomorrow Button */}
-        <button
-          onClick={() => moveTaskToTomorrow(currentTask.id)}
-          className="p-2 rounded-xl text-mutedText hover:text-foreground text-[13px] font-medium transition-all"
-          title="Move to tomorrow"
-        >
-          <FastForward size={16} />
+          <FastForward size={15} />
+          <span>Skip</span>
         </button>
       </div>
 

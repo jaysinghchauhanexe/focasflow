@@ -13,8 +13,14 @@ export const OverloadModal: React.FC = () => {
   const overloadText = `${hours > 0 ? `${hours}h ` : ''}${mins > 0 ? `${mins}m` : ''}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none">
-      <div className="bg-card w-full max-w-lg rounded-[28px] shadow-float p-6 sm:p-7 transition-colors">
+    <div 
+      onClick={closeOverloadModal}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-card w-full max-w-lg rounded-[28px] shadow-float p-6 sm:p-7 transition-colors"
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-borderToken">
           <div className="flex items-center gap-2.5">

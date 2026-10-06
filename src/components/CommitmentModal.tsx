@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Category } from '../types';
 import { X, Calendar } from 'lucide-react';
+import { CustomSelect } from './CustomSelect';
 
 export const CommitmentModal: React.FC = () => {
   const { isCommitmentModalOpen, closeCommitmentModal, addTask, selectedDate } = useAppStore();
@@ -32,8 +33,14 @@ export const CommitmentModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none">
-      <div className="bg-card w-full max-w-md rounded-[28px] shadow-float p-6 sm:p-7 transition-colors">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none cursor-pointer"
+      onClick={closeCommitmentModal}
+    >
+      <div 
+        className="bg-card w-full max-w-md rounded-[28px] shadow-2xl p-6 sm:p-7 transition-colors cursor-default border border-borderToken"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between pb-4 border-b border-borderToken">
           <div className="flex items-center gap-2">
             <Calendar size={18} className="text-primary" />
@@ -102,16 +109,11 @@ export const CommitmentModal: React.FC = () => {
             <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
               Category
             </label>
-            <select
+            <CustomSelect
               value={category}
-              onChange={(e) => setCategory(e.target.value as Category)}
-              className="w-full px-3.5 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground"
-            >
-              <option value="Work">Work</option>
-              <option value="Personal">Personal</option>
-              <option value="Health">Health</option>
-              <option value="Learning">Learning</option>
-            </select>
+              onChange={(val) => setCategory(val as Category)}
+              options={['Work', 'Personal', 'Health', 'Learning', 'Neutral']}
+            />
           </div>
 
           <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-borderToken">

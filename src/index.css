@@ -223,15 +223,8 @@ body[data-theme="dark"],
 }
 
 /* ==========================================================================
-   GLOBAL STYLES (Enforce zero shadows anywhere)
+   GLOBAL STYLES & HAPTIC TACTILE DYNAMICS
    ========================================================================== */
-*,
-*::before,
-*::after {
-  box-shadow: none !important;
-  text-shadow: none !important;
-}
-
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
@@ -240,6 +233,42 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Global button press haptic tactile feedback */
+button, 
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              opacity 0.15s ease, 
+              background-color 0.15s ease, 
+              border-color 0.15s ease, 
+              color 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active, 
+[role="button"]:active,
+input[type="button"]:active,
+input[type="submit"]:active,
+input[type="reset"]:active {
+  transform: scale(0.96) !important;
+}
+
+/* Elevation Shadows for Popups, Dropdowns & Modals */
+.shadow-float,
+.shadow-2xl,
+.shadow-lg {
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.12), 0 6px 14px -4px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="dark"] .shadow-float,
+[data-theme="dark"] .shadow-2xl,
+[data-theme="dark"] .shadow-lg {
+  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.65), 0 6px 16px -4px rgba(0, 0, 0, 0.5) !important;
 }
 
 .font-serif {
@@ -309,12 +338,47 @@ body {
   animation: breatheScale 6s ease-in-out infinite;
 }
 
-/* Smooth micro-animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+/* ==========================================================================
+   TASK & LIST MICRO-ANIMATIONS
+   ========================================================================== */
+
+/* Subtle staggered slide up for task list items */
+@keyframes enterUp {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.animate-enter-up {
+  animation: enterUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Spring Checkmark pop */
+@keyframes checkPop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-check-pop {
+  animation: checkPop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Spring micro-interaction transition */
+.transition-spring {
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }

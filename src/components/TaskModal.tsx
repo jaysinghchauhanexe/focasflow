@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Category, Priority } from '../types';
 import { X } from 'lucide-react';
+import { CustomSelect } from './CustomSelect';
 
 export const TaskModal: React.FC = () => {
   const { isTaskModalOpen, closeTaskModal, editingTask, addTask, updateTask, selectedDate } = useAppStore();
@@ -72,16 +73,62 @@ export const TaskModal: React.FC = () => {
   };
 
   const categories: Category[] = ['Health', 'Work', 'Personal', 'Learning', 'Neutral'];
-  const priorities: { id: Priority; label: string; desc: string }[] = [
-    { id: 'critical', label: 'Critical', desc: 'Must happen today' },
-    { id: 'important', label: 'Important', desc: 'Should happen today' },
-    { id: 'flexible', label: 'Flexible', desc: 'Can move if needed' },
-    { id: 'optional', label: 'Optional', desc: 'Only if time permits' },
+  const priorities: {
+    id: Priority;
+    label: string;
+    desc: string;
+    activeClass: string;
+    inactiveClass: string;
+    dotClass: string;
+    textClass: string;
+  }[] = [
+    {
+      id: 'critical',
+      label: 'Critical',
+      desc: 'Must happen today',
+      activeClass: 'bg-[#E5484D]/15 border-[#E5484D]/25',
+      inactiveClass: 'bg-[#E5484D]/[0.03] border-[#E5484D]/10 hover:border-[#E5484D]/20 hover:bg-[#E5484D]/[0.07]',
+      dotClass: 'bg-[#E5484D]',
+      textClass: 'text-[#E5484D]',
+    },
+    {
+      id: 'important',
+      label: 'Important',
+      desc: 'Should happen today',
+      activeClass: 'bg-[#F97316]/15 border-[#F97316]/25',
+      inactiveClass: 'bg-[#F97316]/[0.03] border-[#F97316]/10 hover:border-[#F97316]/20 hover:bg-[#F97316]/[0.07]',
+      dotClass: 'bg-[#F97316]',
+      textClass: 'text-[#EA580C] dark:text-[#FB923C]',
+    },
+    {
+      id: 'flexible',
+      label: 'Flexible',
+      desc: 'Can move if needed',
+      activeClass: 'bg-[#D97706]/15 border-[#D97706]/25',
+      inactiveClass: 'bg-[#D97706]/[0.03] border-[#D97706]/10 hover:border-[#D97706]/20 hover:bg-[#D97706]/[0.07]',
+      dotClass: 'bg-[#D97706]',
+      textClass: 'text-[#D97706]',
+    },
+    {
+      id: 'optional',
+      label: 'Optional',
+      desc: 'Only if time permits',
+      activeClass: 'bg-[#64748B]/15 border-[#64748B]/25',
+      inactiveClass: 'bg-[#64748B]/[0.03] border-[#64748B]/10 hover:border-[#64748B]/20 hover:bg-[#64748B]/[0.07]',
+      dotClass: 'bg-[#64748B]',
+      textClass: 'text-[#475569] dark:text-[#94A3B8]',
+    },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none">
-      <div className="bg-card w-full max-w-lg rounded-[28px] shadow-float p-6 sm:p-7 transition-colors">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none cursor-pointer"
+      onClick={closeTaskModal}
+    >
+      <div 
+        className="bg-card w-full max-w-lg rounded-[28px] shadow-2xl p-6 sm:p-7 transition-colors cursor-default border border-borderToken"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-borderToken">
           <h3 className="text-[20px] font-serif font-medium text-foreground">
@@ -141,17 +188,11 @@ export const TaskModal: React.FC = () => {
               <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
                 Category
               </label>
-              <select
+              <CustomSelect
                 value={category}
-                onChange={(e) => setCategory(e.target.value as Category)}
-                className="w-full px-3.5 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
-              >
-                {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setCategory(val as Category)}
+                options={categories}
+              />
             </div>
           </div>
 
@@ -160,22 +201,30 @@ export const TaskModal: React.FC = () => {
             <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
               Priority Level
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              {priorities.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setPriority(p.id)}
-                  className={`p-2.5 rounded-2xl text-left border transition-all ${
-                    priority === p.id
-                      ? 'border-primary bg-primary-soft'
-                      : 'border-borderToken hover:border-primary/40 bg-card'
-                  }`}
-                >
-                  <span className="block text-[12.5px] font-semibold text-foreground">{p.label}</span>
-                  <span className="block text-[11px] text-mutedText">{p.desc}</span>
-                </button>
-              ))}
+            <div className="grid grid-cols-2 gap-2.5">
+              {priorities.map((p) => {
+                const isSelected = priority === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setPriority(p.id)}
+                    className={`p-3 rounded-2xl text-left border transition-all cursor-pointer relative overflow-hidden shadow-none outline-none ${
+                      isSelected ? p.activeClass : p.inactiveClass
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${p.dotClass}`} />
+                      <span className={`text-[13px] font-semibold ${isSelected ? p.textClass : 'text-foreground'}`}>
+                        {p.label}
+                      </span>
+                    </div>
+                    <span className={`block text-[11.5px] pl-4 ${isSelected ? p.textClass + ' opacity-90' : 'text-mutedText'}`}>
+                      {p.desc}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

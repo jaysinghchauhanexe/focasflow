@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Task, Category } from '../types';
-import { Plus, Check, Play, MoreHorizontal, ArrowRight, Clock, Trash2, Edit2, FastForward, CheckCircle2 } from 'lucide-react';
+import { Plus, Check, Play, Pause, MoreHorizontal, ArrowRight, Clock, Trash2, Edit2, FastForward } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
 import { DoodleCup } from './DoodleIllustrations';
 
@@ -17,10 +17,32 @@ export const TodayTasksCard: React.FC = () => {
     moveTaskToTomorrow,
     moveTaskLater,
     skipTask,
-    setCurrentTab
+    setCurrentTab,
+    activeFocusTaskId,
+    isFocusTimerRunning,
+    toggleFocusTask
   } = useAppStore();
 
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const menuContainerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!activeMenuId) return;
+
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
+      if (menuContainerRef.current && !menuContainerRef.current.contains(e.target as Node)) {
+        setActiveMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [activeMenuId]);
 
   const dayTasks = tasks.filter(
     (t) => t.scheduledDate === selectedDate || (!t.scheduledDate && t.status !== 'completed' && t.status !== 'skipped')
@@ -71,11 +93,10 @@ export const TodayTasksCard: React.FC = () => {
                 <button
                   key={filter}
                   onClick={() => setActiveFilter(filter)}
-                  className={`px-3.5 py-1 text-[12.5px] font-medium rounded-lg capitalize transition-all ${
-                    activeFilter === filter
+                  className={`px-3.5 py-1 text-[12.5px] font-medium rounded-lg capitalize transition-all ${activeFilter === filter
                       ? 'bg-card text-foreground font-semibold'
                       : 'text-mutedText hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   {filter === 'all' ? 'All' : filter === 'important' ? 'Important' : 'Flexible'}
                 </button>
@@ -102,7 +123,7 @@ export const TodayTasksCard: React.FC = () => {
               <span className="text-xs text-mutedText mt-0.5">Sip some tea or add an outcome you'd love to accomplish peacefully.</span>
             </div>
           ) : (
-            displayedTasks.map((task) => {
+            displayedTasks.map((task, idx) => {
               const isCompleted = task.status === 'completed';
               const isSkipped = task.status === 'skipped';
               const timeDisplay = task.scheduledStart && task.scheduledEnd
@@ -112,34 +133,33 @@ export const TodayTasksCard: React.FC = () => {
               return (
                 <div
                   key={task.id}
-                  className={`group relative flex items-center justify-between py-3.5 px-2 transition-all duration-150 hover:bg-card-subtle rounded-xl ${
-                    isCompleted ? 'opacity-55' : ''
+                  style={{ animationDelay: `${idx * 45}ms` }}
+                  className={`group relative flex items-center justify-between py-3.5 px-2 transition-spring hover:bg-card-subtle rounded-xl animate-enter-up ${
+                    activeMenuId === task.id ? 'z-30' : 'z-0'
                   }`}
                 >
                   {/* Left: Checkbox + Priority Dot + Title */}
-                  <div className="flex items-center gap-3 min-w-0 pr-4">
+                  <div className={`flex items-center gap-3 min-w-0 pr-4 transition-opacity ${isCompleted ? 'opacity-50' : ''}`}>
                     <button
                       onClick={() => toggleTaskStatus(task.id)}
-                      className={`w-[22px] h-[22px] rounded-[8px] flex items-center justify-center transition-all ${
-                        isCompleted
-                          ? 'bg-primary text-white'
+                      className={`w-[22px] h-[22px] rounded-[8px] flex items-center justify-center transition-spring cursor-pointer active:scale-75 hover:scale-115 ${isCompleted
+                          ? 'bg-primary text-white shadow-xs'
                           : 'border border-borderToken hover:border-primary bg-card'
-                      }`}
+                        }`}
                     >
-                      {isCompleted && <Check size={14} strokeWidth={3} className="text-white" />}
+                      {isCompleted && <Check size={14} strokeWidth={3} className="text-white animate-check-pop" />}
                     </button>
 
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityDot(task)}`} />
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 group-hover:scale-125 transition-transform duration-200 ${getPriorityDot(task)}`} />
 
                     <span
                       onClick={() => openTaskModal(task)}
-                      className={`text-[14px] font-sans truncate cursor-pointer transition-colors ${
-                        isCompleted
+                      className={`text-[14px] font-sans truncate cursor-pointer transition-colors ${isCompleted
                           ? 'line-through text-mutedText'
                           : isSkipped
-                          ? 'italic line-through text-mutedText'
-                          : 'text-foreground hover:text-primary font-medium'
-                      }`}
+                            ? 'italic line-through text-mutedText'
+                            : 'text-foreground hover:text-primary font-medium'
+                        }`}
                     >
                       {task.title}
                     </span>
@@ -148,91 +168,109 @@ export const TodayTasksCard: React.FC = () => {
                   {/* Middle & Right: Category Badge + Time + Actions */}
                   <div className="flex items-center gap-4 flex-shrink-0">
                     <span
-                      className={`px-3 py-1 rounded-xl text-[11.5px] font-medium ${getCategoryClass(
-                        task.category
-                      )}`}
+                      className={`px-3 py-1 rounded-xl text-[11.5px] font-medium transition-all group-hover:scale-105 duration-200 ${
+                        isCompleted ? 'opacity-50' : ''
+                      } ${getCategoryClass(task.category)}`}
                     >
                       {task.category}
                     </span>
 
-                    <span className="text-[12.5px] font-normal text-mutedText min-w-[125px] text-right font-sans">
+                    <span className={`text-[12.5px] font-normal text-mutedText min-w-[125px] text-right font-sans transition-opacity ${
+                      isCompleted ? 'opacity-50' : ''
+                    }`}>
                       {timeDisplay}
                     </span>
 
-                    <button
-                      onClick={() => toggleTaskStatus(task.id)}
-                      className="p-1 text-mutedText hover:text-primary transition-colors"
-                      title={isCompleted ? 'Mark incomplete' : 'Complete task'}
-                    >
-                      {isCompleted ? (
-                        <Check size={16} className="text-tag-health" />
-                      ) : (
-                        <Play size={14} fill="currentColor" className="text-mutedText hover:text-primary" />
-                      )}
-                    </button>
-
-                    <div className="relative">
+                    {!isCompleted ? (
                       <button
-                        onClick={() => setActiveMenuId(activeMenuId === task.id ? null : task.id)}
-                        className="p-1 rounded-lg text-mutedText hover:text-foreground hover:bg-card-subtle"
+                        onClick={() => toggleFocusTask(task.id)}
+                        className="p-1 transition-spring hover:scale-125 active:scale-90 cursor-pointer text-mutedText hover:text-primary"
+                        title={
+                          isFocusTimerRunning && (activeFocusTaskId === task.id || (!activeFocusTaskId && displayedTasks[0]?.id === task.id))
+                            ? 'Pause focus timer'
+                            : 'Start focus timer'
+                        }
+                      >
+                        {isFocusTimerRunning && (activeFocusTaskId === task.id || (!activeFocusTaskId && displayedTasks[0]?.id === task.id)) ? (
+                          <Pause size={14} className="text-primary fill-primary animate-pulse" />
+                        ) : (
+                          <Play size={14} fill="currentColor" className="text-mutedText hover:text-primary" />
+                        )}
+                      </button>
+                    ) : (
+                      <div className="p-1 text-tag-health opacity-60">
+                        <Check size={15} strokeWidth={2.5} />
+                      </div>
+                    )}
+
+                    <div className="relative" ref={activeMenuId === task.id ? menuContainerRef : null}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuId(activeMenuId === task.id ? null : task.id);
+                        }}
+                        className="p-1 rounded-lg text-mutedText hover:text-foreground hover:bg-card-subtle transition-spring hover:scale-115 active:scale-90 cursor-pointer"
                       >
                         <MoreHorizontal size={16} />
                       </button>
 
                       {activeMenuId === task.id && (
-                        <div className="absolute right-0 top-7 w-44 bg-card rounded-2xl shadow-float py-1.5 z-30 border border-borderToken animate-fade-in">
-                          <button
-                            onClick={() => {
-                              openTaskModal(task);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-card-subtle"
-                          >
-                            <Edit2 size={13} />
-                            <span>Edit task</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              moveTaskToTomorrow(task.id);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-card-subtle"
-                          >
-                            <FastForward size={13} />
-                            <span>Move to tomorrow</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              moveTaskLater(task.id);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-card-subtle"
-                          >
-                            <Clock size={13} />
-                            <span>Move later today</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              skipTask(task.id);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-tag-learning hover:bg-tag-learningBg"
-                          >
-                            <ArrowRight size={13} />
-                            <span>Skip today</span>
-                          </button>
-                          <div className="my-1 border-t border-borderToken" />
-                          <button
-                            onClick={() => {
-                              deleteTask(task.id);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-tag-important hover:bg-tag-importantBg"
-                          >
-                            <Trash2 size={13} />
-                            <span>Delete task</span>
-                          </button>
-                        </div>
+                        <div 
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute right-0 top-8 w-44 bg-card rounded-2xl shadow-float py-1.5 z-50 border border-borderToken animate-fade-in opacity-100"
+                        >
+                            <button
+                              onClick={() => {
+                                openTaskModal(task);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
+                            >
+                              <Edit2 size={13} />
+                              <span>Edit task</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                moveTaskToTomorrow(task.id);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
+                            >
+                              <FastForward size={13} />
+                              <span>Move to tomorrow</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                moveTaskLater(task.id);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
+                            >
+                              <Clock size={13} />
+                              <span>Move later today</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                skipTask(task.id);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-tag-learning hover:bg-tag-learningBg transition-colors cursor-pointer"
+                            >
+                              <ArrowRight size={13} />
+                              <span>Skip today</span>
+                            </button>
+                            <div className="my-1 border-t border-borderToken" />
+                            <button
+                              onClick={() => {
+                                deleteTask(task.id);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-tag-important hover:bg-tag-importantBg transition-colors cursor-pointer"
+                            >
+                              <Trash2 size={13} />
+                              <span>Delete task</span>
+                            </button>
+                          </div>
                       )}
                     </div>
                   </div>

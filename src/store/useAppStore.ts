@@ -46,6 +46,15 @@ interface AppState {
   activeFilter: 'all' | 'important' | 'regular';
   searchQuery: string;
 
+  // Focus Timer States
+  activeFocusTaskId: string | null;
+  isFocusTimerRunning: boolean;
+  focusElapsedSeconds: number;
+  startFocusTask: (taskId: string) => void;
+  pauseFocusTask: () => void;
+  toggleFocusTask: (taskId: string) => void;
+  setFocusElapsedSeconds: (sec: number | ((prev: number) => number)) => void;
+
   // Wellness & Music States
   currentMood: 'stressed' | 'anxious' | 'okay' | 'calm' | 'great';
   activeLofiStation: LofiStationId;
@@ -485,6 +494,28 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   activeFilter: 'all',
   searchQuery: '',
+
+  // Focus Timer States
+  activeFocusTaskId: null,
+  isFocusTimerRunning: false,
+  focusElapsedSeconds: 0,
+  startFocusTask: (taskId) => set((state) => {
+    if (state.activeFocusTaskId === taskId) {
+      return { isFocusTimerRunning: true };
+    }
+    return { activeFocusTaskId: taskId, isFocusTimerRunning: true, focusElapsedSeconds: 0 };
+  }),
+  pauseFocusTask: () => set({ isFocusTimerRunning: false }),
+  toggleFocusTask: (taskId) => set((state) => {
+    if (state.activeFocusTaskId === taskId) {
+      return { isFocusTimerRunning: !state.isFocusTimerRunning };
+    }
+    return { activeFocusTaskId: taskId, isFocusTimerRunning: true, focusElapsedSeconds: 0 };
+  }),
+  setFocusElapsedSeconds: (sec) => set((state) => ({
+    focusElapsedSeconds: typeof sec === 'function' ? sec(state.focusElapsedSeconds) : sec,
+  })),
+
   currentMood: loadPersisted('mood', 'calm' as const),
   activeLofiStation: loadPersisted<LofiStationId>('lofi_station', 'study'),
   isPlayingLofi: false,
@@ -562,22 +593,32 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => {
       const updated = state.tasks.filter((t) => t.id !== id);
       savePersisted('tasks', updated);
-      return { tasks: updated };
+      const isCurrentActive = state.activeFocusTaskId === id;
+      return { 
+        tasks: updated,
+        ...(isCurrentActive ? { activeFocusTaskId: null, isFocusTimerRunning: false, focusElapsedSeconds: 0 } : {})
+      };
     });
     get().replanDay();
   },
 
   toggleTaskStatus: (id) => {
     set((state) => {
+      let isNowCompleted = false;
       const updated: Task[] = state.tasks.map((t) => {
         if (t.id === id) {
           const nextStatus: TaskStatus = t.status === 'completed' ? 'pending' : 'completed';
+          if (nextStatus === 'completed') isNowCompleted = true;
           return { ...t, status: nextStatus, updatedAt: new Date().toISOString() };
         }
         return t;
       });
       savePersisted('tasks', updated);
-      return { tasks: updated };
+      const isCurrentActive = state.activeFocusTaskId === id && isNowCompleted;
+      return { 
+        tasks: updated,
+        ...(isCurrentActive ? { isFocusTimerRunning: false, focusElapsedSeconds: 0, activeFocusTaskId: null } : {})
+      };
     });
     get().replanDay();
   },
@@ -591,7 +632,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         return t;
       });
       savePersisted('tasks', updated);
-      return { tasks: updated };
+      const isCurrentActive = state.activeFocusTaskId === id;
+      return { 
+        tasks: updated,
+        ...(isCurrentActive ? { activeFocusTaskId: null, isFocusTimerRunning: false, focusElapsedSeconds: 0 } : {})
+      };
     });
     get().replanDay();
   },

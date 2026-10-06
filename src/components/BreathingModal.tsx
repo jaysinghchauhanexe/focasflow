@@ -85,8 +85,14 @@ export const BreathingModal: React.FC = () => {
   const isHolding = phase === 'hold' || phase === 'rest';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fade-in select-none">
-      <div className="relative w-full max-w-md bg-card rounded-[32px] p-7 md:p-8 flex flex-col items-center text-center overflow-hidden transition-colors">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fade-in select-none cursor-pointer"
+      onClick={closeBreathingModal}
+    >
+      <div 
+        className="relative w-full max-w-md bg-card rounded-[32px] shadow-2xl p-7 md:p-8 flex flex-col items-center text-center overflow-hidden transition-colors cursor-default border border-borderToken"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Top Header */}
         <div className="relative z-10 w-full flex items-center justify-between pb-2 mb-4">
           <div className="flex items-center gap-3">
