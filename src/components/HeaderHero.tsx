@@ -106,10 +106,44 @@ export const HeaderHero: React.FC = () => {
   const theme = settings.theme || 'green';
 
   const d = selectedDate ? new Date(selectedDate) : new Date();
-  const hour = d.getHours();
-  const greeting = hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
+  const currentHour = new Date().getHours();
+  
+  const timeOfDay = useMemo(() => {
+    if (currentHour >= 5 && currentHour < 12) return 'morning';
+    if (currentHour >= 12 && currentHour < 17) return 'afternoon';
+    if (currentHour >= 17 && currentHour < 21) return 'evening';
+    return 'night';
+  }, [currentHour]);
+
+  const greeting = useMemo(() => {
+    switch (timeOfDay) {
+      case 'morning':
+        return 'Good Morning';
+      case 'afternoon':
+        return 'Good Afternoon';
+      case 'evening':
+        return 'Good Evening';
+      case 'night':
+      default:
+        return 'Good Night';
+    }
+  }, [timeOfDay]);
+
+  const quote = useMemo(() => {
+    switch (timeOfDay) {
+      case 'morning':
+        return 'A focused day brings a calm & peaceful mind.';
+      case 'afternoon':
+        return 'Maintain steady momentum with mindful flow.';
+      case 'evening':
+        return 'Reflect gently on the progress made today.';
+      case 'night':
+      default:
+        return 'Rest deeply to restore your energy for tomorrow.';
+    }
+  }, [timeOfDay]);
+
   const name = settings.userName || "Jay";
-  const quote = "A focused day brings a calm & peaceful mind.";
   const today = (d.getDay() + 6) % 7; // Mon = 0
   const day = d.getDate();
   const monthYear = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -290,9 +324,9 @@ export const HeaderHero: React.FC = () => {
                 fill="#FFFFFF"
                 opacity={isSelected ? 1 : isPast ? 0.95 : 0.8}
                 style={{
-                  font: isSelected
-                    ? "600 20px var(--font-heading, 'Gilda Display', serif)"
-                    : "400 18.5px var(--font-heading, 'Gilda Display', serif)"
+                  fontFamily: "'Gilda Display', serif",
+                  fontSize: isSelected ? '20px' : '18.5px',
+                  fontWeight: isSelected ? 600 : 400,
                 }}
               >
                 {p.label}

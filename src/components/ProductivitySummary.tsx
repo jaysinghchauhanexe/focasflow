@@ -1,73 +1,205 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { LOFI_STATIONS, LOFI_STATION_LIST } from '../engine/lofiStations';
 import { 
   Play, 
   Pause, 
   AlertCircle, 
-  CloudRain, 
-  Trees, 
-  Wind, 
-  Waves,
   Flag,
   Calendar,
   Check,
-  Leaf
+  Leaf,
+  Headphones,
+  Zap,
+  Coffee,
+  Volume2,
+  Volume1,
+  VolumeX
 } from 'lucide-react';
 
-/* Mountain Sunrise Serene Illustration with Left/Right/Bottom Edge Fades */
-const MountainSunriseIllustration: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <div 
-    className={`relative select-none pointer-events-none flex items-center overflow-visible ${className}`}
-    style={{
-      maskImage: 'linear-gradient(to right, transparent 0%, black 14%, black 82%, transparent 100%), linear-gradient(to bottom, black 65%, transparent 100%)',
-      WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 14%, black 82%, transparent 100%), linear-gradient(to bottom, black 65%, transparent 100%)',
-      maskComposite: 'intersect',
-      WebkitMaskComposite: 'destination-in',
-    }}
-  >
-    <svg
-      viewBox="0 0 240 85"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-[190px] sm:w-[220px] h-[66px]"
+const stationIcons: Record<string, any> = {
+  study: Headphones,
+  work: Zap,
+  coffee: Coffee,
+};
+
+/* Dynamic Time-of-Day Serene Sky Illustration (Morning, Afternoon, Evening/Sunset, Night) */
+const DiurnalSkyIllustration: React.FC<{ className?: string }> = ({ className = '' }) => {
+  const hour = new Date().getHours();
+  
+  const timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night' = 
+    hour >= 5 && hour < 12 ? 'morning' :
+    hour >= 12 && hour < 17 ? 'afternoon' :
+    hour >= 17 && hour < 21 ? 'evening' : 'night';
+
+  return (
+    <div 
+      className={`relative select-none pointer-events-none flex items-center overflow-visible transition-all duration-700 ${className}`}
+      style={{
+        maskImage: 'linear-gradient(to right, transparent 0%, black 14%, black 82%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 22%, black 72%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 14%, black 82%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 22%, black 72%, transparent 100%)',
+        maskComposite: 'intersect',
+        WebkitMaskComposite: 'destination-in',
+      }}
     >
-      <defs>
-        <linearGradient id="sunGlow" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FDE68A" stopOpacity="0.95" />
-          <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.25" />
-        </linearGradient>
-        <linearGradient id="mountBack" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.24" />
-          <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.02" />
-        </linearGradient>
-        <linearGradient id="mountMid" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.45" />
-          <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.06" />
-        </linearGradient>
-        <linearGradient id="mountFront" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.72" />
-          <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.16" />
-        </linearGradient>
-      </defs>
-      
-      {/* Soft Golden Rising Sun */}
-      <circle cx="106" cy="36" r="20" fill="url(#sunGlow)" />
-      
-      {/* Flying Birds in Sky */}
-      <path d="M 128 17 Q 132 13 136 17 Q 140 13 144 17" stroke="var(--color-primary)" strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.65" />
-      <path d="M 144 25 Q 147 22 150 25 Q 153 22 156 25" stroke="var(--color-primary)" strokeWidth="1.1" strokeLinecap="round" fill="none" opacity="0.5" />
-      
-      {/* Background Mountain Layer */}
-      <path d="M 0 85 L 0 58 Q 40 28 80 52 T 165 44 L 240 66 L 240 85 Z" fill="url(#mountBack)" />
-      
-      {/* Middle Mountain Layer */}
-      <path d="M 10 85 L 48 52 Q 82 28 116 54 T 195 46 L 240 72 L 240 85 Z" fill="url(#mountMid)" />
-      
-      {/* Foreground Mountain Layer with crisp peaks */}
-      <path d="M 25 85 L 68 42 L 92 58 L 126 32 L 158 62 L 186 48 L 225 78 L 240 85 Z" fill="url(#mountFront)" />
-    </svg>
-  </div>
-);
+      <svg
+        viewBox="0 -18 240 103"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-[190px] sm:w-[220px] h-[72px] overflow-visible"
+      >
+        <defs>
+          {/* Layer Blur Atmospheric Filters for Spreading Shine */}
+          <filter id="atmosphericSpread" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="12" />
+          </filter>
+          <filter id="softRayBlur" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="6" />
+          </filter>
+
+          {/* Spreading Radial Glows for Natural Atmospheric Diffusion (Muted & Desaturated) */}
+          <radialGradient id="morningSpreadGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#FEF08A" stopOpacity="0.45" />
+            <stop offset="40%" stopColor="#FDE68A" stopOpacity="0.2" />
+            <stop offset="75%" stopColor="#FDE68A" stopOpacity="0.05" />
+            <stop offset="100%" stopColor="#FDE68A" stopOpacity="0" />
+          </radialGradient>
+
+          <radialGradient id="afternoonSpreadGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#FEF9C3" stopOpacity="0.45" />
+            <stop offset="40%" stopColor="#FEF08A" stopOpacity="0.2" />
+            <stop offset="75%" stopColor="#FEF08A" stopOpacity="0.05" />
+            <stop offset="100%" stopColor="#FEF08A" stopOpacity="0" />
+          </radialGradient>
+
+          <radialGradient id="eveningSpreadGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#FED7AA" stopOpacity="0.48" />
+            <stop offset="40%" stopColor="#FDBA74" stopOpacity="0.22" />
+            <stop offset="75%" stopColor="#FB923C" stopOpacity="0.06" />
+            <stop offset="100%" stopColor="#FB923C" stopOpacity="0" />
+          </radialGradient>
+
+          <radialGradient id="nightSpreadGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#E2E8F0" stopOpacity="0.32" />
+            <stop offset="50%" stopColor="#CBD5E1" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="#94A3B8" stopOpacity="0" />
+          </radialGradient>
+
+          {/* Morning Sunrise Core (Pastel Warm Amber) */}
+          <linearGradient id="morningSun" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#FEF9C3" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#FDE68A" stopOpacity="0.8" />
+          </linearGradient>
+
+          {/* Afternoon Radiant Sun Core (Soft Warm Cream) */}
+          <linearGradient id="afternoonSun" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.92" />
+            <stop offset="100%" stopColor="#FEF08A" stopOpacity="0.8" />
+          </linearGradient>
+
+          {/* Evening Sunset Core (Soft Peach Amber) */}
+          <linearGradient id="eveningSun" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#FED7AA" stopOpacity="0.92" />
+            <stop offset="50%" stopColor="#FDBA74" stopOpacity="0.84" />
+            <stop offset="100%" stopColor="#FB923C" stopOpacity="0.75" />
+          </linearGradient>
+
+          {/* Night Moon Glow */}
+          <linearGradient id="nightMoon" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#F8FAFC" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#94A3B8" stopOpacity="0.4" />
+          </linearGradient>
+
+          {/* Mountain Gradient Layers */}
+          <linearGradient id="mountBack" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={timeOfDay === 'night' ? '0.35' : '0.24'} />
+            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.02" />
+          </linearGradient>
+          <linearGradient id="mountMid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={timeOfDay === 'night' ? '0.55' : '0.45'} />
+            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.06" />
+          </linearGradient>
+          <linearGradient id="mountFront" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={timeOfDay === 'night' ? '0.85' : '0.72'} />
+            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.16" />
+          </linearGradient>
+        </defs>
+        
+        {/* TIME SPECIFIC CELESTIAL BODIES WITH GENTLE LAYER BLUR */}
+        {timeOfDay === 'morning' && (
+          <>
+            {/* Subtle Atmospheric Layer Blur */}
+            <circle cx="106" cy="36" r="46" fill="url(#morningSpreadGlow)" filter="url(#atmosphericSpread)" opacity="0.8" />
+            <circle cx="106" cy="36" r="28" fill="url(#morningSpreadGlow)" filter="url(#softRayBlur)" opacity="0.8" />
+            {/* Morning Sun Core */}
+            <circle cx="106" cy="36" r="18" fill="url(#morningSun)" />
+            {/* Morning Birds */}
+            <path d="M 128 17 Q 132 13 136 17 Q 140 13 144 17" stroke="var(--color-primary)" strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.75" />
+            <path d="M 144 25 Q 147 22 150 25 Q 153 22 156 25" stroke="var(--color-primary)" strokeWidth="1.1" strokeLinecap="round" fill="none" opacity="0.6" />
+          </>
+        )}
+
+        {timeOfDay === 'afternoon' && (
+          <>
+            {/* Subtle Atmospheric Layer Blur */}
+            <circle cx="120" cy="22" r="46" fill="url(#afternoonSpreadGlow)" filter="url(#atmosphericSpread)" opacity="0.8" />
+            <circle cx="120" cy="22" r="28" fill="url(#afternoonSpreadGlow)" filter="url(#softRayBlur)" opacity="0.8" />
+            {/* High Afternoon Sun Core */}
+            <circle cx="120" cy="22" r="17" fill="url(#afternoonSun)" />
+            {/* Drifting Clouds */}
+            <path d="M 45 22 Q 52 14 62 18 Q 72 14 80 20 Q 84 25 76 28 L 48 28 Z" fill="rgba(255, 255, 255, 0.45)" />
+            <path d="M 155 16 Q 162 10 170 14 Q 178 11 184 16 L 158 20 Z" fill="rgba(255, 255, 255, 0.35)" />
+            {/* Soaring Bird */}
+            <path d="M 96 14 Q 100 10 104 14 Q 108 10 112 14" stroke="var(--color-primary)" strokeWidth="1.1" strokeLinecap="round" fill="none" opacity="0.6" />
+          </>
+        )}
+
+        {timeOfDay === 'evening' && (
+          <>
+            {/* Subtle Atmospheric Sunset Layer Blur */}
+            <circle cx="110" cy="42" r="48" fill="url(#eveningSpreadGlow)" filter="url(#atmosphericSpread)" opacity="0.8" />
+            <circle cx="110" cy="42" r="30" fill="url(#eveningSpreadGlow)" filter="url(#softRayBlur)" opacity="0.8" />
+            {/* Evening Sunset Sun Core dipping low */}
+            <circle cx="110" cy="42" r="19" fill="url(#eveningSun)" />
+            {/* Evening Birds Flying Home */}
+            <path d="M 138 20 Q 142 16 146 20 Q 150 16 154 20" stroke="var(--color-primary)" strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.8" />
+            <path d="M 152 28 Q 155 25 158 28 Q 161 25 164 28" stroke="var(--color-primary)" strokeWidth="1.1" strokeLinecap="round" fill="none" opacity="0.65" />
+            <path d="M 166 22 Q 169 19 172 22 Q 175 19 178 22" stroke="var(--color-primary)" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.5" />
+          </>
+        )}
+
+        {timeOfDay === 'night' && (
+          <>
+            {/* Spreading Lunar Atmosphere Blur */}
+            <circle cx="120" cy="25" r="42" fill="url(#nightSpreadGlow)" filter="url(#atmosphericSpread)" />
+            {/* Crescent Moon */}
+            <path 
+              d="M 115 15 A 15 15 0 0 0 128 35 A 13 13 0 1 1 115 15 Z" 
+              fill="url(#nightMoon)" 
+              filter="drop-shadow(0 0 5px rgba(255,255,255,0.45))"
+            />
+            {/* Twinkling Stars */}
+            <circle cx="48" cy="18" r="1.3" fill="#FFFFFF" opacity="0.85" className="animate-pulse" />
+            <circle cx="75" cy="28" r="1.1" fill="#FFFFFF" opacity="0.7" style={{ animationDelay: '0.4s' }} className="animate-pulse" />
+            <circle cx="150" cy="14" r="1.4" fill="#FFFFFF" opacity="0.9" style={{ animationDelay: '0.8s' }} className="animate-pulse" />
+            <circle cx="178" cy="24" r="1" fill="#FFFFFF" opacity="0.75" style={{ animationDelay: '1.2s' }} className="animate-pulse" />
+            <circle cx="196" cy="16" r="1.2" fill="#FFFFFF" opacity="0.85" style={{ animationDelay: '0.6s' }} className="animate-pulse" />
+            <circle cx="92" cy="12" r="1" fill="#FFFFFF" opacity="0.6" style={{ animationDelay: '1s' }} className="animate-pulse" />
+          </>
+        )}
+        
+        {/* Background Mountain Layer */}
+        <path d="M 0 85 L 0 58 Q 40 28 80 52 T 165 44 L 240 66 L 240 85 Z" fill="url(#mountBack)" />
+        
+        {/* Middle Mountain Layer */}
+        <path d="M 10 85 L 48 52 Q 82 28 116 54 T 195 46 L 240 72 L 240 85 Z" fill="url(#mountMid)" />
+        
+        {/* Foreground Mountain Layer with crisp peaks */}
+        <path d="M 25 85 L 68 42 L 92 58 L 126 32 L 158 62 L 186 48 L 225 78 L 240 85 Z" fill="url(#mountFront)" />
+      </svg>
+    </div>
+  );
+};
 
 /* Corner Wave Organic Blob for bottom metric cards */
 const CornerBlob: React.FC<{ className?: string }> = ({ className = '' }) => (
@@ -84,9 +216,12 @@ export const ProductivitySummary: React.FC = () => {
   const { 
     getDayCapacity, 
     openOverloadModal, 
-    activeSoundscape, 
-    isPlayingSoundscape, 
-    toggleSoundscape 
+    activeLofiStation, 
+    isPlayingLofi, 
+    toggleLofi,
+    setLofiStation,
+    lofiVolume,
+    setLofiVolume
   } = useAppStore();
   
   const capacity = getDayCapacity();
@@ -103,12 +238,7 @@ export const ProductivitySummary: React.FC = () => {
 
   const capacityPercent = Math.min(100, Math.round((capacity.totalPlannedMinutes / (capacity.totalAvailableMinutes || 480)) * 100)) || 72;
 
-  const soundscapes = [
-    { id: 'rain', label: 'Rain', icon: CloudRain },
-    { id: 'forest', label: 'Forest', icon: Trees },
-    { id: 'stream', label: 'Stream', icon: Wind },
-    { id: 'waves', label: 'Waves', icon: Waves },
-  ] as const;
+  const currentStation = LOFI_STATIONS[activeLofiStation] || LOFI_STATIONS.study;
 
   return (
     <div className="w-full min-h-[350px] bg-card rounded-[28px] p-4 sm:p-5 md:p-6 shadow-soft select-none flex flex-col justify-between gap-3 sm:gap-3.5 relative overflow-hidden transition-colors">
@@ -131,8 +261,8 @@ export const ProductivitySummary: React.FC = () => {
             </p>
           </div>
 
-          {/* Sunset Illustration - gracefully visible when space allows */}
-          <MountainSunriseIllustration className="hidden 2xl:flex flex-shrink min-w-0" />
+          {/* Dynamic Sky Illustration (Morning, Afternoon, Evening/Sunset, Night) */}
+          <DiurnalSkyIllustration className="hidden xl:flex flex-shrink min-w-0" />
         </div>
 
         {/* Right: Daily Focus Capacity Card */}
@@ -222,57 +352,125 @@ export const ProductivitySummary: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. MIDDLE ROW: Calm Soundscape Player Bar */}
-      <div className="bg-background rounded-[20px] p-2 sm:p-2.5 px-2.5 sm:px-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 transition-colors">
-        <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
-          {/* Photo Thumbnail with Centered Play Button */}
+      {/* 2. MIDDLE ROW: YouTube Lofi Focus Radio & Ambient Player Bar */}
+      <div className="bg-background rounded-[20px] p-2 sm:p-2.5 px-2.5 sm:px-3 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5 transition-colors">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+          {/* Photo Thumbnail with Centered Play Button & Equalizer */}
           <div 
-            onClick={() => toggleSoundscape()}
-            className="relative w-10 sm:w-12 md:w-14 h-8 sm:h-9 md:h-10 rounded-xl overflow-hidden shadow-xs cursor-pointer group flex-shrink-0"
+            onClick={() => toggleLofi()}
+            className="relative w-11 sm:w-12 md:w-14 h-9 sm:h-10 md:h-11 rounded-xl overflow-hidden shadow-xs cursor-pointer group flex-shrink-0"
+            title={isPlayingLofi ? 'Pause Lofi Music' : 'Play Lofi Music'}
           >
             <img 
-              src="/cyan-theme-bg.jpg" 
-              alt="Calm soundscape ambient" 
-              className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-300"
+              src={currentStation.thumbnail} 
+              alt={currentStation.label} 
+              className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-500"
             />
-            <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-xs">
-                {isPlayingSoundscape ? <Pause size={10} fill="currentColor" /> : <Play size={10} fill="currentColor" className="ml-0.5" />}
+            <div className="absolute inset-0 bg-black/35 flex items-center justify-center transition-colors group-hover:bg-black/45">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/95 text-primary flex items-center justify-center shadow-md transition-transform duration-150 group-hover:scale-105">
+                {isPlayingLofi ? (
+                  <Pause size={11} fill="currentColor" />
+                ) : (
+                  <Play size={11} fill="currentColor" className="ml-0.5" />
+                )}
               </div>
             </div>
+
+            {/* Equalizer animation when playing */}
+            {isPlayingLofi && (
+              <div className="absolute bottom-1 right-1 flex items-end gap-0.5 bg-black/60 px-1 py-0.5 rounded">
+                <span className="w-0.5 h-2 bg-tag-health animate-pulse rounded-full" />
+                <span className="w-0.5 h-3 bg-tag-health animate-pulse delay-75 rounded-full" />
+                <span className="w-0.5 h-1.5 bg-tag-health animate-pulse delay-150 rounded-full" />
+              </div>
+            )}
           </div>
 
-          {/* Soundscape Titles */}
-          <div className="min-w-0">
-            <span className="text-[12.5px] sm:text-[13px] font-semibold text-foreground block leading-tight truncate">
-              Calm Soundscape
-            </span>
+          {/* Lofi Track / Mood Information */}
+          <div className="min-w-0 flex-1 pr-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[12.5px] sm:text-[13px] font-semibold text-foreground block leading-tight truncate">
+                {currentStation.label}
+              </span>
+              {isPlayingLofi && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-tag-health-bg text-tag-health text-[9.5px] font-bold tracking-wide uppercase">
+                  Live
+                </span>
+              )}
+            </div>
             <span className="text-[10.5px] sm:text-[11px] text-mutedText font-normal leading-tight mt-0.5 block truncate">
-              {isPlayingSoundscape ? `Playing ${activeSoundscape}` : 'Relax & focus ambient'}
+              {isPlayingLofi ? currentStation.subLabel : 'Audio-only YouTube lofi stream'}
             </span>
           </div>
         </div>
 
-        {/* Soundscape Pills */}
-        <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-end ml-auto">
-          {soundscapes.map((s) => {
-            const Icon = s.icon;
-            const isSel = activeSoundscape === s.id && isPlayingSoundscape;
-            return (
-              <button
-                key={s.id}
-                onClick={() => toggleSoundscape(s.id as any)}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-[11.5px] font-medium transition-all ${
-                  isSel
-                    ? 'bg-primary-soft text-primary font-semibold'
-                    : 'bg-card text-textSecondary hover:text-foreground hover:bg-card-subtle'
-                }`}
-              >
-                <Icon size={12} className={isSel ? 'text-primary' : 'text-mutedText'} />
-                <span>{s.label}</span>
-              </button>
-            );
-          })}
+        {/* Lofi Station Switcher Pills & Volume Control */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end ml-auto flex-shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            {LOFI_STATION_LIST.map((s) => {
+              const Icon = stationIcons[s.id] || Headphones;
+              const isSel = activeLofiStation === s.id;
+              const isCurrentPlaying = isSel && isPlayingLofi;
+
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    if (activeLofiStation === s.id) {
+                      toggleLofi();
+                    } else {
+                      setLofiStation(s.id);
+                      if (!isPlayingLofi) toggleLofi(s.id);
+                    }
+                  }}
+                  title={`${s.label}: ${s.subLabel}`}
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-[11.5px] font-medium transition-all cursor-pointer ${
+                    isCurrentPlaying
+                      ? 'bg-primary text-white font-semibold shadow-xs'
+                      : isSel
+                      ? 'bg-primary-soft text-primary font-semibold'
+                      : 'bg-card text-textSecondary hover:text-foreground hover:bg-card-subtle'
+                  }`}
+                >
+                  <Icon size={12} className={isCurrentPlaying ? 'text-white' : isSel ? 'text-primary' : 'text-mutedText'} />
+                  <span>{s.label.split(' ')[0]}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Inline Volume Control */}
+          <div className="flex items-center gap-1.5 pl-1.5 sm:pl-2 border-l border-borderToken/70">
+            <button
+              onClick={() => setLofiVolume(lofiVolume === 0 ? 45 : 0)}
+              className="text-mutedText hover:text-foreground transition-colors p-1 rounded-lg cursor-pointer"
+              title={lofiVolume === 0 ? 'Unmute' : `Mute (Current: ${lofiVolume}%)`}
+              aria-label="Toggle mute"
+            >
+              {lofiVolume === 0 ? (
+                <VolumeX size={14} className="text-tag-important" />
+              ) : lofiVolume < 50 ? (
+                <Volume1 size={14} />
+              ) : (
+                <Volume2 size={14} />
+              )}
+            </button>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={lofiVolume}
+              onChange={(e) => setLofiVolume(Number(e.target.value))}
+              className="w-14 sm:w-16 h-1.5 rounded-full appearance-none cursor-pointer accent-primary"
+              style={{
+                background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${lofiVolume}%, var(--color-primary-soft) ${lofiVolume}%, var(--color-primary-soft) 100%)`
+              }}
+              title={`Music Volume: ${lofiVolume}%`}
+            />
+            <span className="text-[10px] text-mutedText font-mono w-5 text-right select-none hidden md:inline-block">
+              {lofiVolume}%
+            </span>
+          </div>
         </div>
       </div>
 

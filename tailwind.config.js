@@ -40,8 +40,9 @@ export default {
         }
       },
       fontFamily: {
-        serif: ['var(--font-heading)', '"Gilda Display"', 'serif'],
-        sans: ['var(--font-sans)', 'Inter', '"DM Sans"', '"Plus Jakarta Sans"', 'sans-serif'],
+        serif: ['"Gilda Display"', 'serif'],
+        sans: ['"DM Sans"', 'Inter', '"Plus Jakarta Sans"', 'sans-serif'],
+        heading: ['"Gilda Display"', 'serif'],
         mono: ['Inter', 'sans-serif'],
       },
       borderRadius: {

@@ -83,6 +83,17 @@ export interface HistoryLog {
 
 export type AppTheme = 'green' | 'teal' | 'blue' | 'monochrome' | 'dark';
 
+export type LofiStationId = 'study' | 'work' | 'coffee';
+
+export interface LofiStation {
+  id: LofiStationId;
+  label: string;
+  subLabel: string;
+  youtubeId: string;
+  thumbnail: string;
+  mood: string;
+}
+
 export interface AppSettings {
   userName: string;
   wakeTime: string; // e.g. "07:00"

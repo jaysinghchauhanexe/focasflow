@@ -13,7 +13,8 @@ import {
   TaskStatus,
   Priority,
   Category,
-  AppTheme
+  AppTheme,
+  LofiStationId
 } from '../types';
 import { calculateDayCapacity, buildDaySchedule } from '../engine/scheduler';
 
@@ -39,13 +40,24 @@ interface AppState {
   lastAiResult: AiResponsePayload | null;
   isOverloadModalOpen: boolean;
   isBreathingModalOpen: boolean;
+  isSidebarCollapsed: boolean;
+  toggleSidebar: () => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
   activeFilter: 'all' | 'important' | 'regular';
   searchQuery: string;
 
-  // Wellness & Calm States
+  // Wellness & Music States
   currentMood: 'stressed' | 'anxious' | 'okay' | 'calm' | 'great';
-  activeSoundscape: 'rain' | 'stream' | 'waves' | 'forest';
+  activeLofiStation: LofiStationId;
+  isPlayingLofi: boolean;
+  lofiVolume: number; // 0 - 100
+  setLofiStation: (station: LofiStationId) => void;
+  toggleLofi: (station?: LofiStationId) => void;
+  setLofiVolume: (volume: number) => void;
+  // Aliases for backwards compatibility
+  activeSoundscape: string;
   isPlayingSoundscape: boolean;
+  toggleSoundscape: (soundscape?: any) => void;
 
   // Onboarding
   isOnboardingOpen: boolean;
@@ -72,7 +84,6 @@ interface AppState {
   setMood: (mood: 'stressed' | 'anxious' | 'okay' | 'calm' | 'great') => void;
   openBreathingModal: () => void;
   closeBreathingModal: () => void;
-  toggleSoundscape: (soundscape?: 'rain' | 'stream' | 'waves' | 'forest') => void;
 
   // Task Actions
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
@@ -462,10 +473,23 @@ export const useAppStore = create<AppState>((set, get) => ({
   lastAiResult: null,
   isOverloadModalOpen: false,
   isBreathingModalOpen: false,
+  isSidebarCollapsed: loadPersisted('sidebar_collapsed', false),
+  toggleSidebar: () => set((state) => {
+    const next = !state.isSidebarCollapsed;
+    savePersisted('sidebar_collapsed', next);
+    return { isSidebarCollapsed: next };
+  }),
+  setSidebarCollapsed: (collapsed: boolean) => {
+    savePersisted('sidebar_collapsed', collapsed);
+    set({ isSidebarCollapsed: collapsed });
+  },
   activeFilter: 'all',
   searchQuery: '',
   currentMood: loadPersisted('mood', 'calm' as const),
-  activeSoundscape: 'rain',
+  activeLofiStation: loadPersisted<LofiStationId>('lofi_station', 'study'),
+  isPlayingLofi: false,
+  lofiVolume: loadPersisted<number>('lofi_volume', 45),
+  activeSoundscape: 'study',
   isPlayingSoundscape: false,
 
   setCurrentTab: (tab) => set({ currentTab: tab }),
@@ -478,10 +502,36 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   openBreathingModal: () => set({ isBreathingModalOpen: true }),
   closeBreathingModal: () => set({ isBreathingModalOpen: false }),
+  setLofiStation: (station) => {
+    savePersisted('lofi_station', station);
+    set({ activeLofiStation: station, activeSoundscape: station });
+  },
+  toggleLofi: (station) => set((state) => {
+    const nextStation = station || state.activeLofiStation;
+    savePersisted('lofi_station', nextStation);
+    const nextPlaying = station 
+      ? (state.activeLofiStation === station ? !state.isPlayingLofi : true)
+      : !state.isPlayingLofi;
+    return { 
+      activeLofiStation: nextStation, 
+      isPlayingLofi: nextPlaying,
+      activeSoundscape: nextStation,
+      isPlayingSoundscape: nextPlaying
+    };
+  }),
+  setLofiVolume: (volume) => {
+    savePersisted('lofi_volume', volume);
+    set({ lofiVolume: volume });
+  },
   toggleSoundscape: (soundscape) => set((state) => {
-    const nextSoundscape = soundscape || state.activeSoundscape;
-    const nextPlaying = soundscape ? (state.activeSoundscape === soundscape ? !state.isPlayingSoundscape : true) : !state.isPlayingSoundscape;
-    return { activeSoundscape: nextSoundscape, isPlayingSoundscape: nextPlaying };
+    const nextStation = (soundscape as LofiStationId) || state.activeLofiStation;
+    const nextPlaying = soundscape ? (state.activeLofiStation === nextStation ? !state.isPlayingLofi : true) : !state.isPlayingLofi;
+    return { 
+      activeLofiStation: nextStation, 
+      isPlayingLofi: nextPlaying,
+      activeSoundscape: nextStation,
+      isPlayingSoundscape: nextPlaying 
+    };
   }),
 
   addTask: (taskData) => {

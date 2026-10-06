@@ -16,6 +16,7 @@ import { AiResultModal } from './components/AiResultModal';
 import { OverloadModal } from './components/OverloadModal';
 import { BreathingModal } from './components/BreathingModal';
 import { OnboardingModal } from './components/OnboardingModal';
+import { LofiBackgroundPlayer } from './components/LofiBackgroundPlayer';
 
 export const App: React.FC = () => {
   const { currentTab, replanDay, settings } = useAppStore();
@@ -77,6 +78,9 @@ export const App: React.FC = () => {
       <OverloadModal />
       <BreathingModal />
       <OnboardingModal />
+
+      {/* Persistent Background Lofi Player */}
+      <LofiBackgroundPlayer />
     </div>
   );
 };
