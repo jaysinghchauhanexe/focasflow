@@ -50,16 +50,6 @@ export const CurrentTaskBanner: React.FC = () => {
 
   const currentTask = (activeFocusTaskId ? activeTasks.find(t => t.id === activeFocusTaskId) : null) || activeTasks[0];
 
-  useEffect(() => {
-    let interval: any = null;
-    if (isFocusTimerRunning && currentTask) {
-      interval = setInterval(() => {
-        setFocusElapsedSeconds((prev) => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isFocusTimerRunning, currentTask?.id]);
-
   if (!currentTask) {
     return (
       <div className="w-full bg-card rounded-[28px] p-6 select-none flex items-center justify-between transition-colors">
@@ -81,7 +71,8 @@ export const CurrentTaskBanner: React.FC = () => {
   }
 
   const durationSeconds = (currentTask.duration || 45) * 60;
-  const progressPercent = Math.min(100, Math.round((focusElapsedSeconds / durationSeconds) * 100));
+  const isOvertime = focusElapsedSeconds > durationSeconds;
+  const progressPercent = isOvertime ? 100 : Math.min(100, Math.round((focusElapsedSeconds / durationSeconds) * 100));
   const remainingMins = Math.max(0, Math.ceil((durationSeconds - focusElapsedSeconds) / 60));
 
   const formatElapsed = (sec: number) => {
@@ -100,16 +91,22 @@ export const CurrentTaskBanner: React.FC = () => {
       {/* Left Block: Squircle Icon + Text + Progress */}
       <div className="flex items-center gap-4 sm:gap-5 flex-1 min-w-0">
         {/* Rounded Squircle Icon Box */}
-        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[18px] bg-primary-soft flex items-center justify-center text-primary flex-shrink-0 transition-colors">
-          <TaskCalendarIcon size={26} className="text-primary" />
+        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-[18px] flex items-center justify-center flex-shrink-0 transition-colors ${
+          isOvertime ? 'bg-tag-importantBg text-tag-important' : 'bg-primary-soft text-primary'
+        }`}>
+          <TaskCalendarIcon size={26} className={isOvertime ? 'text-tag-important' : 'text-primary'} />
         </div>
 
         {/* Text & Inline/Under Progress */}
         <div className="flex-1 min-w-0">
           {/* Header Row: WHAT'S NEXT + Time */}
           <div className="flex items-center gap-2.5 mb-0.5">
-            <span className="px-2.5 py-0.5 rounded-lg bg-primary-soft text-primary text-[10.5px] sm:text-[11px] font-medium tracking-wide uppercase">
-              {isFocusTimerRunning ? 'FOCUSING NOW' : "WHAT'S NEXT"}
+            <span className={`px-2.5 py-0.5 rounded-lg text-[10.5px] sm:text-[11px] font-medium tracking-wide uppercase ${
+              isOvertime
+                ? 'bg-tag-importantBg text-tag-important font-semibold'
+                : 'bg-primary-soft text-primary'
+            }`}>
+              {isOvertime ? 'OVERTIME LIMIT' : isFocusTimerRunning ? 'FOCUSING NOW' : "WHAT'S NEXT"}
             </span>
             <span className="text-[12px] sm:text-[12.5px] text-mutedText font-normal">
               {timeString}
@@ -124,13 +121,23 @@ export const CurrentTaskBanner: React.FC = () => {
 
             {/* Clean Progress Pill Track */}
             <div className="flex items-center gap-3 w-full sm:w-[180px] md:w-[220px] flex-shrink-0">
-              <div className="flex-1 h-2 sm:h-2.5 bg-primary-soft rounded-full overflow-hidden">
+              <div className={`flex-1 h-2 sm:h-2.5 rounded-full overflow-hidden ${
+                isOvertime ? 'bg-tag-important/20' : 'bg-primary-soft'
+              }`}>
                 <div
-                  className="h-full bg-primary transition-all duration-300 rounded-full"
+                  className={`h-full transition-all duration-300 rounded-full ${
+                    isOvertime ? 'bg-tag-important' : 'bg-primary'
+                  }`}
                   style={{ width: `${Math.max(6, progressPercent)}%` }}
                 />
               </div>
-              <span className="text-[11.5px] sm:text-[12px] font-medium text-textSecondary font-sans whitespace-nowrap min-w-[45px] text-right">
+              <span className={`text-[11.5px] sm:text-[12px] font-mono tabular-nums whitespace-nowrap min-w-[45px] text-right ${
+                isOvertime
+                  ? 'text-tag-important font-bold'
+                  : isFocusTimerRunning
+                    ? 'text-primary font-semibold'
+                    : 'text-textSecondary font-medium'
+              }`}>
                 {isFocusTimerRunning ? formatElapsed(focusElapsedSeconds) : `${remainingMins}m left`}
               </span>
             </div>

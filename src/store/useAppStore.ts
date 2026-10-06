@@ -50,6 +50,7 @@ interface AppState {
   activeFocusTaskId: string | null;
   isFocusTimerRunning: boolean;
   focusElapsedSeconds: number;
+  taskElapsedSeconds: Record<string, number>;
   startFocusTask: (taskId: string) => void;
   pauseFocusTask: () => void;
   toggleFocusTask: (taskId: string) => void;
@@ -499,22 +500,35 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeFocusTaskId: null,
   isFocusTimerRunning: false,
   focusElapsedSeconds: 0,
+  taskElapsedSeconds: loadPersisted<Record<string, number>>('task_elapsed_seconds', {}),
   startFocusTask: (taskId) => set((state) => {
+    const elapsed = state.taskElapsedSeconds[taskId] || 0;
     if (state.activeFocusTaskId === taskId) {
       return { isFocusTimerRunning: true };
     }
-    return { activeFocusTaskId: taskId, isFocusTimerRunning: true, focusElapsedSeconds: 0 };
+    return { activeFocusTaskId: taskId, isFocusTimerRunning: true, focusElapsedSeconds: elapsed };
   }),
   pauseFocusTask: () => set({ isFocusTimerRunning: false }),
   toggleFocusTask: (taskId) => set((state) => {
     if (state.activeFocusTaskId === taskId) {
       return { isFocusTimerRunning: !state.isFocusTimerRunning };
     }
-    return { activeFocusTaskId: taskId, isFocusTimerRunning: true, focusElapsedSeconds: 0 };
+    const elapsed = state.taskElapsedSeconds[taskId] || 0;
+    return { activeFocusTaskId: taskId, isFocusTimerRunning: true, focusElapsedSeconds: elapsed };
   }),
-  setFocusElapsedSeconds: (sec) => set((state) => ({
-    focusElapsedSeconds: typeof sec === 'function' ? sec(state.focusElapsedSeconds) : sec,
-  })),
+  setFocusElapsedSeconds: (sec) => set((state) => {
+    const nextSec = typeof sec === 'function' ? sec(state.focusElapsedSeconds) : sec;
+    const nextMap = state.activeFocusTaskId
+      ? { ...state.taskElapsedSeconds, [state.activeFocusTaskId]: nextSec }
+      : state.taskElapsedSeconds;
+    if (state.activeFocusTaskId) {
+      savePersisted('task_elapsed_seconds', nextMap);
+    }
+    return {
+      focusElapsedSeconds: nextSec,
+      taskElapsedSeconds: nextMap,
+    };
+  }),
 
   currentMood: loadPersisted('mood', 'calm' as const),
   activeLofiStation: loadPersisted<LofiStationId>('lofi_station', 'study'),

@@ -20,6 +20,8 @@ export const TodayTasksCard: React.FC = () => {
     setCurrentTab,
     activeFocusTaskId,
     isFocusTimerRunning,
+    focusElapsedSeconds,
+    taskElapsedSeconds,
     toggleFocusTask
   } = useAppStore();
 
@@ -44,6 +46,12 @@ export const TodayTasksCard: React.FC = () => {
     };
   }, [activeMenuId]);
 
+  const formatTimer = (totalSeconds: number) => {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
+
   const dayTasks = tasks.filter(
     (t) => t.scheduledDate === selectedDate || (!t.scheduledDate && t.status !== 'completed' && t.status !== 'skipped')
   );
@@ -67,9 +75,11 @@ export const TodayTasksCard: React.FC = () => {
   };
 
   const getPriorityDot = (t: Task) => {
-    if (t.priority === 'critical' || t.priority === 'important') return 'bg-tag-important';
-    if (t.priority === 'flexible') return 'bg-tag-learning';
-    return 'bg-tag-health';
+    if (t.status === 'completed') return 'bg-tag-health';
+    if (t.priority === 'critical') return 'bg-[#E5484D]';
+    if (t.priority === 'important') return 'bg-[#F97316]';
+    if (t.priority === 'flexible') return 'bg-[#D97706]';
+    return 'bg-[#64748B]';
   };
 
   return (
@@ -130,6 +140,12 @@ export const TodayTasksCard: React.FC = () => {
                 ? `${formatTime12h(task.scheduledStart)} - ${formatTime12h(task.scheduledEnd)}`
                 : `${task.duration}m estimated`;
 
+              const isThisTaskActive = activeFocusTaskId === task.id;
+              const isThisTaskRunning = isFocusTimerRunning && isThisTaskActive;
+              const elapsedSeconds = isThisTaskActive ? focusElapsedSeconds : (taskElapsedSeconds[task.id] || 0);
+              const estimatedSeconds = (task.duration || 45) * 60;
+              const isOvertime = elapsedSeconds > estimatedSeconds;
+
               return (
                 <div
                   key={task.id}
@@ -139,11 +155,11 @@ export const TodayTasksCard: React.FC = () => {
                   }`}
                 >
                   {/* Left: Checkbox + Priority Dot + Title */}
-                  <div className={`flex items-center gap-3 min-w-0 pr-4 transition-opacity ${isCompleted ? 'opacity-50' : ''}`}>
+                  <div className="flex items-center gap-3 min-w-0 pr-4">
                     <button
                       onClick={() => toggleTaskStatus(task.id)}
                       className={`w-[22px] h-[22px] rounded-[8px] flex items-center justify-center transition-spring cursor-pointer active:scale-75 hover:scale-115 ${isCompleted
-                          ? 'bg-primary text-white shadow-xs'
+                          ? 'bg-tag-health text-white shadow-xs'
                           : 'border border-borderToken hover:border-primary bg-card'
                         }`}
                     >
@@ -155,9 +171,9 @@ export const TodayTasksCard: React.FC = () => {
                     <span
                       onClick={() => openTaskModal(task)}
                       className={`text-[14px] font-sans truncate cursor-pointer transition-colors ${isCompleted
-                          ? 'line-through text-mutedText'
+                          ? 'line-through text-mutedText opacity-60'
                           : isSkipped
-                            ? 'italic line-through text-mutedText'
+                            ? 'italic line-through text-mutedText opacity-60'
                             : 'text-foreground hover:text-primary font-medium'
                         }`}
                     >
@@ -165,8 +181,8 @@ export const TodayTasksCard: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Middle & Right: Category Badge + Time + Actions */}
-                  <div className="flex items-center gap-4 flex-shrink-0">
+                  {/* Middle & Right: Category Badge + Time + Live Timer + Actions */}
+                  <div className="flex items-center gap-3 sm:gap-3.5 flex-shrink-0">
                     <span
                       className={`px-3 py-1 rounded-xl text-[11.5px] font-medium transition-all group-hover:scale-105 duration-200 ${
                         isCompleted ? 'opacity-50' : ''
@@ -181,20 +197,45 @@ export const TodayTasksCard: React.FC = () => {
                       {timeDisplay}
                     </span>
 
+                    {/* Live Task Timer (between Time and Play button) */}
+                    {!isCompleted && (
+                      <div
+                        className={`flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-mono text-[11.5px] tracking-tight tabular-nums transition-all select-none ${
+                          isOvertime
+                            ? 'bg-tag-importantBg text-tag-important font-bold border border-tag-important/30 shadow-xs animate-pulse'
+                            : isThisTaskRunning
+                              ? 'bg-primary-soft text-primary font-semibold border border-primary/25'
+                              : elapsedSeconds > 0
+                                ? 'bg-card-muted text-foreground font-medium border border-borderToken'
+                                : 'bg-card-subtle text-mutedText font-normal border border-borderToken/40'
+                        }`}
+                        title={
+                          isOvertime
+                            ? `Overtime: estimated ${task.duration || 45}m, current time ${formatTimer(elapsedSeconds)}`
+                            : isThisTaskRunning
+                              ? 'Task timer is running'
+                              : 'Task timer'
+                        }
+                      >
+                        <Clock size={11} className={`flex-shrink-0 ${isOvertime ? 'text-tag-important' : isThisTaskRunning ? 'text-primary' : 'text-mutedText'}`} />
+                        <span>{formatTimer(elapsedSeconds)}</span>
+                      </div>
+                    )}
+
                     {!isCompleted ? (
                       <button
                         onClick={() => toggleFocusTask(task.id)}
                         className="p-1 transition-spring hover:scale-125 active:scale-90 cursor-pointer text-mutedText hover:text-primary"
                         title={
-                          isFocusTimerRunning && (activeFocusTaskId === task.id || (!activeFocusTaskId && displayedTasks[0]?.id === task.id))
+                          isThisTaskRunning
                             ? 'Pause focus timer'
                             : 'Start focus timer'
                         }
                       >
-                        {isFocusTimerRunning && (activeFocusTaskId === task.id || (!activeFocusTaskId && displayedTasks[0]?.id === task.id)) ? (
-                          <Pause size={14} className="text-primary fill-primary animate-pulse" />
+                        {isThisTaskRunning ? (
+                          <Pause size={15} className="text-primary fill-primary animate-pulse" />
                         ) : (
-                          <Play size={14} fill="currentColor" className="text-mutedText hover:text-primary" />
+                          <Play size={15} fill="currentColor" className="text-mutedText hover:text-primary" />
                         )}
                       </button>
                     ) : (

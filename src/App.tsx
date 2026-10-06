@@ -19,12 +19,23 @@ import { OnboardingModal } from './components/OnboardingModal';
 import { LofiBackgroundPlayer } from './components/LofiBackgroundPlayer';
 
 export const App: React.FC = () => {
-  const { currentTab, replanDay, settings } = useAppStore();
+  const { currentTab, replanDay, settings, isFocusTimerRunning, setFocusElapsedSeconds } = useAppStore();
 
   useEffect(() => {
     // Initial calculation of daily capacity and schedule
     replanDay();
   }, []);
+
+  // Global focus timer ticker
+  useEffect(() => {
+    let interval: any = null;
+    if (isFocusTimerRunning) {
+      interval = setInterval(() => {
+        setFocusElapsedSeconds((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isFocusTimerRunning, setFocusElapsedSeconds]);
 
   useEffect(() => {
     applyTheme(settings.theme || 'green');
