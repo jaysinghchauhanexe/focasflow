@@ -10,7 +10,7 @@ export const ScheduleView: React.FC = () => {
   const hoursList = Array.from({ length: 17 }, (_, i) => i + 7); // 7:00 AM to 11:00 PM
 
   return (
-    <div className="space-y-5 animate-fade-in pb-8 select-none max-w-[1600px] mx-auto">
+    <div className="space-y-5 animate-fade-in pb-12 sm:pb-16 select-none max-w-[1600px] mx-auto">
       <div className="bg-card rounded-[28px] p-6 sm:p-7 flex items-center justify-between transition-colors">
         <div className="flex items-center gap-4">
           <DoodleCalendar size={58} className="flex-shrink-0" />

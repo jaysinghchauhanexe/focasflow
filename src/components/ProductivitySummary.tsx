@@ -46,14 +46,12 @@ export const ProductivitySummary: React.FC = () => {
         <div className="flex-shrink-0">
           <div className="flex items-baseline leading-none">
             <span
-              className="text-foreground tracking-tight text-[44px] sm:text-[52px] md:text-[60px] font-medium"
-              style={{ fontFamily: "'Lora', Georgia, serif" }}
+              className="text-foreground tracking-tight text-[44px] sm:text-[52px] md:text-[60px] font-medium font-serif"
             >
               {remainingCount}
             </span>
             <span
-              className="text-[18px] sm:text-[22px] font-light text-primary ml-1.5"
-              style={{ fontFamily: "'Lora', Georgia, serif" }}
+              className="text-[18px] sm:text-[22px] font-light text-primary ml-1.5 font-serif"
             >
               left
             </span>
@@ -155,8 +153,7 @@ export const ProductivitySummary: React.FC = () => {
         <div className="bg-card rounded-[16px] py-3.5 px-2 text-center flex flex-col items-center justify-center transition-colors">
           <div className="flex items-center justify-center leading-none">
             <span
-              className="text-foreground text-[26px] sm:text-[30px] font-medium"
-              style={{ fontFamily: "'Lora', Georgia, serif" }}
+              className="text-foreground text-[26px] sm:text-[30px] font-medium font-serif"
             >
               {importantCount}
             </span>
@@ -171,8 +168,7 @@ export const ProductivitySummary: React.FC = () => {
         <div className="bg-card rounded-[16px] py-3.5 px-2 text-center flex flex-col items-center justify-center transition-colors">
           <div className="flex items-center justify-center leading-none">
             <span
-              className="text-foreground text-[26px] sm:text-[30px] font-medium"
-              style={{ fontFamily: "'Lora', Georgia, serif" }}
+              className="text-foreground text-[26px] sm:text-[30px] font-medium font-serif"
             >
               {regularCount}
             </span>
@@ -187,8 +183,7 @@ export const ProductivitySummary: React.FC = () => {
         <div className="bg-card rounded-[16px] py-3.5 px-2 text-center flex flex-col items-center justify-center transition-colors">
           <div className="flex items-center justify-center leading-none">
             <span
-              className="text-foreground text-[26px] sm:text-[30px] font-medium"
-              style={{ fontFamily: "'Lora', Georgia, serif" }}
+              className="text-foreground text-[26px] sm:text-[30px] font-medium font-serif"
             >
               {completedCount}
             </span>

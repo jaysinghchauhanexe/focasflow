@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useAppStore, applyTheme } from './store/useAppStore';
+import { useAppStore, applyTheme, applyFont } from './store/useAppStore';
 import { Sidebar } from './components/Sidebar';
 import { TodayView } from './views/TodayView';
 import { TasksView } from './views/TasksView';
@@ -27,6 +27,10 @@ export const App: React.FC = () => {
   useEffect(() => {
     applyTheme(settings.theme || 'green');
   }, [settings.theme]);
+
+  useEffect(() => {
+    applyFont(settings.fontHeading || 'Newsreader');
+  }, [settings.fontHeading]);
 
   const renderActiveView = () => {
     switch (currentTab) {

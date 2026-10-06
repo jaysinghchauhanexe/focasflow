@@ -39,7 +39,7 @@ export const TasksView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-5 animate-fade-in pb-8 select-none max-w-[1600px] mx-auto">
+    <div className="space-y-5 animate-fade-in pb-12 sm:pb-16 select-none max-w-[1600px] mx-auto">
       {/* Header with Search and New Task */}
       <div className="bg-card rounded-[28px] p-6 sm:p-7 flex flex-wrap items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-4">

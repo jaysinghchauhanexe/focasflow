@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useAppStore, applyTheme } from '../store/useAppStore';
+import { useAppStore, applyTheme, applyFont } from '../store/useAppStore';
 import { AppTheme } from '../types';
-import { User, Clock, Sparkles, Check, Palette, Moon, Sun, Monitor } from 'lucide-react';
+import { User, Clock, Sparkles, Check, Palette, Type } from 'lucide-react';
 
 export const SettingsView: React.FC = () => {
   const { settings, updateSettings } = useAppStore();
 
   const [theme, setTheme] = useState<AppTheme>(settings.theme || 'green');
+  const [fontHeading, setFontHeading] = useState(settings.fontHeading || 'Newsreader');
   const [userName, setUserName] = useState(settings.userName);
   const [wakeTime, setWakeTime] = useState(settings.wakeTime);
   const [sleepTime, setSleepTime] = useState(settings.sleepTime);
@@ -21,7 +22,10 @@ export const SettingsView: React.FC = () => {
     if (settings.theme) {
       setTheme(settings.theme);
     }
-  }, [settings.theme]);
+    if (settings.fontHeading) {
+      setFontHeading(settings.fontHeading);
+    }
+  }, [settings.theme, settings.fontHeading]);
 
   const handleSelectTheme = (selectedTheme: AppTheme) => {
     setTheme(selectedTheme);
@@ -29,11 +33,19 @@ export const SettingsView: React.FC = () => {
     updateSettings({ theme: selectedTheme });
   };
 
+  const handleSelectFont = (fontName: string) => {
+    setFontHeading(fontName);
+    applyFont(fontName);
+    updateSettings({ fontHeading: fontName });
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     applyTheme(theme);
+    applyFont(fontHeading);
     updateSettings({
       theme,
+      fontHeading,
       userName,
       wakeTime,
       sleepTime,
@@ -95,6 +107,27 @@ export const SettingsView: React.FC = () => {
     },
   ];
 
+  const fontOptions = [
+    {
+      id: 'Gilda Display',
+      name: 'Gilda Display',
+      category: 'Serif',
+      family: "'Gilda Display', serif",
+      tag: 'Serif Option · Serene & Classical',
+      previewText: 'Peaceful Focus & Flow',
+      desc: 'Graceful classical serif with refined proportions for a calm, editorial feel.',
+    },
+    {
+      id: 'DM Sans',
+      name: 'DM Sans',
+      category: 'Sans-Serif',
+      family: "'DM Sans', sans-serif",
+      tag: 'Sans-Serif Option · Comfy & Modern',
+      previewText: 'Peaceful Focus & Flow',
+      desc: 'Friendly, modern geometric sans designed for comfortable daily reading.',
+    },
+  ];
+
   const models = [
     { id: 'anthropic/claude-3.5-haiku', label: 'Claude 3.5 Haiku (Fast & Accurate)' },
     { id: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash (Low latency)' },
@@ -103,18 +136,79 @@ export const SettingsView: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-5 animate-fade-in pb-10 select-none max-w-3xl mx-auto">
+    <div className="space-y-5 animate-fade-in pb-14 sm:pb-16 select-none max-w-3xl mx-auto">
       {/* Header */}
       <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft transition-colors">
         <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
           Application Preferences & Aesthetics
         </h2>
         <p className="text-[13px] text-mutedText mt-0.5">
-          Customize themes, schedule boundaries, sleep constraints, and AI assistance.
+          Customize typography, color palettes, schedule boundaries, sleep constraints, and AI assistance.
         </p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-5">
+        {/* Typography Studio: Font Tester */}
+        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-4 transition-colors">
+          <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
+            <Type size={18} className="text-primary" />
+            <div>
+              <h3 className="text-[17px] font-serif font-semibold text-foreground">
+                Heading & Title Typography
+              </h3>
+              <p className="text-[12px] text-mutedText">
+                Choose between serene classical serif (Gilda Display) or clean comfy modern sans-serif (DM Sans).
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            {fontOptions.map((f) => {
+              const isSelected = fontHeading === f.id;
+              return (
+                <div
+                  key={f.id}
+                  onClick={() => handleSelectFont(f.id)}
+                  className={`p-4 rounded-2xl cursor-pointer transition-all duration-150 flex flex-col justify-between ${
+                    isSelected
+                      ? 'bg-primary-soft ring-2 ring-primary/40 shadow-xs'
+                      : 'bg-card-subtle hover:bg-card-muted'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1 mb-2">
+                      <span className="text-[11px] font-bold text-primary tracking-wide">
+                        {f.tag}
+                      </span>
+                      {isSelected && (
+                        <span className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0">
+                          <Check size={11} strokeWidth={3} />
+                        </span>
+                      )}
+                    </div>
+
+                    <p 
+                      className="text-[20px] text-foreground font-medium mb-1 leading-snug"
+                      style={{ fontFamily: f.family }}
+                    >
+                      {f.previewText}
+                    </p>
+                  </div>
+
+                  <div className="pt-2.5 border-t border-borderToken/50 mt-3">
+                    <span className="text-[13px] font-semibold text-foreground block">
+                      {f.name} ({f.category})
+                    </span>
+                    <p className="text-[11.5px] text-mutedText mt-0.5 leading-snug">
+                      {f.desc}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Appearance & Color Themes */}
         <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-4 transition-colors">
           <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
@@ -138,7 +232,7 @@ export const SettingsView: React.FC = () => {
                   onClick={() => handleSelectTheme(t.id)}
                   className={`p-3.5 rounded-2xl cursor-pointer transition-all duration-150 flex flex-col justify-between ${
                     isSelected
-                      ? 'ring-2 ring-primary/40 bg-card shadow-sm'
+                      ? 'bg-primary-soft ring-2 ring-primary/40 shadow-xs'
                       : 'bg-card-subtle hover:bg-card-muted'
                   }`}
                 >

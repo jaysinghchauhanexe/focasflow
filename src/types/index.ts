@@ -94,6 +94,7 @@ export interface AppSettings {
   openRouterModel: string;
   autoReschedule: boolean;
   theme: AppTheme;
+  fontHeading?: string;
 }
 
 export interface AiOperation {

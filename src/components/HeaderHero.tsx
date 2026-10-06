@@ -195,7 +195,7 @@ export const HeaderHero: React.FC = () => {
               transform={`rotate(${p.angle} ${p.lx} ${p.ly})`}
               fill="#FFFFFF"
               opacity={i === today ? 1 : 0.75}
-              style={{ font: "500 18px 'Lora', Georgia, serif" }}
+              style={{ font: "500 18px var(--font-heading, 'Newsreader', serif)" }}
             >
               {p.label}
             </text>
@@ -211,8 +211,7 @@ export const HeaderHero: React.FC = () => {
       <div className="relative z-10 p-6 sm:p-8 flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0 pr-2">
           <h2
-            className="m-0 text-white tracking-tight leading-tight text-[26px] sm:text-[30px] md:text-[34px] font-medium"
-            style={{ fontFamily: "'Lora', Georgia, serif" }}
+            className="m-0 text-white tracking-tight leading-tight text-[26px] sm:text-[30px] md:text-[34px] font-medium font-serif"
           >
             {greeting}, {name}
           </h2>
@@ -225,8 +224,7 @@ export const HeaderHero: React.FC = () => {
         {/* Clean Date Display without box */}
         <div className="text-right flex-shrink-0">
           <div
-            className="text-white leading-none text-[42px] sm:text-[50px] md:text-[58px]"
-            style={{ fontFamily: "'Lora', Georgia, serif" }}
+            className="text-white leading-none text-[42px] sm:text-[50px] md:text-[58px] font-serif"
           >
             {day}
             <sup className="text-[17px] sm:text-[19px] md:text-[22px] align-top relative -top-[4px] ml-[2px] font-light">

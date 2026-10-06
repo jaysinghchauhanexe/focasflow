@@ -228,10 +228,14 @@ body[data-theme="dark"],
   text-shadow: none !important;
 }
 
+:root {
+  --font-heading: 'Gilda Display', serif;
+}
+
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
-  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'DM Sans', 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -239,7 +243,7 @@ body {
 }
 
 .font-serif {
-  font-family: 'Playfair Display', 'Lora', Georgia, serif;
+  font-family: var(--font-heading, 'Gilda Display', serif);
 }
 
 /* Category Badges via CSS Variables */

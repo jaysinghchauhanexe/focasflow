@@ -337,6 +337,7 @@ const initialSettings: AppSettings = {
   openRouterModel: 'anthropic/claude-3.5-haiku',
   autoReschedule: true,
   theme: 'green',
+  fontHeading: 'Gilda Display',
 };
 
 export const applyTheme = (theme: string) => {
@@ -350,6 +351,28 @@ export const applyTheme = (theme: string) => {
       const root = document.getElementById('root');
       if (root) {
         root.setAttribute('data-theme', safeTheme);
+      }
+    }
+  } catch (e) {
+    // SSR safe
+  }
+};
+
+export const applyFont = (fontName: string) => {
+  const safeFont = fontName || 'Gilda Display';
+  try {
+    if (typeof document !== 'undefined') {
+      const isSans = safeFont === 'DM Sans';
+      const fontValue = isSans
+        ? `'DM Sans', 'Plus Jakarta Sans', sans-serif`
+        : `'Gilda Display', serif`;
+      document.documentElement.style.setProperty('--font-heading', fontValue);
+      if (document.body) {
+        document.body.style.setProperty('--font-heading', fontValue);
+      }
+      const root = document.getElementById('root');
+      if (root) {
+        root.style.setProperty('--font-heading', fontValue);
       }
     }
   } catch (e) {
@@ -381,6 +404,7 @@ const loadedSettings: AppSettings = {
   ...rawLoadedSettings,
 };
 applyTheme(loadedSettings.theme || 'green');
+applyFont(loadedSettings.fontHeading || 'Gilda Display');
 
 export const useAppStore = create<AppState>((set, get) => ({
   currentTab: 'today',
@@ -631,6 +655,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateSettings: (newSettings) => {
     if (newSettings.theme) {
       applyTheme(newSettings.theme);
+    }
+    if (newSettings.fontHeading) {
+      applyFont(newSettings.fontHeading);
     }
     set((state) => {
       const updated = { ...state.settings, ...newSettings };

@@ -8,7 +8,7 @@ import { AiCommandBar } from '../components/AiCommandBar';
 
 export const TodayView: React.FC = () => {
   return (
-    <div className="space-y-6 animate-fade-in pb-4 w-full max-w-[1600px] mx-auto">
+    <div className="space-y-6 animate-fade-in pb-12 sm:pb-16 w-full max-w-[1600px] mx-auto">
       {/* Top Row: Header Hero & Productivity Summary */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch w-full">
         <div className="flex w-full">

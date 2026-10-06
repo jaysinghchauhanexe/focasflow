@@ -40,8 +40,8 @@ export default {
         }
       },
       fontFamily: {
-        serif: ['"Playfair Display"', 'Lora', 'Georgia', 'serif'],
-        sans: ['"Plus Jakarta Sans"', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        serif: ['var(--font-heading)', '"Gilda Display"', 'serif'],
+        sans: ['var(--font-sans)', '"DM Sans"', '"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
       },
       borderRadius: {
         'card': '24px',
