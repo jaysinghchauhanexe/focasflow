@@ -33,7 +33,7 @@ export const CommitmentModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none">
-      <div className="bg-card w-full max-w-md rounded-[28px] shadow-float p-6 sm:p-7 border border-borderToken transition-colors">
+      <div className="bg-card w-full max-w-md rounded-[28px] shadow-float p-6 sm:p-7 transition-colors">
         <div className="flex items-center justify-between pb-4 border-b border-borderToken">
           <div className="flex items-center gap-2">
             <Calendar size={18} className="text-primary" />

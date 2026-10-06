@@ -3,6 +3,7 @@ import { useAppStore } from '../store/useAppStore';
 import { Task, Category, Priority } from '../types';
 import { Plus, Search, Check, MoreHorizontal, Edit2, Trash2, FastForward, CheckCircle2 } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
+import { DoodleCalendar } from '../components/DoodleIllustrations';
 
 export const TasksView: React.FC = () => {
   const { tasks, toggleTaskStatus, deleteTask, openTaskModal, moveTaskToTomorrow } = useAppStore();
@@ -40,19 +41,22 @@ export const TasksView: React.FC = () => {
   return (
     <div className="space-y-5 animate-fade-in pb-8 select-none max-w-[1600px] mx-auto">
       {/* Header with Search and New Task */}
-      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex flex-wrap items-center justify-between gap-4 border border-borderToken transition-colors">
-        <div>
-          <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
-            All Tasks & Backlog
-          </h2>
-          <p className="text-[13px] text-mutedText mt-0.5">
-            Organize one-off outcomes and prioritize your focus peacefully.
-          </p>
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 flex flex-wrap items-center justify-between gap-4 transition-colors">
+        <div className="flex items-center gap-4">
+          <DoodleCalendar size={58} className="flex-shrink-0" />
+          <div>
+            <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
+              All Tasks & Backlog
+            </h2>
+            <p className="text-[13px] text-mutedText mt-0.5">
+              Organize one-off outcomes and prioritize your focus peacefully.
+            </p>
+          </div>
         </div>
 
         <button
           onClick={() => openTaskModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all shadow-xs"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all"
         >
           <Plus size={15} />
           <span>New Task</span>
@@ -60,9 +64,9 @@ export const TasksView: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-card rounded-[24px] p-4 shadow-soft flex flex-wrap items-center gap-3 border border-borderToken transition-colors">
+      <div className="bg-card rounded-[24px] p-4 flex flex-wrap items-center gap-3 transition-colors">
         {/* Search */}
-        <div className="flex-1 min-w-[220px] flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-card-subtle border border-borderToken">
+        <div className="flex-1 min-w-[220px] flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-card-subtle">
           <Search size={15} className="text-mutedText" />
           <input
             type="text"
@@ -77,7 +81,7 @@ export const TasksView: React.FC = () => {
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="px-3.5 py-2 rounded-xl bg-card-subtle border border-borderToken text-[13px] text-foreground outline-none font-medium"
+          className="px-3.5 py-2 rounded-xl bg-card-subtle text-[13px] text-foreground outline-none font-medium"
         >
           <option value="All">All Categories</option>
           <option value="Work">Work</option>
@@ -90,7 +94,7 @@ export const TasksView: React.FC = () => {
         <select
           value={selectedPriority}
           onChange={(e) => setSelectedPriority(e.target.value)}
-          className="px-3.5 py-2 rounded-xl bg-card-subtle border border-borderToken text-[13px] text-foreground outline-none font-medium"
+          className="px-3.5 py-2 rounded-xl bg-card-subtle text-[13px] text-foreground outline-none font-medium"
         >
           <option value="All">All Priorities</option>
           <option value="critical">Critical</option>
@@ -101,11 +105,13 @@ export const TasksView: React.FC = () => {
       </div>
 
       {/* Tasks Table */}
-      <div className="bg-card rounded-[28px] p-6 shadow-soft border border-borderToken transition-colors">
+      <div className="bg-card rounded-[28px] p-6 transition-colors">
         <div className="divide-y divide-borderToken">
           {filteredTasks.length === 0 ? (
-            <div className="py-12 text-center text-[13.5px] text-mutedText">
-              No outcomes found matching your filter.
+            <div className="py-12 text-center text-[13.5px] text-mutedText flex flex-col items-center justify-center">
+              <DoodleCalendar size={68} className="mb-2 opacity-80" />
+              <span className="font-serif text-[15px] font-medium text-foreground">No outcomes found matching your filter</span>
+              <span className="text-xs text-mutedText mt-0.5">Try resetting search or create a new peaceful task.</span>
             </div>
           ) : (
             filteredTasks.map((task) => {

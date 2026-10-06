@@ -2,6 +2,7 @@ import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Clock, Lock, Check } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
+import { DoodleCalendar } from '../components/DoodleIllustrations';
 
 export const ScheduleView: React.FC = () => {
   const { scheduleBlocks, toggleTaskStatus, replanDay } = useAppStore();
@@ -10,25 +11,28 @@ export const ScheduleView: React.FC = () => {
 
   return (
     <div className="space-y-5 animate-fade-in pb-8 select-none max-w-[1600px] mx-auto">
-      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex items-center justify-between border border-borderToken transition-colors">
-        <div>
-          <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
-            Daily Visual Schedule
-          </h2>
-          <p className="text-[13px] text-mutedText mt-0.5">
-            A peaceful, realistic timeline built around your natural circadian rhythms and priorities.
-          </p>
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 flex items-center justify-between transition-colors">
+        <div className="flex items-center gap-4">
+          <DoodleCalendar size={58} className="flex-shrink-0" />
+          <div>
+            <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
+              Daily Visual Schedule
+            </h2>
+            <p className="text-[13px] text-mutedText mt-0.5">
+              A peaceful, realistic timeline built around your natural circadian rhythms and priorities.
+            </p>
+          </div>
         </div>
 
         <button
           onClick={replanDay}
-          className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all shadow-xs"
+          className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all"
         >
           Rebalance Day
         </button>
       </div>
 
-      <div className="bg-card rounded-[28px] p-6 sm:p-8 shadow-soft border border-borderToken transition-colors">
+      <div className="bg-card rounded-[28px] p-6 sm:p-8 shadow-soft transition-colors">
         <div className="relative border-l-2 border-borderToken ml-16 space-y-7 py-2">
           {hoursList.map((hour) => {
             const timeLabel = formatTime12h(`${String(hour).padStart(2, '0')}:00`);
@@ -56,10 +60,10 @@ export const ScheduleView: React.FC = () => {
                     matchingBlocks.map((block) => (
                       <div
                         key={block.id}
-                        className={`p-3.5 px-4 rounded-2xl border flex items-center justify-between transition-all ${
+                        className={`p-3.5 px-4 rounded-2xl flex items-center justify-between transition-all ${
                           block.isFixed
-                            ? 'bg-primary-soft border-primary/30 text-foreground'
-                            : 'bg-card-subtle border-borderToken hover:border-primary/40 text-foreground'
+                            ? 'bg-primary-soft text-foreground'
+                            : 'bg-card-subtle text-foreground'
                         }`}
                       >
                         <div className="flex items-center gap-3">

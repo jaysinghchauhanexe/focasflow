@@ -105,7 +105,7 @@ export const SettingsView: React.FC = () => {
   return (
     <div className="space-y-5 animate-fade-in pb-10 select-none max-w-3xl mx-auto">
       {/* Header */}
-      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft border border-borderToken transition-colors">
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft transition-colors">
         <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
           Application Preferences & Aesthetics
         </h2>
@@ -116,7 +116,7 @@ export const SettingsView: React.FC = () => {
 
       <form onSubmit={handleSave} className="space-y-5">
         {/* Appearance & Color Themes */}
-        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-4 border border-borderToken transition-colors">
+        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-4 transition-colors">
           <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
             <Palette size={18} className="text-primary" />
             <div>
@@ -136,15 +136,15 @@ export const SettingsView: React.FC = () => {
                 <div
                   key={t.id}
                   onClick={() => handleSelectTheme(t.id)}
-                  className={`p-3.5 rounded-2xl border cursor-pointer transition-all duration-150 flex flex-col justify-between ${
+                  className={`p-3.5 rounded-2xl cursor-pointer transition-all duration-150 flex flex-col justify-between ${
                     isSelected
-                      ? 'border-primary ring-2 ring-primary/20 bg-card shadow-sm'
-                      : 'border-borderToken hover:border-primary/50 bg-card-subtle'
+                      ? 'ring-2 ring-primary/40 bg-card shadow-sm'
+                      : 'bg-card-subtle hover:bg-card-muted'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     {/* Color Swatch Preview */}
-                    <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/5 border border-black/5">
+                    <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/5">
                       <span
                         className="w-5 h-5 rounded-lg shadow-xs"
                         style={{ backgroundColor: t.bg }}
@@ -184,7 +184,7 @@ export const SettingsView: React.FC = () => {
         </div>
 
         {/* Personal Profile */}
-        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-4 border border-borderToken transition-colors">
+        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-4 transition-colors">
           <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
             <User size={18} className="text-primary" />
             <h3 className="text-[17px] font-serif font-semibold text-foreground">
@@ -200,13 +200,13 @@ export const SettingsView: React.FC = () => {
               type="text"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
-              className="w-full max-w-sm px-4 py-2.5 rounded-2xl bg-card-subtle border border-borderToken text-[13.5px] text-foreground outline-none focus:border-primary"
+              className="w-full max-w-sm px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
 
         {/* Schedule & Working Constraints */}
-        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-4 border border-borderToken transition-colors">
+        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-4 transition-colors">
           <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
             <Clock size={18} className="text-primary" />
             <h3 className="text-[17px] font-serif font-semibold text-foreground">
@@ -223,7 +223,7 @@ export const SettingsView: React.FC = () => {
                 type="time"
                 value={wakeTime}
                 onChange={(e) => setWakeTime(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle border border-borderToken text-[13.5px] text-foreground"
+                className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
@@ -235,7 +235,7 @@ export const SettingsView: React.FC = () => {
                 type="time"
                 value={sleepTime}
                 onChange={(e) => setSleepTime(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle border border-borderToken text-[13.5px] text-foreground"
+                className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
@@ -249,7 +249,7 @@ export const SettingsView: React.FC = () => {
                 type="time"
                 value={workStart}
                 onChange={(e) => setWorkStart(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle border border-borderToken text-[13.5px] text-foreground"
+                className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
 
@@ -261,7 +261,7 @@ export const SettingsView: React.FC = () => {
                 type="time"
                 value={workEnd}
                 onChange={(e) => setWorkEnd(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle border border-borderToken text-[13.5px] text-foreground"
+                className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
@@ -276,13 +276,13 @@ export const SettingsView: React.FC = () => {
               max="60"
               value={breakDuration}
               onChange={(e) => setBreakDuration(Number(e.target.value))}
-              className="w-full max-w-xs px-4 py-2.5 rounded-2xl bg-card-subtle border border-borderToken text-[13.5px] text-foreground"
+              className="w-full max-w-xs px-4 py-2.5 rounded-2xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
 
         {/* AI Gateway / OpenRouter */}
-        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-4 border border-borderToken transition-colors">
+        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-4 transition-colors">
           <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
             <Sparkles size={18} className="text-primary" />
             <h3 className="text-[17px] font-serif font-semibold text-foreground">
@@ -299,7 +299,7 @@ export const SettingsView: React.FC = () => {
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="sk-or-v1-..."
-              className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle border border-borderToken text-[13px] font-mono text-foreground"
+              className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13px] font-mono text-foreground outline-none focus:ring-1 focus:ring-primary"
             />
             <p className="text-[11.5px] text-mutedText mt-1.5">
               Keys are stored securely in your local environment. If left blank, offline heuristic parsing is used.
@@ -313,7 +313,7 @@ export const SettingsView: React.FC = () => {
             <select
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground"
+              className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13px] text-foreground outline-none focus:ring-1 focus:ring-primary"
             >
               {models.map((m) => (
                 <option key={m.id} value={m.id}>

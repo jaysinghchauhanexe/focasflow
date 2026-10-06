@@ -2,6 +2,7 @@ import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Sun, Moon, Check } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
+import { DoodleRoutine } from '../components/DoodleIllustrations';
 
 export const RoutinesView: React.FC = () => {
   const { routines, updateRoutine } = useAppStore();
@@ -19,14 +20,17 @@ export const RoutinesView: React.FC = () => {
 
   return (
     <div className="space-y-5 animate-fade-in pb-8 select-none max-w-[1600px] mx-auto">
-      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex items-center justify-between border border-borderToken transition-colors">
-        <div>
-          <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
-            Daily Routines & Sequences
-          </h2>
-          <p className="text-[13px] text-mutedText mt-0.5">
-            Gentle rituals executed as a peaceful sequence to open and close your day.
-          </p>
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 flex items-center justify-between transition-colors">
+        <div className="flex items-center gap-4">
+          <DoodleRoutine size={58} className="flex-shrink-0" />
+          <div>
+            <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
+              Daily Routines & Sequences
+            </h2>
+            <p className="text-[13px] text-mutedText mt-0.5">
+              Gentle rituals executed as a peaceful sequence to open and close your day.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -37,7 +41,7 @@ export const RoutinesView: React.FC = () => {
           const isMorning = routine.type === 'morning';
 
           return (
-            <div key={routine.id} className="bg-card rounded-[26px] p-6 sm:p-7 shadow-soft space-y-4 border border-borderToken transition-colors">
+            <div key={routine.id} className="bg-card rounded-[26px] p-6 sm:p-7 shadow-soft space-y-4 transition-colors">
               {/* Routine Header */}
               <div className="flex items-center justify-between pb-3.5 border-b border-borderToken">
                 <div className="flex items-center gap-3">
@@ -69,7 +73,7 @@ export const RoutinesView: React.FC = () => {
                   <div
                     key={step.id}
                     onClick={() => toggleRoutineStep(routine.id, step.id)}
-                    className="flex items-center justify-between p-3 rounded-2xl bg-card-subtle hover:bg-card-muted cursor-pointer transition-all border border-borderToken"
+                    className="flex items-center justify-between p-3 rounded-2xl bg-card-subtle hover:bg-card-muted cursor-pointer transition-all"
                   >
                     <div className="flex items-center gap-3">
                       <div

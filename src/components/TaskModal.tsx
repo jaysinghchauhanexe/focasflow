@@ -81,7 +81,7 @@ export const TaskModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none">
-      <div className="bg-card w-full max-w-lg rounded-[28px] shadow-float p-6 sm:p-7 border border-borderToken transition-colors">
+      <div className="bg-card w-full max-w-lg rounded-[28px] shadow-float p-6 sm:p-7 transition-colors">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-borderToken">
           <h3 className="text-[20px] font-serif font-medium text-foreground">

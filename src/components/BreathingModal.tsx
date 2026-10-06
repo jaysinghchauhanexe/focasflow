@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { X, Play, Pause, RotateCcw, Wind, Sparkles } from 'lucide-react';
+import { DoodleWindClouds } from './DoodleIllustrations';
 
 export const BreathingModal: React.FC = () => {
   const { isBreathingModalOpen, closeBreathingModal } = useAppStore();
@@ -85,13 +86,11 @@ export const BreathingModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fade-in select-none">
-      <div className="relative w-full max-w-md bg-card rounded-[32px] p-7 md:p-8 shadow-float border border-borderToken flex flex-col items-center text-center overflow-hidden transition-colors">
+      <div className="relative w-full max-w-md bg-card rounded-[32px] p-7 md:p-8 flex flex-col items-center text-center overflow-hidden transition-colors">
         {/* Top Header */}
         <div className="relative z-10 w-full flex items-center justify-between pb-2 mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary-soft text-primary flex items-center justify-center">
-              <Wind size={17} />
-            </div>
+          <div className="flex items-center gap-3">
+            <DoodleWindClouds size={46} className="flex-shrink-0" />
             <div className="text-left">
               <h3 className="text-[17px] font-semibold text-foreground tracking-tight">
                 Breathing Reset

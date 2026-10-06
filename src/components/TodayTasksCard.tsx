@@ -3,6 +3,7 @@ import { useAppStore } from '../store/useAppStore';
 import { Task, Category } from '../types';
 import { Plus, Check, Play, MoreHorizontal, ArrowRight, Clock, Trash2, Edit2, FastForward, CheckCircle2 } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
+import { DoodleCup } from './DoodleIllustrations';
 
 export const TodayTasksCard: React.FC = () => {
   const {
@@ -50,7 +51,7 @@ export const TodayTasksCard: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-card rounded-[28px] p-6 sm:p-7 shadow-soft select-none flex flex-col justify-between border border-borderToken transition-colors">
+    <div className="w-full bg-card rounded-[28px] p-6 sm:p-7 select-none flex flex-col justify-between transition-colors">
       <div>
         {/* Card Header with Title, Filter Tabs, and + Add Task Button */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-borderToken">
@@ -72,7 +73,7 @@ export const TodayTasksCard: React.FC = () => {
                   onClick={() => setActiveFilter(filter)}
                   className={`px-3.5 py-1 text-[12.5px] font-medium rounded-lg capitalize transition-all ${
                     activeFilter === filter
-                      ? 'bg-card text-foreground shadow-xs font-semibold'
+                      ? 'bg-card text-foreground font-semibold'
                       : 'text-mutedText hover:text-foreground'
                   }`}
                 >
@@ -84,7 +85,7 @@ export const TodayTasksCard: React.FC = () => {
             {/* + Add Task Button */}
             <button
               onClick={() => openTaskModal()}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-[12.5px] font-medium transition-all shadow-xs"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-[12.5px] font-medium transition-all"
             >
               <Plus size={14} />
               <span>Add Task</span>
@@ -92,15 +93,13 @@ export const TodayTasksCard: React.FC = () => {
           </div>
         </div>
 
-        {/* Task Rows List */}
-        <div className="space-y-1.5 mt-3">
+        {/* Task Rows List with divider line under each task */}
+        <div className="divide-y divide-borderToken mt-2">
           {displayedTasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-12 h-12 rounded-full bg-primary-soft text-primary flex items-center justify-center mb-2">
-                <CheckCircle2 size={24} />
-              </div>
-              <span className="text-sm text-foreground font-medium">Your day is serene & clear</span>
-              <span className="text-xs text-mutedText mt-0.5">Add an outcome you'd love to accomplish peacefully today.</span>
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <DoodleCup size={72} className="mb-2 transform hover:scale-105 transition-transform" />
+              <span className="text-[15px] font-medium text-foreground font-sans">Your day is serene & clear</span>
+              <span className="text-xs text-mutedText mt-0.5">Sip some tea or add an outcome you'd love to accomplish peacefully.</span>
             </div>
           ) : (
             displayedTasks.map((task) => {
@@ -113,7 +112,7 @@ export const TodayTasksCard: React.FC = () => {
               return (
                 <div
                   key={task.id}
-                  className={`group relative flex items-center justify-between py-2.5 px-3 rounded-2xl transition-all duration-150 hover:bg-card-subtle border border-transparent hover:border-borderToken ${
+                  className={`group relative flex items-center justify-between py-3.5 px-2 transition-all duration-150 hover:bg-card-subtle rounded-xl ${
                     isCompleted ? 'opacity-55' : ''
                   }`}
                 >
@@ -134,7 +133,7 @@ export const TodayTasksCard: React.FC = () => {
 
                     <span
                       onClick={() => openTaskModal(task)}
-                      className={`text-[14.5px] font-normal truncate cursor-pointer transition-colors ${
+                      className={`text-[14px] font-sans truncate cursor-pointer transition-colors ${
                         isCompleted
                           ? 'line-through text-mutedText'
                           : isSkipped

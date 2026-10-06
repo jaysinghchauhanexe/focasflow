@@ -36,7 +36,7 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-[260px] min-w-[260px] h-full bg-card rounded-[28px] p-5 flex flex-col justify-between shadow-soft select-none flex-shrink-0 border border-borderToken transition-colors">
+    <aside className="w-[260px] min-w-[260px] h-full bg-card rounded-[28px] p-5 flex flex-col justify-between shadow-soft select-none flex-shrink-0 transition-colors">
       <div className="flex flex-col flex-1">
         {/* Brand Header */}
         <div className="flex items-center gap-3 px-2 pt-1 pb-5">
@@ -130,7 +130,7 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* User Profile Card */}
-        <div className="p-2.5 rounded-2xl border border-borderToken bg-card-subtle flex items-center justify-between hover:border-primary/40 transition-colors">
+        <div className="p-2.5 rounded-2xl bg-card-subtle flex items-center justify-between transition-colors">
           <div className="flex items-center gap-2.5">
             <img 
               src="/avatar_jay.jpg" 

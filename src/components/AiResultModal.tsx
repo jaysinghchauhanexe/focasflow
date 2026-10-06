@@ -9,7 +9,7 @@ export const AiResultModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none">
-      <div className="bg-card w-full max-w-lg rounded-[28px] shadow-float p-6 sm:p-7 border border-borderToken transition-colors">
+      <div className="bg-card w-full max-w-lg rounded-[28px] shadow-float p-6 sm:p-7 transition-colors">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-borderToken">
           <div className="flex items-center gap-2.5">
@@ -29,7 +29,7 @@ export const AiResultModal: React.FC = () => {
         </div>
 
         {/* Message */}
-        <div className="mt-4 p-4 rounded-2xl bg-primary-soft border border-primary/20 text-[14px] text-foreground font-medium leading-relaxed">
+        <div className="mt-4 p-4 rounded-2xl bg-primary-soft text-[14px] text-foreground font-medium leading-relaxed">
           {lastAiResult.message}
         </div>
 
@@ -42,7 +42,7 @@ export const AiResultModal: React.FC = () => {
             {lastAiResult.operations.map((op, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-card-subtle border border-borderToken text-[12.5px] text-foreground"
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-card-subtle text-[12.5px] text-foreground"
               >
                 <div className="flex items-center gap-2">
                   <ShieldCheck size={14} className="text-primary" />

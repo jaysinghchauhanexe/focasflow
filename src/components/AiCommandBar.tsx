@@ -32,7 +32,7 @@ export const AiCommandBar: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-card rounded-[28px] p-4 sm:p-5 shadow-soft border border-borderToken select-none transition-colors">
+    <div className="w-full bg-card rounded-[28px] p-4 sm:p-5 shadow-soft select-none transition-colors">
       <form onSubmit={handleSubmit} className="flex items-center gap-3">
         {/* AI Icon */}
         <div className="w-9 h-9 rounded-2xl bg-primary-soft flex items-center justify-center text-primary flex-shrink-0">
@@ -69,7 +69,7 @@ export const AiCommandBar: React.FC = () => {
             key={idx}
             type="button"
             onClick={() => setInputVal(prompt)}
-            className="px-3 py-1 rounded-full bg-card-subtle hover:bg-card-muted text-textSecondary hover:text-foreground whitespace-nowrap transition-colors font-sans border border-borderToken"
+            className="px-3 py-1 rounded-full bg-card-subtle hover:bg-card-muted text-textSecondary hover:text-foreground whitespace-nowrap transition-colors font-sans"
           >
             {prompt}
           </button>

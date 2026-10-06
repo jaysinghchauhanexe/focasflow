@@ -14,7 +14,7 @@ export const OverloadModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none">
-      <div className="bg-card w-full max-w-lg rounded-[28px] shadow-float p-6 sm:p-7 border border-tag-important/30 transition-colors">
+      <div className="bg-card w-full max-w-lg rounded-[28px] shadow-float p-6 sm:p-7 transition-colors">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-borderToken">
           <div className="flex items-center gap-2.5">
@@ -39,7 +39,7 @@ export const OverloadModal: React.FC = () => {
         </div>
 
         {/* Overload Alert Badge */}
-        <div className="mt-4 p-4 rounded-2xl bg-tag-importantBg border border-tag-important/20">
+        <div className="mt-4 p-4 rounded-2xl bg-tag-importantBg">
           <span className="text-[14px] font-semibold text-tag-important block">
             Your day is overloaded by {overloadText || '45m'}.
           </span>
@@ -62,7 +62,7 @@ export const OverloadModal: React.FC = () => {
             capacity.suggestions.map((sug) => (
               <div
                 key={sug.id}
-                className="flex items-center justify-between p-3.5 rounded-2xl bg-card-subtle border border-borderToken hover:border-primary transition-all"
+                className="flex items-center justify-between p-3.5 rounded-2xl bg-card-subtle transition-all"
               >
                 <div className="flex items-center gap-2.5">
                   {sug.actionType === 'move' ? (

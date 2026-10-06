@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Plus, Check, Clock, Trash2, Edit2 } from 'lucide-react';
+import { DoodlePlant } from '../components/DoodleIllustrations';
 
 export const HabitsView: React.FC = () => {
   const { habits, toggleHabitDate, openHabitModal, deleteHabit, selectedDate } = useAppStore();
@@ -21,19 +22,22 @@ export const HabitsView: React.FC = () => {
   return (
     <div className="space-y-5 animate-fade-in pb-8 select-none max-w-[1600px] mx-auto">
       {/* Header */}
-      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex flex-wrap items-center justify-between gap-4 border border-borderToken transition-colors">
-        <div>
-          <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
-            Recurring Habits & Mindful Practices
-          </h2>
-          <p className="text-[13px] text-mutedText mt-0.5">
-            Build calm consistency without guilt or streak anxiety.
-          </p>
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 flex flex-wrap items-center justify-between gap-4 transition-colors">
+        <div className="flex items-center gap-4">
+          <DoodlePlant size={58} className="flex-shrink-0" />
+          <div>
+            <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
+              Recurring Habits & Mindful Practices
+            </h2>
+            <p className="text-[13px] text-mutedText mt-0.5">
+              Build calm consistency without guilt or streak anxiety.
+            </p>
+          </div>
         </div>
 
         <button
           onClick={() => openHabitModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all shadow-xs"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all"
         >
           <Plus size={15} />
           <span>New Habit</span>
@@ -48,7 +52,7 @@ export const HabitsView: React.FC = () => {
           return (
             <div
               key={habit.id}
-              className="bg-card rounded-[26px] p-6 shadow-soft flex flex-col justify-between hover:shadow-float transition-all border border-borderToken"
+              className="bg-card rounded-[26px] p-6 shadow-soft flex flex-col justify-between hover:shadow-float transition-all"
             >
               <div>
                 {/* Habit Top Info */}
@@ -82,14 +86,14 @@ export const HabitsView: React.FC = () => {
 
                 {/* Metadata Pills */}
                 <div className="flex items-center gap-2 mb-5">
-                  <span className="px-2.5 py-1 rounded-xl bg-card-subtle text-[12px] font-medium text-textSecondary flex items-center gap-1 border border-borderToken">
+                  <span className="px-2.5 py-1 rounded-xl bg-card-subtle text-[12px] font-medium text-textSecondary flex items-center gap-1">
                     <Clock size={12} />
                     <span>{habit.duration} min</span>
                   </span>
-                  <span className="px-2.5 py-1 rounded-xl bg-card-subtle text-[12px] font-medium text-textSecondary capitalize border border-borderToken">
+                  <span className="px-2.5 py-1 rounded-xl bg-card-subtle text-[12px] font-medium text-textSecondary capitalize">
                     {habit.frequency}
                   </span>
-                  <span className="px-2.5 py-1 rounded-xl bg-card-subtle text-[12px] font-medium text-textSecondary capitalize border border-borderToken">
+                  <span className="px-2.5 py-1 rounded-xl bg-card-subtle text-[12px] font-medium text-textSecondary capitalize">
                     {habit.preferredTime}
                   </span>
                   <span className="px-2.5 py-1 rounded-xl bg-primary-soft text-[12px] font-medium text-primary ml-auto">

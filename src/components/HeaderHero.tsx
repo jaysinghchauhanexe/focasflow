@@ -143,7 +143,7 @@ export const HeaderHero: React.FC = () => {
   const fadeEnd = Math.min(1, (knob.x + 10) / W);
 
   return (
-    <div className="relative w-full h-[350px] rounded-[28px] overflow-hidden select-none flex flex-col justify-between border border-borderToken group">
+    <div className="relative w-full h-[350px] rounded-[28px] overflow-hidden select-none flex flex-col justify-between group">
       {/* Dynamic Serene Theme Background Image */}
       <img
         src={themeConfig.bgImage}

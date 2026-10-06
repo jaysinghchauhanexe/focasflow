@@ -39,7 +39,7 @@ export const ProductivitySummary: React.FC = () => {
   ] as const;
 
   return (
-    <div className="w-full h-[350px] bg-card rounded-[28px] p-6 sm:p-7 shadow-soft select-none flex flex-col justify-between border border-borderToken relative overflow-hidden transition-colors">
+    <div className="w-full h-[350px] bg-card rounded-[28px] p-6 sm:p-7 shadow-soft select-none flex flex-col justify-between relative overflow-hidden transition-colors">
       {/* Top Row: Tasks Remaining Counter & Focus Time Progress */}
       <div className="flex items-start justify-between gap-4 sm:gap-6">
         {/* Tasks Remaining Large Counter */}
@@ -102,7 +102,7 @@ export const ProductivitySummary: React.FC = () => {
       </div>
 
       {/* Middle Row: Ambient Soundscape Mini Player */}
-      <div className="bg-card-subtle rounded-[18px] p-2.5 px-3.5 border border-borderToken flex items-center justify-between gap-3 transition-colors">
+      <div className="bg-card-subtle rounded-[18px] p-2.5 px-3.5 flex items-center justify-between gap-3 transition-colors">
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => toggleSoundscape()}
@@ -152,7 +152,7 @@ export const ProductivitySummary: React.FC = () => {
       {/* Bottom Row: 3 Soft Metric Cards */}
       <div className="bg-card-muted/60 rounded-[22px] p-3 grid grid-cols-3 gap-3 transition-colors">
         {/* Important Tasks */}
-        <div className="bg-card rounded-[16px] py-3.5 px-2 text-center shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-borderToken flex flex-col items-center justify-center transition-colors">
+        <div className="bg-card rounded-[16px] py-3.5 px-2 text-center flex flex-col items-center justify-center transition-colors">
           <div className="flex items-center justify-center leading-none">
             <span
               className="text-foreground text-[26px] sm:text-[30px] font-medium"
@@ -168,7 +168,7 @@ export const ProductivitySummary: React.FC = () => {
         </div>
 
         {/* Regular Tasks */}
-        <div className="bg-card rounded-[16px] py-3.5 px-2 text-center shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-borderToken flex flex-col items-center justify-center transition-colors">
+        <div className="bg-card rounded-[16px] py-3.5 px-2 text-center flex flex-col items-center justify-center transition-colors">
           <div className="flex items-center justify-center leading-none">
             <span
               className="text-foreground text-[26px] sm:text-[30px] font-medium"
@@ -184,7 +184,7 @@ export const ProductivitySummary: React.FC = () => {
         </div>
 
         {/* Completed Tasks */}
-        <div className="bg-card rounded-[16px] py-3.5 px-2 text-center shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-borderToken flex flex-col items-center justify-center transition-colors">
+        <div className="bg-card rounded-[16px] py-3.5 px-2 text-center flex flex-col items-center justify-center transition-colors">
           <div className="flex items-center justify-center leading-none">
             <span
               className="text-foreground text-[26px] sm:text-[30px] font-medium"

@@ -1,18 +1,22 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { DoodleJournal } from '../components/DoodleIllustrations';
 
 export const HistoryView: React.FC = () => {
   const { history } = useAppStore();
 
   return (
     <div className="space-y-5 animate-fade-in pb-8 select-none max-w-[1600px] mx-auto">
-      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft border border-borderToken transition-colors">
-        <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
-          Reflections & Daily Reviews
-        </h2>
-        <p className="text-[13px] text-mutedText mt-0.5">
-          Calm observations on past days to understand your capacity without guilt.
-        </p>
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 flex items-center gap-4 transition-colors">
+        <DoodleJournal size={58} className="flex-shrink-0" />
+        <div>
+          <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
+            Reflections & Daily Reviews
+          </h2>
+          <p className="text-[13px] text-mutedText mt-0.5">
+            Calm observations on past days to understand your capacity without guilt.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -23,7 +27,7 @@ export const HistoryView: React.FC = () => {
           const completedM = log.completedMinutes % 60;
 
           return (
-            <div key={log.id} className="bg-card rounded-[26px] p-6 shadow-soft space-y-4 border border-borderToken transition-colors">
+            <div key={log.id} className="bg-card rounded-[26px] p-6 shadow-soft space-y-4 transition-colors">
               <div className="flex items-center justify-between pb-3 border-b border-borderToken">
                 <span className="text-[17px] font-serif font-semibold text-foreground">
                   {log.date}
@@ -34,7 +38,7 @@ export const HistoryView: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-4 gap-3 text-center">
-                <div className="p-3 rounded-2xl bg-card-subtle border border-borderToken">
+                <div className="p-3 rounded-2xl bg-card-subtle">
                   <span className="text-[14px] font-serif font-medium text-foreground block">
                     {plannedH}h {plannedM > 0 ? `${plannedM}m` : ''}
                   </span>
@@ -55,7 +59,7 @@ export const HistoryView: React.FC = () => {
                   <span className="text-[11px] text-tag-learning/80">Moved</span>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-card-subtle border border-borderToken">
+                <div className="p-3 rounded-2xl bg-card-subtle">
                   <span className="text-[14px] font-serif font-medium text-mutedText block">
                     {log.skippedMinutes}m
                   </span>
@@ -64,7 +68,7 @@ export const HistoryView: React.FC = () => {
               </div>
 
               {log.notes && (
-                <p className="text-[13px] text-textSecondary italic bg-card-subtle p-3 rounded-2xl border border-borderToken">
+                <p className="text-[13px] text-textSecondary italic bg-card-subtle p-3 rounded-2xl">
                   “{log.notes}”
                 </p>
               )}

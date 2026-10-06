@@ -23,7 +23,7 @@ export const QuickActionsCard: React.FC = () => {
   const todayHabits = habits.slice(0, 3);
 
   return (
-    <div className="w-full bg-card rounded-[28px] p-6 sm:p-7 shadow-soft select-none flex flex-col justify-between border border-borderToken transition-colors">
+    <div className="w-full bg-card rounded-[28px] p-6 sm:p-7 shadow-soft select-none flex flex-col justify-between transition-colors">
       <div>
         <h3 className="text-[22px] sm:text-[24px] font-serif font-medium text-foreground tracking-tight mb-4">
           Quick Actions
@@ -67,7 +67,7 @@ export const QuickActionsCard: React.FC = () => {
                 <div
                   key={habit.id}
                   onClick={() => toggleHabitDate(habit.id, selectedDate)}
-                  className="flex items-center justify-between p-2.5 px-3 rounded-2xl bg-card-subtle hover:bg-card-muted cursor-pointer transition-all border border-borderToken"
+                  className="flex items-center justify-between p-2.5 px-3 rounded-2xl bg-card-subtle hover:bg-card-muted cursor-pointer transition-all"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Compass, Plus, CheckCircle2 } from 'lucide-react';
+import { DoodleMountainFlag } from '../components/DoodleIllustrations';
 
 export const GoalsView: React.FC = () => {
   const { goals, addGoal } = useAppStore();
@@ -25,19 +26,22 @@ export const GoalsView: React.FC = () => {
 
   return (
     <div className="space-y-5 animate-fade-in pb-8 select-none max-w-[1600px] mx-auto">
-      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex items-center justify-between border border-borderToken transition-colors">
-        <div>
-          <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
-            High-Level Vision & Milestones
-          </h2>
-          <p className="text-[13px] text-mutedText mt-0.5">
-            Connect your deep intentions into tangible, calm everyday milestones.
-          </p>
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 flex items-center justify-between transition-colors">
+        <div className="flex items-center gap-4">
+          <DoodleMountainFlag size={58} className="flex-shrink-0" />
+          <div>
+            <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
+              High-Level Vision & Milestones
+            </h2>
+            <p className="text-[13px] text-mutedText mt-0.5">
+              Connect your deep intentions into tangible, calm everyday milestones.
+            </p>
+          </div>
         </div>
 
         <button
           onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all shadow-xs"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all"
         >
           <Plus size={15} />
           <span>New Goal</span>
@@ -45,7 +49,7 @@ export const GoalsView: React.FC = () => {
       </div>
 
       {isAdding && (
-        <form onSubmit={handleCreate} className="bg-card rounded-[26px] p-6 shadow-soft space-y-3.5 border border-borderToken transition-colors">
+        <form onSubmit={handleCreate} className="bg-card rounded-[26px] p-6 shadow-soft space-y-3.5 transition-colors">
           <input
             type="text"
             required
@@ -53,14 +57,14 @@ export const GoalsView: React.FC = () => {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Goal Title (e.g. Master Full-Stack Architecture)"
-            className="w-full px-4 py-2.5 rounded-xl bg-card-subtle border border-borderToken text-[13.5px] text-foreground outline-none focus:border-primary"
+            className="w-full px-4 py-2.5 rounded-xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:border-primary"
           />
           <textarea
             rows={2}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Key milestones and desired peaceful outcomes..."
-            className="w-full px-4 py-2.5 rounded-xl bg-card-subtle border border-borderToken text-[13.5px] text-foreground outline-none focus:border-primary"
+            className="w-full px-4 py-2.5 rounded-xl bg-card-subtle text-[13.5px] text-foreground outline-none focus:border-primary"
           />
           <div className="flex justify-end gap-2.5 pt-1">
             <button
@@ -82,7 +86,7 @@ export const GoalsView: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {goals.map((goal) => (
-          <div key={goal.id} className="bg-card rounded-[26px] p-6 sm:p-7 shadow-soft space-y-4 border border-borderToken transition-colors">
+          <div key={goal.id} className="bg-card rounded-[26px] p-6 sm:p-7 shadow-soft space-y-4 transition-colors">
             <div className="flex items-start justify-between">
               <div>
                 <span className="text-[11px] font-bold text-primary uppercase tracking-wider">
@@ -113,7 +117,7 @@ export const GoalsView: React.FC = () => {
                 {goal.projects.map((p) => (
                   <div
                     key={p.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-card-subtle text-[13px] text-foreground border border-borderToken"
+                    className="flex items-center justify-between p-3 rounded-xl bg-card-subtle text-[13px] text-foreground"
                   >
                     <span>{p.title}</span>
                     <span className="font-mono text-[11.5px] text-mutedText">

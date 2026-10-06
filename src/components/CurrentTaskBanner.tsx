@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Check, ArrowRight, Play, Pause, FastForward, Sparkles, Clock } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
+import { DoodleZenStones } from './DoodleIllustrations';
 
 export const CurrentTaskBanner: React.FC = () => {
   const { tasks, selectedDate, toggleTaskStatus, skipTask, moveTaskToTomorrow, openTaskModal } = useAppStore();
@@ -26,19 +27,17 @@ export const CurrentTaskBanner: React.FC = () => {
 
   if (!currentTask) {
     return (
-      <div className="w-full bg-card rounded-[28px] p-6 shadow-soft select-none flex items-center justify-between border border-borderToken transition-colors">
-        <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-tag-healthBg flex items-center justify-center text-tag-health">
-            <Check size={20} strokeWidth={2.5} />
-          </div>
+      <div className="w-full bg-card rounded-[28px] p-6 select-none flex items-center justify-between transition-colors">
+        <div className="flex items-center gap-4">
+          <DoodleZenStones size={52} />
           <div>
-            <h4 className="text-[15px] font-semibold text-foreground">You're all caught up with scheduled tasks.</h4>
-            <p className="text-[12.5px] text-mutedText">Take a peaceful break or add your next milestone.</p>
+            <h4 className="text-[16px] font-serif font-medium text-foreground">You're all caught up with scheduled tasks.</h4>
+            <p className="text-[12.5px] text-mutedText">Enjoy a peaceful breather or plant your next intentional milestone.</p>
           </div>
         </div>
         <button
           onClick={() => openTaskModal()}
-          className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[12.5px] font-semibold rounded-xl transition-all shadow-xs"
+          className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[12.5px] font-semibold rounded-xl transition-all"
         >
           Add Next Task
         </button>
@@ -57,7 +56,7 @@ export const CurrentTaskBanner: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-card rounded-[28px] p-6 shadow-soft select-none border-l-[6px] border-primary border-y border-r border-borderToken flex flex-col md:flex-row items-start md:items-center justify-between gap-5 transition-colors">
+    <div className="w-full bg-card rounded-[28px] p-6 shadow-soft select-none border-l-[6px] border-primary flex flex-col md:flex-row items-start md:items-center justify-between gap-5 transition-colors">
       {/* Left info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2.5 mb-1.5">
@@ -75,7 +74,7 @@ export const CurrentTaskBanner: React.FC = () => {
           </span>
         </div>
 
-        <h4 className="text-[18px] sm:text-[20px] font-serif font-medium text-foreground truncate">
+        <h4 className="text-[17px] sm:text-[19px] font-sans font-semibold text-foreground truncate">
           {currentTask.title}
         </h4>
 
