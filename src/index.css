@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #328F9B;
+  --color-primary-hover: #287C87;
+  --color-primary-active: #216C76;
+  --color-primary-soft: rgba(50, 143, 155, 0.12);
+  --color-focus: rgba(50, 143, 155, 0.30);
+
+  --color-background: #DEEFF6;
+  --color-card: #FFFFFF;
+  --color-foreground: #05313A;
+
+  --color-border: rgba(5, 49, 58, 0.10);
+  --color-muted: rgba(5, 49, 58, 0.60);
+  --color-subtle: rgba(5, 49, 58, 0.40);
+
+  --tag-health: #35A853;
+  --tag-work: #328F9B;
+  --tag-personal: #8B5CF6;
+  --tag-learning: #D88A2D;
+  --tag-important: #D94B5B;
+  --tag-neutral: #6B7F84;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-serif {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* Custom serene card styling matching DESIGN.md */
+.card-surface {
+  background: #FFFFFF;
+  border: none;
+  border-radius: 18px;
+  box-shadow: 0 4px 20px rgba(5, 49, 58, 0.03);
+}
+
+/* Category Badge Styles with exact 20% soft tint rule */
+.badge-health {
+  color: #2e8b46;
+  background-color: rgba(53, 168, 83, 0.14);
+}
+
+.badge-work {
+  color: #287c87;
+  background-color: rgba(50, 143, 155, 0.14);
+}
+
+.badge-personal {
+  color: #7c3aed;
+  background-color: rgba(139, 92, 246, 0.14);
+}
+
+.badge-learning {
+  color: #c2781e;
+  background-color: rgba(216, 138, 45, 0.14);
+}
+
+.badge-important {
+  color: #c53030;
+  background-color: rgba(217, 75, 91, 0.14);
+}
+
+.badge-neutral {
+  color: #556b70;
+  background-color: rgba(107, 127, 132, 0.14);
+}
+
+/* Hide scrollbars globally while preserving smooth scrolling */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Smooth micro-animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
