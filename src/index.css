@@ -4,6 +4,34 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --font-heading: 'Gilda Display', Georgia, serif;
+  --font-sans: 'DM Sans', 'Inter', 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Dynamic Font Heading Overrides */
+html[data-font="dm-sans"],
+body[data-font="dm-sans"],
+#root[data-font="dm-sans"],
+[data-font="dm-sans"],
+html[data-font="DM Sans"],
+body[data-font="DM Sans"],
+#root[data-font="DM Sans"],
+[data-font="DM Sans"] {
+  --font-heading: 'DM Sans', 'Inter', 'Plus Jakarta Sans', sans-serif !important;
+}
+
+html[data-font="gilda"],
+body[data-font="gilda"],
+#root[data-font="gilda"],
+[data-font="gilda"],
+html[data-font="Gilda Display"],
+body[data-font="Gilda Display"],
+#root[data-font="Gilda Display"],
+[data-font="Gilda Display"] {
+  --font-heading: 'Gilda Display', Georgia, serif !important;
+}
+
 /* ==========================================================================
    THEME 1: GREEN (Calming Sage & Forest - Default)
    ========================================================================== */
@@ -12,8 +40,6 @@
 html[data-theme="green"],
 body[data-theme="green"],
 #root[data-theme="green"] {
-  --font-heading: 'Gilda Display', serif;
-  --font-sans: 'DM Sans', 'Inter', 'Plus Jakarta Sans', sans-serif;
   --color-bg: #F2F5F2;
   --color-card: #FFFFFF;
   --color-card-subtle: #FAFBF9;
@@ -271,8 +297,9 @@ input[type="reset"]:active {
   box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.65), 0 6px 16px -4px rgba(0, 0, 0, 0.5) !important;
 }
 
-.font-serif {
-  font-family: 'Gilda Display', Georgia, serif;
+.font-serif,
+.font-heading {
+  font-family: var(--font-heading, 'Gilda Display', serif) !important;
 }
 
 .font-sans {

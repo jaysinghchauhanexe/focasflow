@@ -9,6 +9,7 @@ import { GoalsView } from './views/GoalsView';
 import { ScheduleView } from './views/ScheduleView';
 import { HistoryView } from './views/HistoryView';
 import { SettingsView } from './views/SettingsView';
+import { PreferencesView } from './views/PreferencesView';
 import { TaskModal } from './components/TaskModal';
 import { HabitModal } from './components/HabitModal';
 import { CommitmentModal } from './components/CommitmentModal';
@@ -64,6 +65,8 @@ export const App: React.FC = () => {
         return <HistoryView />;
       case 'settings':
         return <SettingsView />;
+      case 'preferences':
+        return <PreferencesView />;
       default:
         return <TodayView />;
     }

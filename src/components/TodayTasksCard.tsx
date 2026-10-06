@@ -24,7 +24,8 @@ export const TodayTasksCard: React.FC = () => {
     focusElapsedSeconds,
     taskElapsedSeconds,
     toggleFocusTask,
-    extendTaskDuration
+    extendTaskDuration,
+    settings,
   } = useAppStore();
 
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -152,7 +153,8 @@ export const TodayTasksCard: React.FC = () => {
               const isThisTaskRunning = isFocusTimerRunning && isThisTaskActive;
               const elapsedSeconds = isThisTaskActive ? focusElapsedSeconds : (taskElapsedSeconds[task.id] || 0);
               const estimatedSeconds = (task.duration || 45) * 60;
-              const isOvertime = elapsedSeconds > estimatedSeconds;
+              const areOvertimeAlertsEnabled = settings.preferences?.enableOvertimeAlerts ?? true;
+              const isOvertime = areOvertimeAlertsEnabled && elapsedSeconds > estimatedSeconds;
 
               return (
                 <div

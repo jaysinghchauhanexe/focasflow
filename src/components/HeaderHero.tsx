@@ -164,10 +164,13 @@ export const HeaderHero: React.FC = () => {
     if (moodTimerRef.current) {
       clearTimeout(moodTimerRef.current);
     }
-    // After a 2-second delay, open the mood insight popup
-    moodTimerRef.current = setTimeout(() => {
-      openMoodModal();
-    }, 2000);
+    // Check if user has enabled mood-adaptive insight pop-up notifications in preferences
+    const isPopupEnabled = settings.preferences?.enableMoodInsightPopups ?? true;
+    if (isPopupEnabled) {
+      moodTimerRef.current = setTimeout(() => {
+        openMoodModal();
+      }, 2000);
+    }
   };
 
   React.useEffect(() => {
@@ -480,6 +483,7 @@ export const HeaderHero: React.FC = () => {
             {MOODS.map((m) => {
               const Icon = m.icon;
               const isSelected = currentMood === m.id;
+              const areAnimationsEnabled = settings.preferences?.enableMoodFaceAnimations ?? true;
               return (
                 <button
                   key={m.id}
@@ -498,7 +502,7 @@ export const HeaderHero: React.FC = () => {
                   <Icon
                     key={`${m.id}-${isSelected ? 'active' : 'idle'}`}
                     size={24}
-                    isActive={isSelected}
+                    isActive={areAnimationsEnabled ? isSelected : false}
                     className={
                       isSelected
                         ? isDark

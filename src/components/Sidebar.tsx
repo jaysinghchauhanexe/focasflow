@@ -10,6 +10,7 @@ import {
   BarChart2,
   Sparkles,
   Settings,
+  SlidersHorizontal,
   Wind,
   PanelLeftClose,
   PanelLeftOpen
@@ -53,6 +54,7 @@ export const Sidebar: React.FC = () => {
   ];
 
   const bottomNavItems = [
+    { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 

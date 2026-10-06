@@ -7,6 +7,7 @@ import {
   ScheduleBlock, 
   HistoryLog, 
   AppSettings, 
+  UserPreferences,
   DayCapacity, 
   AiResponsePayload, 
   SchedulerSuggestion, 
@@ -19,7 +20,7 @@ import {
 import { calculateDayCapacity, buildDaySchedule } from '../engine/scheduler';
 
 interface AppState {
-  currentTab: 'today' | 'tasks' | 'habits' | 'routines' | 'goals' | 'schedule' | 'history' | 'settings';
+  currentTab: 'today' | 'tasks' | 'habits' | 'routines' | 'goals' | 'schedule' | 'history' | 'settings' | 'preferences';
   selectedDate: string; // YYYY-MM-DD
   tasks: Task[];
   habits: Habit[];
@@ -122,8 +123,9 @@ interface AppState {
   updateGoal: (goal: Goal) => void;
   deleteGoal: (id: string) => void;
 
-  // Settings Actions
+  // Settings & Preferences Actions
   updateSettings: (newSettings: Partial<AppSettings>) => void;
+  updatePreferences: (newPreferences: Partial<UserPreferences>) => void;
 
   // Scheduler & AI
   replanDay: () => void;
@@ -384,6 +386,23 @@ const initialHistory: HistoryLog[] = [
   }
 ];
 
+export const defaultPreferences: UserPreferences = {
+  enableMoodInsightPopups: true,
+  enableMoodFaceAnimations: true,
+  enableDailyMoodCheckin: true,
+  autoPlayMusicOnFocus: false,
+  defaultLofiStation: 'coffee',
+  enableOvertimeAlerts: true,
+  taskCompletionChime: true,
+  enableOverloadWarnings: true,
+  autoRollFlexibleTasks: true,
+  strictBedtimeBoundary: true,
+  smartBreakBuffers: true,
+  enableSmoothAnimations: true,
+  enableHapticFeedback: true,
+  showShortcutsHint: true,
+};
+
 const initialSettings: AppSettings = {
   userName: 'Jay',
   wakeTime: '07:00',
@@ -398,6 +417,7 @@ const initialSettings: AppSettings = {
   fontHeading: 'Gilda Display',
   hasCompletedOnboarding: false,
   focusPriority: 'balance',
+  preferences: defaultPreferences,
 };
 
 export const applyTheme = (theme: string) => {
@@ -424,14 +444,20 @@ export const applyFont = (fontName: string) => {
     if (typeof document !== 'undefined') {
       const isSans = safeFont === 'DM Sans';
       const fontValue = isSans
-        ? `'DM Sans', 'Plus Jakarta Sans', sans-serif`
-        : `'Gilda Display', serif`;
+        ? `'DM Sans', 'Inter', 'Plus Jakarta Sans', sans-serif`
+        : `'Gilda Display', Georgia, serif`;
+      const fontAttr = isSans ? 'dm-sans' : 'gilda';
+
+      document.documentElement.setAttribute('data-font', fontAttr);
       document.documentElement.style.setProperty('--font-heading', fontValue);
+
       if (document.body) {
+        document.body.setAttribute('data-font', fontAttr);
         document.body.style.setProperty('--font-heading', fontValue);
       }
       const root = document.getElementById('root');
       if (root) {
+        root.setAttribute('data-font', fontAttr);
         root.style.setProperty('--font-heading', fontValue);
       }
     }
@@ -462,6 +488,10 @@ const rawLoadedSettings = loadPersisted<Partial<AppSettings>>('settings', {});
 const loadedSettings: AppSettings = {
   ...initialSettings,
   ...rawLoadedSettings,
+  preferences: {
+    ...defaultPreferences,
+    ...(rawLoadedSettings.preferences || {}),
+  },
 };
 applyTheme(loadedSettings.theme || 'green');
 applyFont(loadedSettings.fontHeading || 'Gilda Display');
@@ -509,6 +539,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   taskElapsedSeconds: loadPersisted<Record<string, number>>('task_elapsed_seconds', {}),
   startFocusTask: (taskId) => set((state) => {
     const elapsed = state.taskElapsedSeconds[taskId] || 0;
+    const shouldAutoPlayMusic = state.settings.preferences?.autoPlayMusicOnFocus;
+    if (shouldAutoPlayMusic && !state.isPlayingLofi) {
+      const station = state.settings.preferences?.defaultLofiStation || 'coffee';
+      savePersisted('lofi_station', station);
+      return {
+        activeFocusTaskId: taskId,
+        isFocusTimerRunning: true,
+        focusElapsedSeconds: elapsed,
+        activeLofiStation: station,
+        isPlayingLofi: true,
+        activeSoundscape: station,
+        isPlayingSoundscape: true,
+      };
+    }
     if (state.activeFocusTaskId === taskId) {
       return { isFocusTimerRunning: true };
     }
@@ -859,6 +903,22 @@ export const useAppStore = create<AppState>((set, get) => ({
       return { settings: updated };
     });
     get().replanDay();
+  },
+
+  updatePreferences: (newPreferences) => {
+    set((state) => {
+      const updatedPrefs: UserPreferences = {
+        ...defaultPreferences,
+        ...(state.settings.preferences || {}),
+        ...newPreferences,
+      };
+      const updatedSettings: AppSettings = {
+        ...state.settings,
+        preferences: updatedPrefs,
+      };
+      savePersisted('settings', updatedSettings);
+      return { settings: updatedSettings };
+    });
   },
 
   replanDay: () => {

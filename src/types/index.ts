@@ -94,6 +94,30 @@ export interface LofiStation {
   mood: string;
 }
 
+export interface UserPreferences {
+  // Mood & Emotional Intelligence
+  enableMoodInsightPopups: boolean;
+  enableMoodFaceAnimations: boolean;
+  enableDailyMoodCheckin: boolean;
+
+  // Focus & Soundscapes
+  autoPlayMusicOnFocus: boolean;
+  defaultLofiStation: LofiStationId;
+  enableOvertimeAlerts: boolean;
+  taskCompletionChime: boolean;
+
+  // Schedule & Capacity Automations
+  enableOverloadWarnings: boolean;
+  autoRollFlexibleTasks: boolean;
+  strictBedtimeBoundary: boolean;
+  smartBreakBuffers: boolean;
+
+  // Visual & Experience
+  enableSmoothAnimations: boolean;
+  enableHapticFeedback: boolean;
+  showShortcutsHint: boolean;
+}
+
 export interface AppSettings {
   userName: string;
   wakeTime: string; // e.g. "07:00"
@@ -108,6 +132,7 @@ export interface AppSettings {
   fontHeading?: string;
   hasCompletedOnboarding?: boolean;
   focusPriority?: 'tasks' | 'habits' | 'balance';
+  preferences?: UserPreferences;
 }
 
 export interface AiOperation {
