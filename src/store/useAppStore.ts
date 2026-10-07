@@ -23,7 +23,7 @@ import { calculateDayCapacity, buildDaySchedule } from '../engine/scheduler';
 import { playCompletionSound } from '../utils/soundEffects';
 
 interface AppState {
-  currentTab: 'today' | 'tasks' | 'analytics' | 'habits' | 'routines' | 'goals' | 'schedule' | 'history' | 'settings' | 'preferences';
+  currentTab: 'today' | 'tasks' | 'analytics' | 'habits' | 'routines' | 'goals' | 'schedule' | 'history' | 'settings' | 'preferences' | 'ai-planner';
   selectedDate: string; // YYYY-MM-DD
   tasks: Task[];
   habits: Habit[];
@@ -422,6 +422,8 @@ export const defaultPreferences: UserPreferences = {
   enableSmoothAnimations: true,
   enableHapticFeedback: true,
   showShortcutsHint: true,
+  enableAiDebugJson: false,
+  showAiOperationsByDefault: false,
 };
 
 const initialSettings: AppSettings = {
@@ -433,6 +435,10 @@ const initialSettings: AppSettings = {
   breakDuration: 15,
   openRouterApiKey: '',
   openRouterModel: 'anthropic/claude-3.5-haiku',
+  aiProvider: 'in_app',
+  inAppModel: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
+  localModel: 'qwen2.5:1.5b',
+  localEndpoint: 'http://localhost:11434',
   autoReschedule: true,
   theme: 'green',
   fontHeading: 'Gilda Display',
@@ -514,16 +520,8 @@ const loadedSettings: AppSettings = {
     ...(rawLoadedSettings.preferences || {}),
   },
 };
-const initialAppSites: AppSiteFocusItem[] = [
-  { id: 'site-1', name: 'VS Code & Terminals', domain: 'code.visualstudio.com', category: 'Work', durationMinutes: 245, icon: 'Code2', isProductive: true, color: '#38BDF8' },
-  { id: 'site-2', name: 'GitHub Repos & PRs', domain: 'github.com', category: 'Work', durationMinutes: 135, icon: 'GitPullRequest', isProductive: true, color: '#A855F7' },
-  { id: 'site-3', name: 'Figma UI/UX Design', domain: 'figma.com', category: 'Work', durationMinutes: 110, icon: 'Layout', isProductive: true, color: '#F97316' },
-  { id: 'site-4', name: 'Notion Knowledge Base', domain: 'notion.so', category: 'Learning', durationMinutes: 85, icon: 'BookOpen', isProductive: true, color: '#10B981' },
-  { id: 'site-5', name: 'Linear Issue Tracker', domain: 'linear.app', category: 'Work', durationMinutes: 60, icon: 'CheckSquare', isProductive: true, color: '#6366F1' },
-  { id: 'site-6', name: 'FocusFlow Web & Docs', domain: 'focusflow.app', category: 'Personal', durationMinutes: 45, icon: 'Compass', isProductive: true, color: '#EC4899' },
-  { id: 'site-7', name: 'YouTube Ambient Study', domain: 'youtube.com', category: 'Learning', durationMinutes: 55, icon: 'Headphones', isProductive: true, color: '#E11D48' },
-  { id: 'site-8', name: 'Mindful Meditation & Health', domain: 'health.flow', category: 'Health', durationMinutes: 30, icon: 'Heart', isProductive: true, color: '#22C55E' },
-];
+
+const initialAppSites: AppSiteFocusItem[] = [];
 
 applyTheme(loadedSettings.theme || 'green');
 applyFont(loadedSettings.fontHeading || 'Gilda Display');
@@ -538,7 +536,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   scheduleBlocks: [],
   history: loadPersisted('history', initialHistory),
   settings: loadedSettings,
-  appSiteFocusData: loadPersisted('app_site_focus', initialAppSites),
+  appSiteFocusData: loadPersisted('app_site_focus', []),
 
   isOnboardingOpen: !loadedSettings.hasCompletedOnboarding,
   isTaskModalOpen: false,
@@ -1056,6 +1054,53 @@ export const useAppStore = create<AppState>((set, get) => ({
           target.scheduledDate = op.target_date === 'tomorrow' ? tomorrow.toISOString().split('T')[0] : selectedDate;
           target.movedCount = (target.movedCount || 0) + 1;
         }
+      } else if (op.op_type === 'DELETE_TASK') {
+        const rawTitle = (op.title || '').trim().toLowerCase();
+        if (rawTitle === 'all' || rawTitle === 'all tasks' || rawTitle === 'everything' || rawTitle === 'all_tasks') {
+          updatedTasks = [];
+        } else {
+          const rangeMatch = rawTitle.match(/task\s*(\d+)\s*(?:through|to|-)\s*(?:task\s*)?(\d+)/i) || rawTitle.match(/(\d+)\s*(?:through|to|-)\s*(\d+)/);
+          if (rangeMatch) {
+            const start = parseInt(rangeMatch[1], 10) - 1;
+            const end = parseInt(rangeMatch[2], 10) - 1;
+            updatedTasks = updatedTasks.filter((_, idx) => idx < start || idx > end);
+          } else {
+            const indexMatch = rawTitle.match(/^task\s*(\d+)$/i) || rawTitle.match(/^#(\d+)$/);
+            const targetIdx = indexMatch ? parseInt(indexMatch[1], 10) - 1 : -1;
+
+            updatedTasks = updatedTasks.filter((t, idx) => {
+              if (op.task_id && t.id === op.task_id) return false;
+              if (targetIdx !== -1 && idx === targetIdx) return false;
+              if (rawTitle && (t.title.toLowerCase().includes(rawTitle) || rawTitle.includes(t.title.toLowerCase()))) return false;
+              return true;
+            });
+          }
+        }
+      } else if (op.op_type === 'UPDATE_TASK' || op.op_type === 'CHANGE_DURATION' || op.op_type === 'CHANGE_PRIORITY') {
+        const rawTitle = (op.title || '').trim().toLowerCase();
+        const target = updatedTasks.find(t => t.id === op.task_id || (rawTitle && (t.title.toLowerCase().includes(rawTitle) || rawTitle.includes(t.title.toLowerCase()))));
+        if (target) {
+          if (op.duration_minutes) target.duration = op.duration_minutes;
+          if (op.priority) target.priority = op.priority;
+          if (op.category) target.category = op.category;
+          if (op.start_time) target.scheduledStart = op.start_time;
+          if (op.target_date) target.scheduledDate = op.target_date === 'tomorrow' ? undefined : selectedDate;
+          target.updatedAt = new Date().toISOString();
+        } else if (op.title) {
+          // If task didn't exist in store yet (e.g. user refining a newly proposed task), insert it!
+          updatedTasks.unshift({
+            id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+            title: op.title,
+            duration: op.duration_minutes || 25,
+            priority: op.priority || 'important',
+            status: 'pending',
+            category: op.category || 'Work',
+            scheduledStart: op.start_time,
+            scheduledDate: op.target_date === 'tomorrow' ? undefined : selectedDate,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        }
       } else if (op.op_type === 'CREATE_HABIT') {
         updatedHabits.push({
           id: `habit-${Date.now()}`,
@@ -1076,7 +1121,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       tasks: updatedTasks,
       habits: updatedHabits,
       lastAiResult: result,
-      isAiModalOpen: true,
+      isAiModalOpen: false,
       aiLoading: false,
     });
     savePersisted('tasks', updatedTasks);
@@ -1177,7 +1222,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   getDayCapacity: () => {
-    const { selectedDate, tasks, habits, settings } = get();
-    return calculateDayCapacity(selectedDate, tasks, habits, settings);
+    const { selectedDate, tasks, habits, settings, taskElapsedSeconds, activeFocusTaskId, focusElapsedSeconds } = get();
+    return calculateDayCapacity(selectedDate, tasks, habits, settings, taskElapsedSeconds, activeFocusTaskId, focusElapsedSeconds);
   }
 }));

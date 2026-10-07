@@ -211,8 +211,16 @@ export const TodayTasksCard: React.FC = () => {
                       {timeDisplay}
                     </span>
 
-                    {/* Live Task Timer (between Time and Play button) */}
-                    {!isCompleted && (
+                    {/* Task Timer (Live for pending, Total duration for completed) */}
+                    {isCompleted ? (
+                      <div
+                        className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-mono text-[11.5px] bg-tag-healthBg text-tag-health font-medium border border-tag-health/30 tracking-tight tabular-nums select-none"
+                        title="Completed focus duration"
+                      >
+                        <Check size={11} strokeWidth={2.5} className="text-tag-health flex-shrink-0" />
+                        <span>{formatTimer(Math.max((task.duration || 45) * 60, elapsedSeconds))}</span>
+                      </div>
+                    ) : (
                       <div 
                         className="relative"
                         ref={activeOvertimeMenuId === task.id ? overtimeContainerRef : null}

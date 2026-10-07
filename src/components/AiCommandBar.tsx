@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { Sparkles, CornerDownLeft, Loader2 } from 'lucide-react';
+import { Sparkles, CornerDownLeft, Loader2, Mic, MicOff } from 'lucide-react';
 import { sendAiCommand } from '../engine/aiClient';
 
 export const AiCommandBar: React.FC = () => {
   const { tasks, habits, settings, applyAiOperations, aiLoading, setAiLoading } = useAppStore();
   const [inputVal, setInputVal] = useState('');
+  const [isListening, setIsListening] = useState(false);
 
   const samplePrompts = [
     'I have a meeting at 4 PM today',
@@ -13,6 +14,41 @@ export const AiCommandBar: React.FC = () => {
     'Add 2 hours for client API',
     'Add 30 min reading every evening',
   ];
+
+  const toggleSpeechRecognition = () => {
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      alert('Voice dictation is supported in Chrome, Edge, and Chromium-based browsers.');
+      return;
+    }
+
+    if (isListening) {
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRec();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((r: any) => r[0].transcript)
+          .join('');
+        setInputVal(transcript);
+      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+
+      recognition.start();
+    } catch (err) {
+      console.warn('Speech recognition error:', err);
+      setIsListening(false);
+    }
+  };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -25,6 +61,29 @@ export const AiCommandBar: React.FC = () => {
     try {
       const result = await sendAiCommand(query, tasks, habits, settings);
       applyAiOperations(result);
+
+      // Append to persistent chat history
+      try {
+        const existingHistory = JSON.parse(localStorage.getItem('focusflow_ai_chat_history') || '[]');
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        existingHistory.push(
+          {
+            id: `user-${Date.now()}`,
+            sender: 'user',
+            text: query,
+            timestamp: time,
+          },
+          {
+            id: `ai-${Date.now() + 1}`,
+            sender: 'ai',
+            text: result.message || 'Task operations processed successfully.',
+            timestamp: time,
+            payload: result,
+            rawJson: JSON.stringify(result, null, 2),
+          }
+        );
+        localStorage.setItem('focusflow_ai_chat_history', JSON.stringify(existingHistory));
+      } catch {}
     } catch (err) {
       console.error('AI command failed:', err);
       setAiLoading(false);
@@ -44,15 +103,29 @@ export const AiCommandBar: React.FC = () => {
           type="text"
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
-          placeholder="Tell FocusFlow what's changed... (e.g. 'Meeting at 3 PM', 'Move DSA to tomorrow')"
+          placeholder={isListening ? "Listening to your voice..." : "Tell FocusFlow what's changed... (e.g. 'Meeting at 3 PM', 'Move DSA to tomorrow')"}
           className="flex-1 bg-transparent text-[14.5px] text-foreground placeholder-mutedText outline-none border-none font-medium"
         />
+
+        {/* Voice Dictation Button */}
+        <button
+          type="button"
+          onClick={toggleSpeechRecognition}
+          className={`p-2 rounded-xl transition-all cursor-pointer ${
+            isListening 
+              ? 'bg-tag-important text-white animate-pulse shadow-xs' 
+              : 'bg-card-subtle hover:bg-card-muted text-mutedText hover:text-foreground'
+          }`}
+          title={isListening ? 'Listening (Click to stop)' : 'Voice Input (Hands-free)'}
+        >
+          {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+        </button>
 
         {/* Submit Enter Button */}
         <button
           type="submit"
           disabled={!inputVal.trim() || aiLoading}
-          className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-40 text-white text-[13px] font-medium flex items-center gap-1.5 transition-all shadow-xs"
+          className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-40 text-white text-[13px] font-medium flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
         >
           <span>Ask</span>
           <CornerDownLeft size={13} />
@@ -69,7 +142,7 @@ export const AiCommandBar: React.FC = () => {
             key={idx}
             type="button"
             onClick={() => setInputVal(prompt)}
-            className="px-3 py-1 rounded-full bg-card-subtle hover:bg-card-muted text-textSecondary hover:text-foreground whitespace-nowrap transition-colors font-sans"
+            className="px-3 py-1 rounded-full bg-card-subtle hover:bg-card-muted text-textSecondary hover:text-foreground whitespace-nowrap transition-colors font-sans cursor-pointer text-[12px]"
           >
             {prompt}
           </button>

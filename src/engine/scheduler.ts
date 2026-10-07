@@ -25,7 +25,10 @@ export function calculateDayCapacity(
   date: string,
   tasks: Task[],
   habits: Habit[],
-  settings: AppSettings
+  settings: AppSettings,
+  taskElapsedSeconds: Record<string, number> = {},
+  activeFocusTaskId: string | null = null,
+  focusElapsedSeconds: number = 0
 ): DayCapacity {
   const dayTasks = tasks.filter(t => (t.scheduledDate === date || (!t.scheduledDate && t.status !== 'completed' && t.status !== 'skipped')));
   
@@ -48,6 +51,30 @@ export function calculateDayCapacity(
     } else {
       regularCount++;
     }
+  }
+
+  // Calculate actual focused minutes until now
+  let actualFocusedMinutes = 0;
+
+  // 1. Completed tasks: The full planned task duration replaces whatever was on the timer
+  for (const t of completedTasks) {
+    const elapsedSec = taskElapsedSeconds[t.id] || 0;
+    const taskMinutes = Math.max(t.duration || 30, Math.ceil(elapsedSec / 60));
+    actualFocusedMinutes += taskMinutes;
+  }
+
+  // 2. Active / In-progress / Pending tasks: Count the running/recorded timer
+  for (const t of activeTasks) {
+    const isLive = activeFocusTaskId === t.id;
+    const elapsedSec = isLive ? focusElapsedSeconds : (taskElapsedSeconds[t.id] || 0);
+    if (elapsedSec > 0) {
+      actualFocusedMinutes += Math.ceil(elapsedSec / 60);
+    }
+  }
+
+  // 3. Completed habits for today
+  for (const h of habits.filter(h => h.active && h.completedDates.includes(date))) {
+    actualFocusedMinutes += h.duration || 15;
   }
 
   // Add habits for today
@@ -110,6 +137,7 @@ export function calculateDayCapacity(
     isOverloaded,
     overloadMinutes,
     focusMinutes: totalPlannedMinutes,
+    actualFocusedMinutes,
     importantTasksCount: importantCount,
     regularTasksCount: regularCount,
     completedTasksCount: completedTasks.length,

@@ -18,7 +18,9 @@ import {
   Shield,
   Clock,
   Sparkle,
-  Play
+  Play,
+  Cpu,
+  Code2
 } from 'lucide-react';
 
 interface ToggleProps {
@@ -737,6 +739,61 @@ export const PreferencesView: React.FC = () => {
                 </kbd>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 4: AI Assistant & Developer Intelligence */}
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-5 transition-colors border border-borderToken/60">
+        <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
+          <div className="w-8 h-8 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
+            <Cpu size={18} />
+          </div>
+          <div>
+            <h2 className="text-[17px] font-serif font-semibold text-foreground">
+              AI Assistant & Developer Intelligence
+            </h2>
+            <p className="text-[12px] text-mutedText">
+              Configure assistant output formatting and deep debugging telemetry.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Preference: AI Debug Mode & Raw JSON */}
+          <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+            <div className="space-y-0.5 pr-2">
+              <span className="text-[13.5px] font-semibold text-foreground block">
+                Debug AI & JSON Inspector
+              </span>
+              <p className="text-[12px] text-mutedText leading-relaxed">
+                Show &quot;Inspect JSON&quot; technical triggers and latency telemetry on chat bubbles (off by default).
+              </p>
+            </div>
+
+            <ToggleSwitch
+              checked={preferences.enableAiDebugJson || false}
+              onChange={() => handleToggle('enableAiDebugJson')}
+              label="Debug AI & JSON Inspector"
+            />
+          </div>
+
+          {/* Preference: Show Executed Operations Breakdown */}
+          <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+            <div className="space-y-0.5 pr-2">
+              <span className="text-[13.5px] font-semibold text-foreground block">
+                Show Executed Operations Breakdown
+              </span>
+              <p className="text-[12px] text-mutedText leading-relaxed">
+                Display the detailed action badge list under AI message bubbles instead of text-only (off by default).
+              </p>
+            </div>
+
+            <ToggleSwitch
+              checked={preferences.showAiOperationsByDefault || false}
+              onChange={() => handleToggle('showAiOperationsByDefault')}
+              label="Show Executed Operations Breakdown"
+            />
           </div>
         </div>
       </div>

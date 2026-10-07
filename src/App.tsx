@@ -11,6 +11,7 @@ import { ScheduleView } from './views/ScheduleView';
 import { HistoryView } from './views/HistoryView';
 import { SettingsView } from './views/SettingsView';
 import { PreferencesView } from './views/PreferencesView';
+import { AiAssistantView } from './views/AiAssistantView';
 import { TaskModal } from './components/TaskModal';
 import { HabitModal } from './components/HabitModal';
 import { CommitmentModal } from './components/CommitmentModal';
@@ -57,6 +58,8 @@ export const App: React.FC = () => {
         return <TodayView />;
       case 'tasks':
         return <TasksView />;
+      case 'ai-planner':
+        return <AiAssistantView />;
       case 'analytics':
         return <AnalyticsView />;
       case 'habits':

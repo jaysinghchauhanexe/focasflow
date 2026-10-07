@@ -1,0 +1,1277 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useAppStore } from '../store/useAppStore';
+import { sendAiCommand } from '../engine/aiClient';
+import { AiOperation, AiResponsePayload } from '../types';
+import {
+  Sparkles,
+  Send,
+  Mic,
+  MicOff,
+  Cpu,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  Settings as SettingsIcon,
+  Check,
+  ArrowRight,
+  Code2,
+  Clock,
+  Calendar,
+  Terminal,
+  Globe,
+  Download,
+  Trash2,
+  RotateCcw,
+  Plus,
+  MoreHorizontal,
+  Paperclip,
+  SlidersHorizontal,
+  Target,
+  BookOpen,
+  Sun,
+  Flag,
+  GraduationCap,
+  Lightbulb,
+  FileText,
+  Leaf,
+  MessageSquare,
+  User,
+  Wind,
+  Headphones,
+  ArrowUp,
+  X,
+  ChevronDown
+} from 'lucide-react';
+import { IN_APP_MODELS, loadInAppModel } from '../engine/webLlmService';
+import { DiurnalSkyIllustration } from '../components/ProductivitySummary';
+
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'ai';
+  text: string;
+  timestamp: string;
+  payload?: AiResponsePayload;
+  rawJson?: string;
+  isApplied?: boolean;
+  isDiscarded?: boolean;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  dateLabel: string;
+  createdAt: string;
+  updatedAt: string;
+  messages: ChatMessage[];
+}
+
+export const AiAssistantView: React.FC = () => {
+  const { tasks, habits, settings, applyAiOperations, setCurrentTab } = useAppStore();
+
+  const [inputVal, setInputVal] = useState(() => {
+    try {
+      return localStorage.getItem('focusflow_ai_input_draft') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [loading, setLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [showRawJsonMap, setShowRawJsonMap] = useState<Record<string, boolean>>({});
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [quickPromptsOpen, setQuickPromptsOpen] = useState(false);
+  const [refiningPromptHint, setRefiningPromptHint] = useState<string | null>(null);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Save input draft in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('focusflow_ai_input_draft', inputVal);
+    } catch {}
+  }, [inputVal]);
+
+  // Helper to format friendly dates for previous chats
+  const getFormattedDateLabel = (dateStr?: string) => {
+    const d = dateStr ? new Date(dateStr) : new Date();
+    const today = new Date();
+    const isToday =
+      d.getDate() === today.getDate() &&
+      d.getMonth() === today.getMonth() &&
+      d.getFullYear() === today.getFullYear();
+
+    if (isToday) return 'Today';
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday =
+      d.getDate() === yesterday.getDate() &&
+      d.getMonth() === yesterday.getMonth() &&
+      d.getFullYear() === yesterday.getFullYear();
+
+    if (isYesterday) return 'Yesterday';
+
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  // Sessions Management
+  const [sessions, setSessions] = useState<ChatSession[]>(() => {
+    try {
+      const saved = localStorage.getItem('focusflow_ai_chat_sessions');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(() => {
+    try {
+      const last = localStorage.getItem('focusflow_ai_active_session');
+      if (last) return last;
+    } catch {}
+    return null;
+  });
+
+  // Current Active Session or empty state
+  const currentSession = sessions.find((s) => s.id === activeSessionId) || null;
+  const activeMessages: ChatMessage[] = currentSession ? currentSession.messages : [];
+
+  // Provider & Model Connection Status
+  const [connectionStatus, setConnectionStatus] = useState<'testing' | 'connected' | 'model_missing' | 'disconnected'>('testing');
+  const [connectionLatency, setConnectionLatency] = useState<number | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string>('');
+
+  // In-App Download state
+  const [downloadingInApp, setDownloadingInApp] = useState(false);
+  const [downloadProgressPercent, setDownloadProgressPercent] = useState(0);
+  const [downloadProgressText, setDownloadProgressText] = useState('');
+
+  const provider = settings.aiProvider || 'in_app';
+  const isLocal = provider === 'in_app' || provider === 'local_ollama';
+  const activeModelId = settings.inAppModel || 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC';
+  const currentInAppMeta = IN_APP_MODELS.find((m) => m.id === activeModelId) || IN_APP_MODELS[0];
+  const activeModelName =
+    provider === 'in_app'
+      ? (currentInAppMeta?.name || 'Qwen 2.5 1.5B')
+      : provider === 'local_ollama'
+      ? (settings.localModel || 'qwen2.5:1.5b')
+      : (settings.openRouterModel || 'GPT-4o');
+
+  const localEndpoint = settings.localEndpoint || 'http://localhost:11434';
+
+  // Dynamic greeting based on user time
+  const currentHour = new Date().getHours();
+  const greetingText =
+    currentHour < 12
+      ? 'Good morning'
+      : currentHour < 17
+      ? 'Good afternoon'
+      : 'Good evening';
+  const userName = settings.userName || 'Jay';
+
+  // Save Sessions & Active session to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('focusflow_ai_chat_sessions', JSON.stringify(sessions));
+      if (activeSessionId) {
+        localStorage.setItem('focusflow_ai_active_session', activeSessionId);
+      } else {
+        localStorage.removeItem('focusflow_ai_active_session');
+      }
+    } catch {}
+  }, [sessions, activeSessionId]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (activeMessages.length > 0) {
+      scrollToBottom();
+    }
+  }, [activeMessages, loading]);
+
+  const testConnection = async () => {
+    setConnectionStatus('testing');
+    const start = performance.now();
+
+    if (provider === 'in_app') {
+      try {
+        const cached = await import('../engine/webLlmService').then((m) => m.checkModelCached(activeModelId));
+        const elapsed = Math.round(performance.now() - start);
+        setConnectionLatency(elapsed);
+        if (cached) {
+          setConnectionStatus('connected');
+          setStatusMessage('Downloaded & In-App Cached');
+        } else {
+          setConnectionStatus('model_missing');
+          setStatusMessage(`Not Downloaded (${currentInAppMeta.size})`);
+        }
+      } catch {
+        setConnectionStatus('disconnected');
+        setStatusMessage('WebGPU Not Available');
+      }
+      return;
+    }
+
+    if (provider === 'local_ollama') {
+      try {
+        const endpoint = localEndpoint.replace(/\/$/, '');
+        const res = await fetch(`${endpoint}/api/tags`, { method: 'GET' });
+        const elapsed = Math.round(performance.now() - start);
+        setConnectionLatency(elapsed);
+        if (res.ok) {
+          const data = await res.json();
+          const installedNames: string[] = (data.models || []).map((m: any) => m.name || m.model);
+          const target = settings.localModel || 'qwen2.5:1.5b';
+          const hasModel = installedNames.some(
+            (m) => m === target || m.startsWith(`${target}:`) || target.startsWith(`${m}:`)
+          );
+
+          if (hasModel) {
+            setConnectionStatus('connected');
+            setStatusMessage(`${elapsed}ms (Model Ready)`);
+          } else {
+            setConnectionStatus('model_missing');
+            setStatusMessage(`Ollama online, but "${target}" not downloaded`);
+          }
+        } else {
+          setConnectionStatus('disconnected');
+          setStatusMessage('Ollama Daemon Offline');
+        }
+      } catch {
+        setConnectionStatus('disconnected');
+        setStatusMessage('Ollama Daemon Offline');
+      }
+      return;
+    }
+
+    // OpenRouter Cloud
+    setConnectionLatency(35);
+    if (settings.openRouterApiKey) {
+      setConnectionStatus('connected');
+      setStatusMessage('Cloud API Ready');
+    } else {
+      setConnectionStatus('model_missing');
+      setStatusMessage('Missing OpenRouter API Key');
+    }
+  };
+
+  useEffect(() => {
+    testConnection();
+  }, [provider, settings.inAppModel, settings.localModel, localEndpoint, settings.openRouterApiKey]);
+
+  const handleDownloadInApp = async () => {
+    setDownloadingInApp(true);
+    setDownloadProgressPercent(0);
+    setDownloadProgressText(`Initializing download for ${currentInAppMeta.name} from Hugging Face...`);
+
+    try {
+      await loadInAppModel(activeModelId, (report) => {
+        setDownloadProgressText(report.text);
+        if (report.progress !== undefined) {
+          setDownloadProgressPercent(Math.round(report.progress * 100));
+        }
+      });
+      setConnectionStatus('connected');
+      setStatusMessage('Downloaded & In-App Cached');
+      setDownloadProgressText('Model downloaded & loaded into WebGPU memory!');
+    } catch (err: any) {
+      setDownloadProgressText(`Download failed: ${err?.message || 'Error downloading weights'}`);
+    } finally {
+      setTimeout(() => {
+        setDownloadingInApp(false);
+      }, 1500);
+    }
+  };
+
+  const handleSpeechRecognition = () => {
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      alert('Voice dictation is supported in modern Chrome, Edge, and Chromium-based browsers.');
+      return;
+    }
+
+    if (isListening) {
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRec();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((r: any) => r[0].transcript)
+          .join('');
+        setInputVal(transcript);
+      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+
+      recognition.start();
+    } catch (err) {
+      console.warn('Speech recognition error:', err);
+      setIsListening(false);
+    }
+  };
+
+  const handleStartNewChat = () => {
+    setActiveSessionId(null);
+    setInputVal('');
+    setRefiningPromptHint(null);
+  };
+
+  const handleDeleteSession = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const filtered = sessions.filter((s) => s.id !== id);
+    setSessions(filtered);
+    if (activeSessionId === id) {
+      setActiveSessionId(filtered.length > 0 ? filtered[0].id : null);
+    }
+  };
+
+  const handleClearAllChats = () => {
+    if (confirm('Clear all previous chat history?')) {
+      setSessions([]);
+      setActiveSessionId(null);
+      localStorage.removeItem('focusflow_ai_chat_sessions');
+      localStorage.removeItem('focusflow_ai_active_session');
+    }
+  };
+
+  // Schedule button actions (Apply Changes, Refine, Discard)
+  const handleApplyChanges = (msgId: string, payload: AiResponsePayload) => {
+    applyAiOperations(payload);
+    setSessions((prev) =>
+      prev.map((s) => ({
+        ...s,
+        messages: s.messages.map((m) =>
+          m.id === msgId ? { ...m, isApplied: true, isDiscarded: false } : m
+        ),
+      }))
+    );
+  };
+
+  const handleDiscardChanges = (msgId: string) => {
+    setSessions((prev) =>
+      prev.map((s) => ({
+        ...s,
+        messages: s.messages.map((m) =>
+          m.id === msgId ? { ...m, isDiscarded: true, isApplied: false } : m
+        ),
+      }))
+    );
+  };
+
+  const handleRefineChanges = (msgText: string) => {
+    const hint = `Refining schedule: Specify what you'd like adjusted...`;
+    setRefiningPromptHint(hint);
+    setInputVal(`Refine schedule: `);
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
+  };
+
+  const handleSend = async (queryText?: string) => {
+    const textToSend = (queryText || inputVal).trim();
+    if (!textToSend || loading) return;
+
+    setInputVal('');
+    try {
+      localStorage.removeItem('focusflow_ai_input_draft');
+    } catch {}
+    setRefiningPromptHint(null);
+    const userMsgId = `user-${Date.now()}`;
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const newUserMsg: ChatMessage = {
+      id: userMsgId,
+      sender: 'user',
+      text: textToSend,
+      timestamp,
+    };
+
+    let targetSessionId = activeSessionId;
+    let currentSessionMessages: ChatMessage[] = [];
+
+    if (!targetSessionId) {
+      // Create a fresh new session with an intuitive auto-title and formatted date
+      const newSessionId = `session-${Date.now()}`;
+      const title = textToSend.length > 34 ? textToSend.slice(0, 34) + '...' : textToSend;
+      const dateLabel = getFormattedDateLabel();
+      const newSession: ChatSession = {
+        id: newSessionId,
+        title,
+        dateLabel,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: [newUserMsg],
+      };
+      setSessions((prev) => [newSession, ...prev]);
+      setActiveSessionId(newSessionId);
+      targetSessionId = newSessionId;
+      currentSessionMessages = [newUserMsg];
+    } else {
+      // Append to existing active session
+      currentSessionMessages = [...activeMessages, newUserMsg];
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === targetSessionId
+            ? { ...s, updatedAt: new Date().toISOString(), messages: currentSessionMessages }
+            : s
+        )
+      );
+    }
+
+    setLoading(true);
+
+    try {
+      const history = currentSessionMessages
+        .filter((m) => m.text)
+        .slice(-8)
+        .map((m) => ({
+          role: m.sender === 'user' ? ('user' as const) : ('assistant' as const),
+          content: m.text,
+        }));
+
+      const result = await sendAiCommand(textToSend, tasks, habits, settings, history);
+
+      // NOTE: DO NOT auto-apply operations! Actions are only applied when user clicks "Apply Changes"
+
+      const aiMsgId = `ai-${Date.now()}`;
+      const newAiMsg: ChatMessage = {
+        id: aiMsgId,
+        sender: 'ai',
+        text: result.message || 'I have proposed schedule adjustments below.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        payload: result,
+        rawJson: JSON.stringify(result, null, 2),
+        isApplied: false,
+        isDiscarded: false,
+      };
+
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === targetSessionId
+            ? { ...s, updatedAt: new Date().toISOString(), messages: [...currentSessionMessages, newAiMsg] }
+            : s
+        )
+      );
+    } catch (err: any) {
+      const errAiMsg: ChatMessage = {
+        id: `ai-err-${Date.now()}`,
+        sender: 'ai',
+        text: `Command error: ${err?.message || 'Could not process schedule command.'}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === targetSessionId
+            ? { ...s, updatedAt: new Date().toISOString(), messages: [...currentSessionMessages, errAiMsg] }
+            : s
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Quick Action Cards for the Hero view
+  const heroActionCards = [
+    {
+      id: 'plan-day',
+      icon: FileText,
+      title: 'Plan my day',
+      desc: 'Turn my tasks into a focused plan',
+      prompt: 'Plan my day based on my current tasks and optimal focus windows.',
+    },
+    {
+      id: 'build-habit',
+      icon: Leaf,
+      title: 'Build a habit',
+      desc: 'Create a simple habit plan',
+      prompt: 'Help me design a consistent mindful habit routine for today.',
+    },
+    {
+      id: 'give-insights',
+      icon: Lightbulb,
+      title: 'Give me insights',
+      desc: 'Analyze my productivity patterns',
+      prompt: 'Analyze my current schedule balance, deep work capacity, and potential burnout risks.',
+    },
+    {
+      id: 'just-chat',
+      icon: MessageSquare,
+      title: 'Just chat',
+      desc: 'Ask me anything',
+      prompt: 'Hi! How can you help me optimize my focus, tasks, and daily routine today?',
+    },
+  ];
+
+  // Suggestions List for the Right Sidebar
+  const sidebarSuggestions = [
+    {
+      icon: SlidersHorizontal,
+      title: "Summarize today's tasks",
+      prompt: "Summarize today's urgent tasks, commitments, and available focus blocks.",
+    },
+    {
+      icon: Target,
+      title: 'Help me stay focused',
+      prompt: 'I am starting a 45-minute focus session. Help me stay on track and eliminate distractions.',
+    },
+    {
+      icon: BookOpen,
+      title: 'Create a study plan',
+      prompt: 'Create a structured study and practice plan for my technical goals this week.',
+    },
+    {
+      icon: Sun,
+      title: 'Suggest a morning routine',
+      prompt: 'Design an energizing, mindful 45-minute morning routine to start my day with calm focus.',
+    },
+    {
+      icon: Flag,
+      title: 'Break down a big goal',
+      prompt: 'Help me break down my primary project goal into manageable 30-minute milestones.',
+    },
+    {
+      icon: GraduationCap,
+      title: 'Explain a concept',
+      prompt: 'Explain cognitive load theory and deliberate practice in simple, practical terms.',
+    },
+    {
+      icon: Lightbulb,
+      title: 'Give me a productivity tip',
+      prompt: 'Give me an evidence-based mindful productivity tip for managing energy and focus.',
+    },
+  ];
+
+  // Render Schedule Timeline Item in AI Response (Matching Screenshot 2)
+  const renderSchedulePreviewItem = (op: AiOperation, idx: number) => {
+    const isBreathing =
+      op.title?.toLowerCase().includes('breath') ||
+      op.title?.toLowerCase().includes('pause') ||
+      op.title?.toLowerCase().includes('mindful');
+    const isSync =
+      op.title?.toLowerCase().includes('sync') ||
+      op.title?.toLowerCase().includes('meeting') ||
+      op.title?.toLowerCase().includes('call');
+    const priority = op.priority || (isSync ? 'critical' : 'important');
+    const category = op.category || 'Work';
+
+    return (
+      <div
+        key={idx}
+        className="flex items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl bg-card border border-borderToken/70 shadow-xs hover:border-primary/40 transition-colors"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              isBreathing
+                ? 'bg-tag-healthBg text-tag-health'
+                : isSync
+                ? 'bg-tag-learningBg text-tag-learning'
+                : 'bg-primary-soft text-primary'
+            }`}
+          >
+            {isBreathing ? (
+              <Wind size={18} />
+            ) : isSync ? (
+              <Calendar size={18} />
+            ) : (
+              <Headphones size={18} />
+            )}
+          </div>
+
+          <div className="min-w-0 space-y-0.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-[13.5px] text-foreground truncate">
+                {op.title || `${op.op_type.replace('_', ' ')}`}
+              </span>
+
+              {/* Priority Badge */}
+              <span
+                className={`px-2 py-0.5 rounded-md text-[10.5px] font-semibold capitalize ${
+                  priority === 'critical'
+                    ? 'bg-tag-importantBg text-tag-important'
+                    : priority === 'important'
+                    ? 'bg-tag-learningBg text-tag-learning'
+                    : priority === 'flexible'
+                    ? 'bg-primary-soft text-primary'
+                    : 'bg-card-muted text-mutedText'
+                }`}
+              >
+                {priority}
+              </span>
+
+              {/* Category Badge */}
+              {category && (
+                <span className="px-2 py-0.5 rounded-md bg-card-subtle border border-borderToken/50 text-mutedText text-[10.5px] font-medium">
+                  {category}
+                </span>
+              )}
+            </div>
+
+            <p className="text-[11.5px] text-mutedText truncate">
+              {op.start_time ? `@${op.start_time}` : 'Scheduled for today'}
+              {op.target_date ? ` • ${op.target_date}` : ''}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-right flex-shrink-0">
+          {op.duration_minutes && (
+            <span className="text-[12px] font-mono font-semibold text-mutedText">
+              {op.duration_minutes}m
+            </span>
+          )}
+          <div className="w-6 h-6 rounded-full bg-primary-soft flex items-center justify-center text-primary">
+            <Check size={13} strokeWidth={2.5} />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-5 h-[calc(100vh-48px)] max-w-[1600px] mx-auto select-none animate-fade-in pb-4">
+      {/* ========================================================================= */}
+      {/* 1. LEFT / MAIN AI CHAT & HERO PANEL (Clean, seamless without heavy lines) */}
+      {/* ========================================================================= */}
+      <div className="flex-1 flex flex-col bg-card rounded-[28px] shadow-soft overflow-hidden">
+        {/* TOP HEADER (Clean without model pill or harsh borders) */}
+        <div className="px-6 py-4 flex items-center justify-between gap-4 flex-shrink-0 bg-card">
+          <div>
+            <h1 className="text-[20px] sm:text-[22px] font-serif font-bold text-foreground tracking-tight flex items-center gap-2">
+              <span>AI Assistant</span>
+            </h1>
+            <p className="text-[12px] text-mutedText">Your personal productivity companion</p>
+          </div>
+
+          <div className="flex items-center gap-2 relative">
+            {/* More Options Button */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowMoreMenu((v) => !v)}
+                className="p-2 rounded-full bg-card-subtle hover:bg-card-muted text-textSecondary hover:text-foreground border border-borderToken/50 transition-all cursor-pointer"
+                title="More Options"
+              >
+                <MoreHorizontal size={16} />
+              </button>
+
+              {showMoreMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-card rounded-2xl shadow-xl border border-borderToken p-1.5 z-50 animate-enter-up space-y-1 text-left">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMoreMenu(false);
+                      handleStartNewChat();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-medium text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
+                  >
+                    <Plus size={14} />
+                    <span>New Chat</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMoreMenu(false);
+                      handleClearAllChats();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-medium text-tag-important hover:bg-tag-importantBg transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={14} />
+                    <span>Clear All Chats</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMoreMenu(false);
+                      setCurrentTab('preferences');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-medium text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
+                  >
+                    <SettingsIcon size={14} />
+                    <span>AI Preferences</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Real-time In-App Model Download Progress Banner */}
+        {downloadingInApp && (
+          <div className="m-4 mb-0 bg-card rounded-[24px] p-4 border border-primary/30 shadow-soft space-y-2 animate-enter-up">
+            <div className="flex items-center justify-between text-[12.5px] font-medium">
+              <div className="flex items-center gap-2 text-primary font-semibold">
+                <RefreshCw size={14} className="animate-spin" />
+                <span>Downloading {currentInAppMeta.name} from Hugging Face...</span>
+              </div>
+              <span className="font-mono font-bold text-primary">{downloadProgressPercent}%</span>
+            </div>
+            <div className="w-full bg-borderToken/50 h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-primary h-full transition-all duration-300 rounded-full"
+                style={{ width: `${downloadProgressPercent}%` }}
+              />
+            </div>
+            <p className="text-[11px] text-mutedText font-mono truncate">{downloadProgressText}</p>
+          </div>
+        )}
+
+        {/* CENTER CONTENT AREA */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-7 flex flex-col">
+          {/* ================================================================= */}
+          {/* STATE A: EMPTY / NEW CHAT HERO SCREEN (Dashboard Vector Art)     */}
+          {/* ================================================================= */}
+          {activeMessages.length === 0 ? (
+            <div className="flex-1 flex flex-col justify-center items-center text-center max-w-3xl mx-auto w-full my-auto space-y-7 animate-fade-in">
+              {/* Dynamic Dashboard SVG Sky Artwork (Morning/Afternoon/Evening/Night) - Grand Size */}
+              <div className="flex justify-center items-center overflow-visible my-2">
+                <DiurnalSkyIllustration
+                  className="overflow-visible"
+                  svgClassName="w-[360px] sm:w-[480px] md:w-[560px] h-[140px] sm:h-[180px] md:h-[210px]"
+                />
+              </div>
+
+              {/* Greeting Heading */}
+              <div className="space-y-1.5">
+                <h2 className="text-[26px] sm:text-[32px] font-serif font-bold text-foreground tracking-tight">
+                  {greetingText}, {userName}
+                </h2>
+                <p className="text-[14px] sm:text-[15px] text-mutedText font-medium">
+                  How can I help you today?
+                </p>
+              </div>
+
+              {/* 4 Quick Action Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 w-full pt-1">
+                {heroActionCards.map((card) => {
+                  const Icon = card.icon;
+                  return (
+                    <div
+                      key={card.id}
+                      onClick={() => handleSend(card.prompt)}
+                      className="p-4 rounded-2xl bg-card-subtle hover:bg-card-muted border border-borderToken/60 transition-colors duration-150 cursor-pointer text-left flex flex-col justify-between h-[135px]"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-primary-soft text-primary flex items-center justify-center flex-shrink-0">
+                        <Icon size={17} />
+                      </div>
+                      <div>
+                        <h3 className="text-[13.5px] font-semibold text-foreground">
+                          {card.title}
+                        </h3>
+                        <p className="text-[11px] text-mutedText line-clamp-2 mt-0.5 leading-snug">
+                          {card.desc}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            /* =============================================================== */
+            /* STATE B: ACTIVE CONVERSATION THREAD (Matching Screenshot 2)     */
+            /* =============================================================== */
+            <div className="space-y-5 max-w-4xl mx-auto w-full flex-1">
+              {(() => {
+                const lastAiOpMsgId = [...activeMessages]
+                  .reverse()
+                  .find((m) => m.sender === 'ai' && m.payload?.operations && m.payload.operations.length > 0)?.id;
+
+                return activeMessages.map((msg) => {
+                  const isAi = msg.sender === 'ai';
+                  const isJsonOpen = showRawJsonMap[msg.id];
+                  const isLatestProposal = msg.id === lastAiOpMsgId;
+
+                  return (
+                    <div key={msg.id} className="space-y-2 animate-enter-up">
+                      {/* ----------------- USER MESSAGE BUBBLE (With Profile Image) ----------------- */}
+                      {!isAi ? (
+                        <div className="flex justify-end gap-3 items-start pl-8">
+                          <div className="max-w-[85%] sm:max-w-[75%] rounded-[24px] bg-primary text-white p-4 sm:p-5 shadow-xs space-y-1 text-left">
+                            <div className="flex items-center justify-between gap-3 text-[11.5px] text-white/80 pb-1 font-medium">
+                              <span className="font-semibold text-white">{userName}</span>
+                              <span>{msg.timestamp}</span>
+                            </div>
+                            <p className="text-[13.5px] sm:text-[14px] leading-relaxed select-text font-normal">
+                              {msg.text}
+                            </p>
+                          </div>
+
+                          {/* User Profile Avatar */}
+                          <div className="w-8 h-8 rounded-full overflow-hidden bg-primary-soft text-primary flex items-center justify-center flex-shrink-0 mt-1 border border-borderToken shadow-xs">
+                            <img
+                              src="/avatar_jay.jpg"
+                              alt={userName}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // If image fails, fallback gracefully to User icon
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                            <User size={15} />
+                          </div>
+                        </div>
+                      ) : (
+                        /* ----------------- AI RESPONSE CARD ----------------- */
+                        <div className="flex justify-start gap-3 items-start pr-8">
+                          <div className="w-8 h-8 rounded-full bg-primary-soft text-primary flex items-center justify-center flex-shrink-0 mt-1 border border-borderToken">
+                            <Leaf size={15} />
+                          </div>
+
+                          <div className="max-w-[92%] sm:max-w-[85%] rounded-[24px] bg-card border border-borderToken/80 shadow-soft p-5 sm:p-6 space-y-4 text-left">
+                            {/* AI Card Header */}
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-[15px] font-serif font-bold text-foreground">
+                                  {msg.payload?.operations && msg.payload.operations.length > 0
+                                    ? 'Flow Recalibration'
+                                    : 'Mindful Guidance'}
+                                </h3>
+                                <span className="px-2.5 py-0.5 rounded-full bg-primary-soft text-primary text-[10.5px] font-semibold">
+                                  {msg.isDiscarded
+                                    ? 'Discarded'
+                                    : msg.isApplied
+                                    ? 'Changes Applied'
+                                    : !isLatestProposal && msg.payload?.operations && msg.payload.operations.length > 0
+                                    ? 'Superseded'
+                                    : msg.payload?.operations && msg.payload.operations.length > 0
+                                    ? 'Proposed Schedule'
+                                    : 'Assistant'}
+                                </span>
+                              </div>
+                              <span className="text-[11.5px] text-mutedText">{msg.timestamp}</span>
+                            </div>
+
+                            {/* AI Response Text */}
+                            <p className="text-[13.5px] sm:text-[14px] text-foreground leading-relaxed select-text whitespace-pre-wrap">
+                              {msg.text}
+                            </p>
+
+                            {/* Render Structured Schedule Timeline (if operations were generated and not discarded) */}
+                            {!msg.isDiscarded && msg.payload?.operations && msg.payload.operations.length > 0 && (
+                              <div className="space-y-2 pt-1">
+                                {msg.payload.operations.map((op, idx) =>
+                                  renderSchedulePreviewItem(op, idx)
+                                )}
+
+                                {/* 3 Explicit Action Buttons: ONLY on the latest active proposal! */}
+                                {isLatestProposal && (
+                                  <div className="flex items-center gap-2 pt-2 flex-wrap">
+                                    {/* 1. Apply Changes */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleApplyChanges(msg.id, msg.payload!)}
+                                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-semibold transition-all cursor-pointer shadow-xs ${
+                                        msg.isApplied
+                                          ? 'bg-tag-health text-white'
+                                          : 'bg-primary hover:bg-primary-hover text-white'
+                                      }`}
+                                    >
+                                      <Check size={14} strokeWidth={2.5} />
+                                      <span>{msg.isApplied ? 'Changes Applied' : 'Apply Changes'}</span>
+                                    </button>
+
+                                    {/* 2. Refine Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRefineChanges(msg.text)}
+                                      className="px-3.5 py-2 rounded-xl bg-card-subtle hover:bg-card-muted text-foreground text-[12.5px] font-medium border border-borderToken/60 transition-all cursor-pointer"
+                                    >
+                                      Refine
+                                    </button>
+
+                                    {/* 3. Discard Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDiscardChanges(msg.id)}
+                                      className="px-3.5 py-2 rounded-xl bg-card-subtle hover:bg-tag-importantBg text-textSecondary hover:text-tag-important text-[12.5px] font-medium border border-borderToken/60 transition-all cursor-pointer"
+                                    >
+                                      Discard
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Discarded Notice */}
+                            {msg.isDiscarded && (
+                              <div className="p-2.5 rounded-xl bg-card-subtle text-mutedText text-[12px] italic border border-borderToken/40">
+                                Proposed schedule changes were discarded.
+                              </div>
+                            )}
+
+                          {/* AI Debug Telemetry & Raw JSON (Only if enabled in Preferences) */}
+                          {settings.preferences?.enableAiDebugJson && (
+                            <div className="pt-3 border-t border-borderToken/50 flex flex-wrap items-center justify-between gap-2 text-[11px] text-mutedText font-mono">
+                              <span className="px-2 py-0.5 rounded-md bg-card-subtle">
+                                Latency: {msg.payload?.latencyMs || 0}ms • {msg.payload?.modelUsed || activeModelName}
+                              </span>
+
+                              {msg.rawJson && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setShowRawJsonMap((prev) => ({ ...prev, [msg.id]: !prev[msg.id] }))
+                                  }
+                                  className="flex items-center gap-1 text-primary hover:underline cursor-pointer"
+                                >
+                                  <Code2 size={12} />
+                                  <span>{isJsonOpen ? 'Hide JSON' : 'Inspect JSON'}</span>
+                                </button>
+                              )}
+
+                              {isJsonOpen && msg.rawJson && (
+                                <div className="w-full mt-2 p-3 rounded-xl bg-black/80 text-emerald-400 font-mono text-[11px] overflow-x-auto border border-white/10">
+                                  <pre>{msg.rawJson}</pre>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+            })()}
+
+              {/* Loading Indicator */}
+              {loading && (
+                <div className="flex justify-start gap-3 items-center animate-fade-in">
+                  <div className="w-8 h-8 rounded-full bg-primary-soft text-primary flex items-center justify-center flex-shrink-0 animate-pulse">
+                    <Leaf size={15} />
+                  </div>
+                  <div className="p-3.5 px-4 rounded-[22px] bg-card border border-borderToken text-mutedText text-[12.5px] flex items-center gap-2">
+                    <RefreshCw size={13} className="animate-spin text-primary" />
+                    <span>Recalibrating schedule with {activeModelName}...</span>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        {/* BOTTOM FLOATING INPUT BAR (Clean capsule design matching reference) */}
+        <div className="p-4 sm:p-5 bg-card">
+          {/* Refine mode prompt banner */}
+          {refiningPromptHint && (
+            <div className="mb-2.5 px-3.5 py-1.5 rounded-2xl bg-primary-soft text-primary text-[12px] font-medium flex items-center justify-between animate-fade-in border border-primary/20">
+              <span>{refiningPromptHint}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setRefiningPromptHint(null);
+                  setInputVal('');
+                }}
+                className="hover:opacity-75 cursor-pointer"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+            className="rounded-[30px] bg-card border border-borderToken/80 p-2 sm:p-2.5 px-3 sm:px-4 flex items-center justify-between gap-2.5 sm:gap-3 transition-colors focus-within:border-primary/60 shadow-none"
+          >
+            {/* Left Action Buttons (Seamless, no internal dividing lines) */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {/* Plus Button / Quick Prompt Insert */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setQuickPromptsOpen((v) => !v)}
+                  className="w-8 h-8 rounded-full hover:bg-card-muted text-mutedText hover:text-foreground flex items-center justify-center transition-all cursor-pointer"
+                  title="Quick Prompts"
+                >
+                  <Plus size={16} />
+                </button>
+
+                {quickPromptsOpen && (
+                  <div className="absolute bottom-11 left-0 w-64 bg-card rounded-2xl shadow-xl border border-borderToken p-1.5 z-50 animate-enter-up space-y-1 text-left">
+                    <div className="px-2.5 py-1 text-[10.5px] font-semibold text-mutedText uppercase tracking-wider">
+                      Insert Template
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInputVal('Reschedule my unfinished tasks to tomorrow morning');
+                        setQuickPromptsOpen(false);
+                      }}
+                      className="w-full text-left p-2 rounded-xl text-[11.5px] text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
+                    >
+                      Reschedule unfinished tasks
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInputVal('Carve out a 15m mindful breathing pause at 2:00 PM');
+                        setQuickPromptsOpen(false);
+                      }}
+                      className="w-full text-left p-2 rounded-xl text-[11.5px] text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
+                    >
+                      Insert 15m breathing pause
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Local / Cloud Brain Icon */}
+              <button
+                type="button"
+                onClick={testConnection}
+                className="w-8 h-8 rounded-full hover:bg-card-muted text-mutedText hover:text-foreground flex items-center justify-center transition-all cursor-pointer"
+                title={`Brain: ${activeModelName} (${isLocal ? 'Local Offline' : 'Cloud'})`}
+              >
+                <Globe size={16} className={isLocal ? 'text-tag-health' : 'text-tag-learning'} />
+              </button>
+
+              {/* Attach Tasks Context */}
+              <button
+                type="button"
+                onClick={() => {
+                  const taskSummary = tasks.slice(0, 5).map((t) => t.title).join(', ');
+                  setInputVal(`Consider my current tasks (${taskSummary}): `);
+                }}
+                className="w-8 h-8 rounded-full hover:bg-card-muted text-mutedText hover:text-foreground flex items-center justify-center transition-all cursor-pointer"
+                title="Attach Today's Schedule Context"
+              >
+                <Paperclip size={16} />
+              </button>
+
+              {/* Voice Dictation Button */}
+              <button
+                type="button"
+                onClick={handleSpeechRecognition}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                  isListening
+                    ? 'bg-tag-important text-white animate-pulse'
+                    : 'hover:bg-card-muted text-mutedText hover:text-foreground'
+                }`}
+                title={isListening ? 'Stop Listening' : 'Voice Dictation'}
+              >
+                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+              </button>
+            </div>
+
+            {/* Input Field (Seamless) */}
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputVal}
+              onChange={(e) => setInputVal(e.target.value)}
+              placeholder={
+                isListening
+                  ? 'Listening to your voice...'
+                  : 'Ask anything...'
+              }
+              className="flex-1 bg-transparent text-[14px] text-foreground placeholder-mutedText outline-none border-none font-medium px-2"
+            />
+
+            {/* Right Action Tools: Current AI Model Selector Pill + Circular Send Arrow */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Model Selector Pill (Replaces Default tone) */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowModelDropdown((v) => !v)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card-subtle hover:bg-card-muted text-foreground text-[12px] font-medium border border-borderToken/60 transition-all cursor-pointer shadow-none"
+                >
+                  <Sparkles size={12} className="text-primary" />
+                  <span className="font-mono text-[11.5px] font-semibold">{activeModelName}</span>
+                  <ChevronDown size={12} className="text-mutedText" />
+                </button>
+
+                {showModelDropdown && (
+                  <div className="absolute bottom-11 right-0 w-72 bg-card rounded-2xl shadow-xl border border-borderToken p-2.5 z-50 animate-enter-up space-y-1.5 text-left">
+                    <div className="px-2.5 py-1 text-[10.5px] font-semibold text-mutedText uppercase tracking-wider">
+                      Select Brain Engine
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowModelDropdown(false);
+                        setCurrentTab('settings');
+                      }}
+                      className="w-full flex items-center justify-between p-2 rounded-xl bg-card-subtle hover:bg-primary-soft text-foreground text-[12px] font-medium transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Cpu size={14} className="text-primary" />
+                        <span>Configure Models & Keys</span>
+                      </div>
+                      <ArrowRight size={13} className="text-mutedText" />
+                    </button>
+
+                    <div className="p-2 rounded-xl bg-card-subtle text-[11px] text-mutedText flex items-center justify-between">
+                      <span>Status: {statusMessage || 'Ready'}</span>
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          connectionStatus === 'connected'
+                            ? 'bg-tag-health'
+                            : connectionStatus === 'model_missing'
+                            ? 'bg-tag-learning'
+                            : 'bg-tag-important'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Circular Send Arrow Button */}
+              <button
+                type="submit"
+                disabled={!inputVal.trim() || loading}
+                className="w-8 h-8 rounded-full bg-primary hover:bg-primary-hover disabled:opacity-40 text-white flex items-center justify-center transition-all cursor-pointer flex-shrink-0"
+              >
+                {loading ? <RefreshCw size={14} className="animate-spin" /> : <ArrowUp size={16} strokeWidth={2.5} />}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 2. RIGHT SIDEBAR PANEL: SINGLE CARD WITH DIVIDERS                        */}
+      {/* ========================================================================= */}
+      <div className="w-full lg:w-[320px] bg-card rounded-[28px] p-5 shadow-soft flex flex-col justify-between flex-shrink-0 overflow-y-auto border border-borderToken/70">
+        <div className="space-y-4">
+          {/* SECTION 1: SUGGESTIONS */}
+          <div>
+            <div className="flex items-center justify-between pb-2.5">
+              <h2 className="text-[14px] font-serif font-bold text-foreground">Suggestions</h2>
+              <button
+                type="button"
+                onClick={() => handleSend("Give me fresh suggestions for my focus blocks today.")}
+                className="text-mutedText hover:text-foreground transition-colors p-1 cursor-pointer"
+                title="Refresh suggestions"
+              >
+                <RotateCcw size={13} />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              {sidebarSuggestions.map((sug, idx) => {
+                const Icon = sug.icon;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSend(sug.prompt)}
+                    disabled={loading}
+                    className="w-full flex items-center gap-2.5 p-2 px-3 rounded-xl bg-card-subtle hover:bg-primary-soft hover:text-primary text-textSecondary text-[12.5px] font-medium transition-colors text-left cursor-pointer border border-transparent hover:border-primary/20 disabled:opacity-50"
+                  >
+                    <Icon size={14} className="text-primary flex-shrink-0" />
+                    <span className="truncate text-foreground font-normal">{sug.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* INNER CARD DIVIDER LINE */}
+          <div className="border-t border-borderToken/60 my-2" />
+
+          {/* SECTION 2: PREVIOUS CHATS & NEW CHAT BUTTON */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[14px] font-serif font-bold text-foreground">Previous Chats</h2>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={handleStartNewChat}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary-soft hover:bg-primary text-primary hover:text-white text-[11px] font-semibold transition-all cursor-pointer"
+                  title="Start a new chat thread"
+                >
+                  <Plus size={12} />
+                  <span>New</span>
+                </button>
+
+                {sessions.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllChats}
+                    className="text-mutedText hover:text-tag-important transition-colors p-1 cursor-pointer"
+                    title="Clear all chat history"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="max-h-[170px] overflow-y-auto space-y-1.5 pr-1">
+              {sessions.length === 0 ? (
+                <p className="text-[12px] text-mutedText text-center py-4">No previous chats yet.</p>
+              ) : (
+                sessions.map((session) => {
+                  const isActive = session.id === activeSessionId;
+                  return (
+                    <div
+                      key={session.id}
+                      onClick={() => setActiveSessionId(session.id)}
+                      className={`group flex items-center justify-between gap-2 p-2 px-2.5 rounded-xl transition-all cursor-pointer border ${
+                        isActive
+                          ? 'bg-primary-soft border-primary/30 font-medium'
+                          : 'bg-card-subtle hover:bg-card-muted border-transparent'
+                      }`}
+                    >
+                      <div className="min-w-0 flex items-center gap-2 flex-1">
+                        <MessageSquare size={13} className="text-primary flex-shrink-0" />
+                        <span className="text-[12px] text-foreground font-normal truncate">
+                          {session.title}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className="text-[10.5px] font-mono text-mutedText">
+                          {session.dateLabel || 'Today'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteSession(session.id, e)}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 text-mutedText hover:text-tag-important transition-opacity cursor-pointer"
+                          title="Delete chat"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* BOTTOM WATERMARK QUOTE SECTION */}
+        <div className="mt-4 pt-3 border-t border-borderToken/60 relative overflow-hidden flex items-center min-h-[50px]">
+          <p className="text-[11px] text-mutedText italic leading-relaxed relative z-10">
+            &ldquo;Small consistent practices build a tranquil life.&rdquo;
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -46,6 +46,7 @@ export const Sidebar: React.FC = () => {
   const mainNavItems = [
     { id: 'today', label: 'Dashboard', icon: Home },
     { id: 'tasks', label: 'My Tasks', icon: CheckSquare, badge: pendingTasksCount },
+    { id: 'ai-planner', label: 'AI Assistant', icon: Sparkles },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'schedule', label: 'Calendar', icon: Calendar },
     { id: 'habits', label: 'Habits', icon: Target },
@@ -53,7 +54,6 @@ export const Sidebar: React.FC = () => {
     { id: 'goals', label: 'Vision & Goals', icon: Compass },
     { id: 'history', label: 'Reflections', icon: BookOpen },
     { id: 'breathing', label: 'Breathing', icon: Wind, isBreathing: true },
-    { id: 'ai-planner', label: 'AI Assistant', icon: Sparkles, isAction: true },
   ];
 
   const bottomNavItems = [
@@ -155,9 +155,7 @@ export const Sidebar: React.FC = () => {
                 key={item.id}
                 type="button"
                 onClick={() => {
-                  if (item.isAction) {
-                    openAiModal();
-                  } else if (item.isBreathing) {
+                  if (item.isBreathing) {
                     openBreathingModal();
                   } else if (item.id === 'tasks') {
                     navigateToTasks();

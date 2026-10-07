@@ -117,6 +117,10 @@ export interface UserPreferences {
   enableSmoothAnimations: boolean;
   enableHapticFeedback: boolean;
   showShortcutsHint: boolean;
+
+  // AI & Developer Intelligence
+  enableAiDebugJson: boolean;
+  showAiOperationsByDefault: boolean;
 }
 
 export interface AppSettings {
@@ -128,6 +132,10 @@ export interface AppSettings {
   breakDuration: number; // in minutes e.g. 15
   openRouterApiKey: string;
   openRouterModel: string;
+  aiProvider?: 'in_app' | 'local_ollama' | 'openrouter';
+  inAppModel?: string; // e.g. "Qwen2.5-1.5B-Instruct-q4f16_1-MLC"
+  localModel?: string; // e.g. "qwen2.5:1.5b"
+  localEndpoint?: string; // e.g. "http://localhost:11434"
   autoReschedule: boolean;
   theme: AppTheme;
   fontHeading?: string;
@@ -157,6 +165,10 @@ export interface AiResponsePayload {
   suggestions?: string[];
   is_overloaded?: boolean;
   overload_minutes?: number;
+  engineSource?: 'in_app_webgpu' | 'ollama_local' | 'openrouter_cloud' | 'heuristic_fallback';
+  modelUsed?: string;
+  latencyMs?: number;
+  warning?: string;
 }
 
 export interface AiRequestContext {
@@ -167,6 +179,7 @@ export interface AiRequestContext {
   working_hours: string;
   sleep_hours: string;
   user_message: string;
+  conversation_history?: { role: 'user' | 'assistant'; content: string }[];
   api_key?: string;
   model?: string;
 }
@@ -189,6 +202,7 @@ export interface DayCapacity {
   isOverloaded: boolean;
   overloadMinutes: number;
   focusMinutes: number;
+  actualFocusedMinutes: number;
   importantTasksCount: number;
   regularTasksCount: number;
   completedTasksCount: number;
@@ -200,7 +214,9 @@ export interface AnalyticsFilter {
   category?: string; // 'All' | 'Work' | 'Health' | 'Personal' | 'Learning'
   priority?: string; // 'all' | 'critical' | 'important' | 'flexible' | 'optional'
   status?: string; // 'all' | 'completed' | 'pending' | 'in_progress'
-  site?: string; // e.g. 'github.com', 'figma.com', 'notion.so', etc.
+  site?: string; // for compatibility
+  taskId?: string;
+  searchQuery?: string;
   timeRange?: 'today' | 'week' | 'month' | 'all';
 }
 

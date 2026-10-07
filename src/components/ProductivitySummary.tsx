@@ -24,7 +24,10 @@ const stationIcons: Record<string, any> = {
 };
 
 /* Dynamic Time-of-Day Serene Sky Illustration (Morning, Afternoon, Evening/Sunset, Night) */
-const DiurnalSkyIllustration: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const DiurnalSkyIllustration: React.FC<{ className?: string; svgClassName?: string }> = ({
+  className = '',
+  svgClassName = 'w-[190px] sm:w-[220px] h-[72px]',
+}) => {
   const hour = new Date().getHours();
 
   const timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night' =
@@ -46,7 +49,7 @@ const DiurnalSkyIllustration: React.FC<{ className?: string }> = ({ className = 
         viewBox="0 -18 240 103"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-[190px] sm:w-[220px] h-[72px] overflow-visible"
+        className={`${svgClassName} overflow-visible`}
       >
         <defs>
           {/* Layer Blur Atmospheric Filters for Spreading Shine */}
@@ -214,6 +217,8 @@ const CornerBlob: React.FC<{ className?: string }> = ({ className = '' }) => (
 
 export const ProductivitySummary: React.FC = () => {
   const {
+    tasks,
+    selectedDate,
     getDayCapacity,
     openOverloadModal,
     activeLofiStation,
@@ -227,9 +232,35 @@ export const ProductivitySummary: React.FC = () => {
 
   const capacity = getDayCapacity();
 
-  const totalFocusMinutes = capacity.focusMinutes || 795;
-  const capacityPercent = Math.min(100, Math.round((capacity.totalPlannedMinutes / (capacity.totalAvailableMinutes || 480)) * 100)) || 76;
-  const targetBarWidth = Math.max(45, Math.min(80, capacityPercent));
+  const actualFocusedMinutes = capacity.actualFocusedMinutes || 0;
+  const completedTasksDuration = tasks
+    .filter((t) => t.status === 'completed' && (t.scheduledDate === selectedDate || !t.scheduledDate))
+    .reduce((acc, t) => acc + (t.duration || 30), 0);
+  const totalPlannedForDay = (capacity.totalPlannedMinutes || 0) + completedTasksDuration;
+
+  const focusPercent = totalPlannedForDay > 0
+    ? Math.min(100, Math.round((actualFocusedMinutes / totalPlannedForDay) * 100))
+    : (actualFocusedMinutes > 0 ? 100 : 0);
+
+  const trackRef = React.useRef<HTMLDivElement>(null);
+  const [trackWidth, setTrackWidth] = React.useState<number>(300);
+
+  React.useEffect(() => {
+    if (!trackRef.current) return;
+    const updateWidth = () => {
+      if (trackRef.current) {
+        setTrackWidth(trackRef.current.offsetWidth);
+      }
+    };
+    updateWidth();
+    const ro = new ResizeObserver(updateWidth);
+    ro.observe(trackRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const targetBarWidth = actualFocusedMinutes === 0
+    ? 26
+    : Math.max(26, Math.min(100, focusPercent));
 
   // Ultra-Smooth Jitter-Free Animations
   const [isBarExpanded, setIsBarExpanded] = React.useState(false);
@@ -255,8 +286,8 @@ export const ProductivitySummary: React.FC = () => {
       // Quintic ease out for silky deceleration
       const ease = 1 - Math.pow(1 - progress, 4);
 
-      const nextPercent = Math.round(capacityPercent * ease);
-      const nextMins = Math.round(totalFocusMinutes * ease);
+      const nextPercent = Math.round(focusPercent * ease);
+      const nextMins = Math.round(actualFocusedMinutes * ease);
 
       if (nextPercent !== prevPercent) {
         setAnimatedPercent(nextPercent);
@@ -278,14 +309,14 @@ export const ProductivitySummary: React.FC = () => {
       clearTimeout(expandTimer);
       cancelAnimationFrame(animFrame);
     };
-  }, [totalFocusMinutes, capacityPercent]);
+  }, [actualFocusedMinutes, focusPercent]);
 
   const animHours = Math.floor(animatedFocusMins / 60);
   const animMins = animatedFocusMins % 60;
   const focusTimeString = `${animHours}h ${animMins > 0 ? `${animMins < 10 ? `0${animMins}` : animMins}m` : '00m'}`;
 
   // Task metrics
-  const remainingCount = capacity.remainingTasksCount || 13;
+  const remainingCount = capacity.remainingTasksCount || 0;
   const importantCount = capacity.importantTasksCount;
   const regularCount = capacity.regularTasksCount;
   const completedCount = capacity.completedTasksCount;
@@ -325,7 +356,7 @@ export const ProductivitySummary: React.FC = () => {
         <div className="bg-background rounded-[22px] p-2.5 sm:p-3 md:p-3.5 flex flex-col justify-center flex-1 sm:max-w-[340px] transition-colors">
           <div className="flex items-center justify-between mb-1.5 sm:mb-2 px-1">
             <span className="text-[12.5px] sm:text-[13px] font-medium text-foreground tracking-tight">
-              Daily Focus Capacity
+              Daily Focus
             </span>
             {capacity.isOverloaded && (
               <span
@@ -338,15 +369,36 @@ export const ProductivitySummary: React.FC = () => {
             )}
           </div>
 
-          {/* Full-Pill Track with Wave Silk Texture */}
-          <div className="w-full h-[40px] sm:h-[44px] rounded-full bg-primary-soft p-0.5 relative overflow-hidden flex items-center justify-between select-none">
-            {/* Filled Progress Pill */}
+          {/* Full-Pill Track with Wave Silk Texture & Dual-Layer Revealed Typography */}
+          <div 
+            ref={trackRef}
+            className="w-full h-[40px] sm:h-[44px] rounded-full bg-primary-soft p-0.5 relative overflow-hidden select-none"
+          >
+            {/* 1. Base Layer (Visible when progress is unfilled: text in primary theme color) */}
+            <div className="w-full h-full flex items-center justify-between pl-3.5 sm:pl-4 pr-3.5 sm:pr-4">
+              <span 
+                className="text-[12.5px] sm:text-[13.5px] font-sans font-medium text-primary tracking-tight whitespace-nowrap opacity-50"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
+              >
+                {focusTimeString}
+              </span>
+              <div className="flex items-center gap-1.5 text-primary flex-shrink-0">
+                <Leaf size={14} strokeWidth={2.3} className="text-primary flex-shrink-0" />
+                <span 
+                  className="text-[12.5px] sm:text-[13.5px] font-sans font-medium text-primary leading-none"
+                  style={{ fontVariantNumeric: 'tabular-nums' }}
+                >
+                  {animatedPercent}%
+                </span>
+              </div>
+            </div>
+
+            {/* 2. Filled Progress Pill with Animated Width & Overflow-Hidden Clipping */}
             <div
               onClick={capacity.isOverloaded ? openOverloadModal : undefined}
-              className={`h-full rounded-full relative overflow-hidden flex items-center pl-3.5 sm:pl-4 pr-3 cursor-pointer shadow-xs ${capacity.isOverloaded
-                  ? 'bg-tag-important'
-                  : 'bg-primary'
-                }`}
+              className={`absolute inset-y-0.5 left-0.5 rounded-full overflow-hidden shadow-xs cursor-pointer ${
+                capacity.isOverloaded ? 'bg-tag-important' : 'bg-primary'
+              }`}
               style={{
                 width: isBarExpanded ? `${targetBarWidth}%` : '0%',
                 transition: 'width 1.3s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -362,22 +414,18 @@ export const ProductivitySummary: React.FC = () => {
                 preserveAspectRatio="none"
                 fill="none"
               >
-                {/* Top highlight wave */}
                 <path
                   d="M 0 0 C 80 18 160 32 240 12 C 275 3 295 10 320 22 L 320 0 Z"
                   fill="rgba(255, 255, 255, 0.18)"
                 />
-                {/* Center sweeping silk curve */}
                 <path
                   d="M 0 44 C 60 22 130 14 200 28 C 260 40 290 32 320 18 L 320 44 Z"
                   fill="rgba(255, 255, 255, 0.14)"
                 />
-                {/* Soft ambient depth shade */}
                 <path
                   d="M 0 35 Q 90 8 180 22 T 320 12 L 320 44 L 0 44 Z"
                   fill="rgba(0, 0, 0, 0.10)"
                 />
-                {/* Crest light accent */}
                 <path
                   d="M 40 0 Q 140 38 280 8"
                   stroke="rgba(255, 255, 255, 0.22)"
@@ -387,23 +435,27 @@ export const ProductivitySummary: React.FC = () => {
                 />
               </svg>
 
-              <span 
-                className="relative z-10 text-[12.5px] sm:text-[13.5px] font-sans font-medium text-white tracking-tight whitespace-nowrap drop-shadow-xs"
-                style={{ fontVariantNumeric: 'tabular-nums' }}
+              {/* Exact Track Overlay Layer (White Text & Leaf revealed exclusively where progress bar covers) */}
+              <div 
+                className="absolute inset-y-0 left-0 flex items-center justify-between pl-3 sm:pl-3.5 pr-3 sm:pr-3.5 text-white pointer-events-none select-none"
+                style={{ width: `${Math.max(trackWidth - 4, 180)}px` }}
               >
-                {focusTimeString}
-              </span>
-            </div>
-
-            {/* Right Leaf + Percentage Badge */}
-            <div className="flex items-center gap-1.5 pr-3 sm:pr-4 pl-1.5 sm:pl-2 text-primary flex-shrink-0 relative z-10 self-center">
-              <Leaf size={14} strokeWidth={2.3} className="text-primary flex-shrink-0" />
-              <span 
-                className="text-[12.5px] sm:text-[13.5px] font-sans font-medium text-primary leading-none"
-                style={{ fontVariantNumeric: 'tabular-nums' }}
-              >
-                {animatedPercent}%
-              </span>
+                <span 
+                  className="text-[12.5px] sm:text-[13.5px] font-sans font-medium text-white tracking-tight whitespace-nowrap drop-shadow-xs"
+                  style={{ fontVariantNumeric: 'tabular-nums' }}
+                >
+                  {focusTimeString}
+                </span>
+                <div className="flex items-center gap-1.5 text-white drop-shadow-xs flex-shrink-0">
+                  <Leaf size={14} strokeWidth={2.3} className="text-white flex-shrink-0" />
+                  <span 
+                    className="text-[12.5px] sm:text-[13.5px] font-sans font-medium text-white leading-none"
+                    style={{ fontVariantNumeric: 'tabular-nums' }}
+                  >
+                    {animatedPercent}%
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
