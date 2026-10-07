@@ -97,7 +97,7 @@ export const AiAssistantView: React.FC = () => {
 
   // Preload Whisper Tiny in background & clean up recording on unmount
   useEffect(() => {
-    getWhisperTranscriber().catch(() => {});
+    getWhisperTranscriber().catch(() => { });
     return () => {
       cancelWhisperRecording();
     };
@@ -107,7 +107,7 @@ export const AiAssistantView: React.FC = () => {
   useEffect(() => {
     try {
       localStorage.setItem('focusflow_ai_input_draft', inputVal);
-    } catch {}
+    } catch { }
   }, [inputVal]);
 
   // Helper to format friendly dates for previous chats
@@ -141,7 +141,7 @@ export const AiAssistantView: React.FC = () => {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-    } catch {}
+    } catch { }
     return [];
   });
 
@@ -149,7 +149,7 @@ export const AiAssistantView: React.FC = () => {
     try {
       const last = localStorage.getItem('focusflow_ai_active_session');
       if (last) return last;
-    } catch {}
+    } catch { }
     return null;
   });
 
@@ -175,8 +175,8 @@ export const AiAssistantView: React.FC = () => {
     provider === 'in_app'
       ? (currentInAppMeta?.name || 'Qwen 2.5 1.5B')
       : provider === 'local_ollama'
-      ? (settings.localModel || 'qwen2.5:1.5b')
-      : (settings.openRouterModel || 'GPT-4o');
+        ? (settings.localModel || 'qwen2.5:1.5b')
+        : (settings.openRouterModel || 'GPT-4o');
 
   const localEndpoint = settings.localEndpoint || 'http://localhost:11434';
 
@@ -186,8 +186,8 @@ export const AiAssistantView: React.FC = () => {
     currentHour < 12
       ? 'Good morning'
       : currentHour < 17
-      ? 'Good afternoon'
-      : 'Good evening';
+        ? 'Good afternoon'
+        : 'Good evening';
   const userName = settings.userName || 'Jay';
 
   // Save Sessions & Active session to localStorage
@@ -199,7 +199,7 @@ export const AiAssistantView: React.FC = () => {
       } else {
         localStorage.removeItem('focusflow_ai_active_session');
       }
-    } catch {}
+    } catch { }
   }, [sessions, activeSessionId]);
 
   // Message windowing: Load couple of previous messages by default, load more on scroll up
@@ -503,7 +503,7 @@ export const AiAssistantView: React.FC = () => {
     setInputVal('');
     try {
       localStorage.removeItem('focusflow_ai_input_draft');
-    } catch {}
+    } catch { }
     setRefiningPromptHint(null);
     const userMsgId = `user-${Date.now()}`;
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -734,13 +734,12 @@ export const AiAssistantView: React.FC = () => {
       >
         <div className="flex items-center gap-3 min-w-0">
           <div
-            className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-              isBreathing
+            className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isBreathing
                 ? 'bg-tag-healthBg text-tag-health'
                 : isSync
-                ? 'bg-tag-learningBg text-tag-learning'
-                : 'bg-primary-soft text-primary'
-            }`}
+                  ? 'bg-tag-learningBg text-tag-learning'
+                  : 'bg-primary-soft text-primary'
+              }`}
           >
             {isBreathing ? (
               <Wind size={18} />
@@ -759,15 +758,14 @@ export const AiAssistantView: React.FC = () => {
 
               {/* Priority Badge */}
               <span
-                className={`px-2 py-0.5 rounded-md text-[10.5px] font-semibold capitalize ${
-                  priority === 'critical'
+                className={`px-2 py-0.5 rounded-md text-[10.5px] font-semibold capitalize ${priority === 'critical'
                     ? 'bg-tag-importantBg text-tag-important'
                     : priority === 'important'
-                    ? 'bg-tag-learningBg text-tag-learning'
-                    : priority === 'flexible'
-                    ? 'bg-primary-soft text-primary'
-                    : 'bg-card-muted text-mutedText'
-                }`}
+                      ? 'bg-tag-learningBg text-tag-learning'
+                      : priority === 'flexible'
+                        ? 'bg-primary-soft text-primary'
+                        : 'bg-card-muted text-mutedText'
+                  }`}
               >
                 {priority}
               </span>
@@ -811,7 +809,7 @@ export const AiAssistantView: React.FC = () => {
         <div className="px-6 py-4 flex items-center justify-between gap-4 flex-shrink-0 bg-card">
           <div>
             <h1 className="text-[20px] sm:text-[22px] font-serif font-bold text-foreground tracking-tight flex items-center gap-2">
-              <span>AI Assistant</span>
+              <span>FocusFlow AI</span>
             </h1>
             <p className="text-[12px] text-mutedText">Your personal productivity companion</p>
           </div>
@@ -1013,30 +1011,29 @@ export const AiAssistantView: React.FC = () => {
                                 <h3 className="text-[15px] font-serif font-bold text-foreground">
                                   FocasFlow Assistant
                                 </h3>
-                                <span className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold ${
-                                  msg.payload?.engineSource === 'heuristic_fallback'
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold ${msg.payload?.engineSource === 'heuristic_fallback'
                                     ? 'bg-tag-learningBg text-tag-learning border border-tag-learning/30'
                                     : msg.isDiscarded
-                                    ? 'bg-tag-importantBg text-tag-important'
-                                    : msg.isApplied
-                                    ? 'bg-tag-healthBg text-tag-health'
-                                    : !isLatestProposal && msg.payload?.operations && msg.payload.operations.length > 0
-                                    ? 'bg-card-subtle text-mutedText border border-borderToken/60'
-                                    : msg.payload?.operations && msg.payload.operations.length > 0
-                                    ? 'bg-primary-soft text-primary'
-                                    : 'bg-primary-soft text-primary'
-                                }`}>
+                                      ? 'bg-tag-importantBg text-tag-important'
+                                      : msg.isApplied
+                                        ? 'bg-tag-healthBg text-tag-health'
+                                        : !isLatestProposal && msg.payload?.operations && msg.payload.operations.length > 0
+                                          ? 'bg-card-subtle text-mutedText border border-borderToken/60'
+                                          : msg.payload?.operations && msg.payload.operations.length > 0
+                                            ? 'bg-primary-soft text-primary'
+                                            : 'bg-primary-soft text-primary'
+                                  }`}>
                                   {msg.payload?.engineSource === 'heuristic_fallback'
                                     ? 'AI Offline (Rule Engine)'
                                     : msg.isDiscarded
-                                    ? 'Discarded'
-                                    : msg.isApplied
-                                    ? 'Changes Applied'
-                                    : !isLatestProposal && msg.payload?.operations && msg.payload.operations.length > 0
-                                    ? 'Superseded'
-                                    : msg.payload?.operations && msg.payload.operations.length > 0
-                                    ? 'Proposed Schedule'
-                                    : 'Assistant'}
+                                      ? 'Discarded'
+                                      : msg.isApplied
+                                        ? 'Changes Applied'
+                                        : !isLatestProposal && msg.payload?.operations && msg.payload.operations.length > 0
+                                          ? 'Superseded'
+                                          : msg.payload?.operations && msg.payload.operations.length > 0
+                                            ? 'Proposed Schedule'
+                                            : 'Assistant'}
                                 </span>
                               </div>
                               <span className="text-[11.5px] text-mutedText">{msg.timestamp}</span>
@@ -1117,40 +1114,40 @@ export const AiAssistantView: React.FC = () => {
                               </div>
                             )}
 
-                          {/* AI Debug Telemetry & Raw JSON (Only if enabled in Preferences) */}
-                          {settings.preferences?.enableAiDebugJson && (
-                            <div className="pt-3 border-t border-borderToken/50 flex flex-wrap items-center justify-between gap-2 text-[11px] text-mutedText font-mono">
-                              <span className="px-2 py-0.5 rounded-md bg-card-subtle">
-                                Latency: {msg.payload?.latencyMs || 0}ms • {msg.payload?.modelUsed || activeModelName}
-                              </span>
+                            {/* AI Debug Telemetry & Raw JSON (Only if enabled in Preferences) */}
+                            {settings.preferences?.enableAiDebugJson && (
+                              <div className="pt-3 border-t border-borderToken/50 flex flex-wrap items-center justify-between gap-2 text-[11px] text-mutedText font-mono">
+                                <span className="px-2 py-0.5 rounded-md bg-card-subtle">
+                                  Latency: {msg.payload?.latencyMs || 0}ms • {msg.payload?.modelUsed || activeModelName}
+                                </span>
 
-                              {msg.rawJson && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setShowRawJsonMap((prev) => ({ ...prev, [msg.id]: !prev[msg.id] }))
-                                  }
-                                  className="flex items-center gap-1 text-primary hover:underline cursor-pointer"
-                                >
-                                  <Code2 size={12} />
-                                  <span>{isJsonOpen ? 'Hide JSON' : 'Inspect JSON'}</span>
-                                </button>
-                              )}
+                                {msg.rawJson && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setShowRawJsonMap((prev) => ({ ...prev, [msg.id]: !prev[msg.id] }))
+                                    }
+                                    className="flex items-center gap-1 text-primary hover:underline cursor-pointer"
+                                  >
+                                    <Code2 size={12} />
+                                    <span>{isJsonOpen ? 'Hide JSON' : 'Inspect JSON'}</span>
+                                  </button>
+                                )}
 
-                              {isJsonOpen && msg.rawJson && (
-                                <div className="w-full mt-2 p-3 rounded-xl bg-black/80 text-emerald-400 font-mono text-[11px] overflow-x-auto border border-white/10">
-                                  <pre>{msg.rawJson}</pre>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                                {isJsonOpen && msg.rawJson && (
+                                  <div className="w-full mt-2 p-3 rounded-xl bg-black/80 text-emerald-400 font-mono text-[11px] overflow-x-auto border border-white/10">
+                                    <pre>{msg.rawJson}</pre>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              });
-            })()}
+                      )}
+                    </div>
+                  );
+                });
+              })()}
 
               {/* Loading Indicator */}
               {loading && (
@@ -1227,8 +1224,8 @@ export const AiAssistantView: React.FC = () => {
                     isTranscribing
                       ? whisperProgressText || 'Transcribing voice with on-device Whisper Tiny...'
                       : isListening
-                      ? '🔴 Recording voice... Click mic when done speaking'
-                      : 'Ask anything...'
+                        ? '🔴 Recording voice... Click mic when done speaking'
+                        : 'Ask anything...'
                   }
                   className="w-full bg-transparent text-[14px] sm:text-[14.5px] text-foreground placeholder-mutedText outline-none border-none font-normal resize-none px-1.5 pt-0.5"
                 />
@@ -1238,19 +1235,18 @@ export const AiAssistantView: React.FC = () => {
                   type="button"
                   onClick={handleSpeechRecognition}
                   disabled={isTranscribing}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer flex-shrink-0 mt-0.5 ${
-                    isTranscribing
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer flex-shrink-0 mt-0.5 ${isTranscribing
                       ? 'bg-primary-soft text-primary'
                       : isListening
-                      ? 'bg-tag-important text-white animate-pulse'
-                      : 'text-mutedText hover:text-foreground hover:bg-card-subtle'
-                  }`}
+                        ? 'bg-tag-important text-white animate-pulse'
+                        : 'text-mutedText hover:text-foreground hover:bg-card-subtle'
+                    }`}
                   title={
                     isTranscribing
                       ? 'Transcribing audio...'
                       : isListening
-                      ? 'Click to finish & transcribe with Whisper Tiny'
-                      : 'Voice Input (On-Device Whisper Tiny)'
+                        ? 'Click to finish & transcribe with Whisper Tiny'
+                        : 'Voice Input (On-Device Whisper Tiny)'
                   }
                 >
                   {isTranscribing ? (
@@ -1344,13 +1340,12 @@ export const AiAssistantView: React.FC = () => {
                         <div className="p-2 rounded-xl bg-card-subtle text-[11px] text-mutedText flex items-center justify-between">
                           <span>Status: {statusMessage || 'Ready'}</span>
                           <span
-                            className={`w-2 h-2 rounded-full ${
-                              connectionStatus === 'connected'
+                            className={`w-2 h-2 rounded-full ${connectionStatus === 'connected'
                                 ? 'bg-tag-health'
                                 : connectionStatus === 'model_missing'
-                                ? 'bg-tag-learning'
-                                : 'bg-tag-important'
-                            }`}
+                                  ? 'bg-tag-learning'
+                                  : 'bg-tag-important'
+                              }`}
                           />
                         </div>
                       </div>
@@ -1451,11 +1446,10 @@ export const AiAssistantView: React.FC = () => {
                     <div
                       key={session.id}
                       onClick={() => setActiveSessionId(session.id)}
-                      className={`group flex items-center justify-between gap-2 p-2 px-2.5 rounded-xl transition-all cursor-pointer border ${
-                        isActive
+                      className={`group flex items-center justify-between gap-2 p-2 px-2.5 rounded-xl transition-all cursor-pointer border ${isActive
                           ? 'bg-primary-soft border-primary/30 font-medium'
                           : 'bg-card-subtle hover:bg-card-muted border-transparent'
-                      }`}
+                        }`}
                     >
                       <div className="min-w-0 flex items-center gap-2 flex-1">
                         <MessageSquare size={13} className="text-primary flex-shrink-0" />

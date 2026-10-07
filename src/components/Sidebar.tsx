@@ -46,7 +46,7 @@ export const Sidebar: React.FC = () => {
   const mainNavItems = [
     { id: 'today', label: 'Dashboard', icon: Home },
     { id: 'tasks', label: 'My Tasks', icon: CheckSquare, badge: pendingTasksCount },
-    { id: 'ai-planner', label: 'AI Assistant', icon: Sparkles },
+    { id: 'ai-planner', label: 'FocusFlow AI', icon: Sparkles },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'schedule', label: 'Calendar', icon: Calendar },
     { id: 'habits', label: 'Habits', icon: Target },
@@ -78,9 +78,8 @@ export const Sidebar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => isSidebarCollapsed && toggleSidebar()}
-                className={`w-9 h-9 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 transition-transform duration-200 ${
-                  isSidebarCollapsed ? 'cursor-pointer hover:scale-105' : ''
-                }`}
+                className={`w-9 h-9 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 transition-transform duration-200 ${isSidebarCollapsed ? 'cursor-pointer hover:scale-105' : ''
+                  }`}
                 title={isSidebarCollapsed ? 'Click to expand sidebar (Ctrl+B)' : undefined}
               >
                 <img src="/app-icon.png" alt="FocusFlow Icon" className="w-full h-full object-cover" />
@@ -165,8 +164,8 @@ export const Sidebar: React.FC = () => {
                 }}
                 title={isSidebarCollapsed ? `${item.label}${item.badge !== undefined ? ` (${item.badge})` : ''}` : undefined}
                 className={`w-full h-11 flex items-center px-2.5 rounded-2xl text-[14px] font-medium transition-all duration-150 relative overflow-hidden group cursor-pointer ${isActive
-                    ? 'bg-primary-soft text-primary font-semibold'
-                    : 'text-textSecondary hover:text-foreground hover:bg-card-subtle'
+                  ? 'bg-primary-soft text-primary font-semibold'
+                  : 'text-textSecondary hover:text-foreground hover:bg-card-subtle'
                   }`}
               >
                 {/* Fixed Icon container - Perfectly stationary during expand & collapse */}
@@ -209,8 +208,8 @@ export const Sidebar: React.FC = () => {
 
                   {item.badge !== undefined && (
                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ml-2 flex-shrink-0 transition-colors ${isActive
-                        ? 'bg-primary/20 text-primary'
-                        : 'bg-primary-soft text-primary'
+                      ? 'bg-primary/20 text-primary'
+                      : 'bg-primary-soft text-primary'
                       }`}>
                       {item.badge}
                     </span>
@@ -237,8 +236,8 @@ export const Sidebar: React.FC = () => {
                 onClick={() => setCurrentTab(item.id as any)}
                 title={isSidebarCollapsed ? item.label : undefined}
                 className={`w-full h-10 flex items-center px-2.5 rounded-2xl text-[14px] font-medium transition-all duration-150 relative overflow-hidden group cursor-pointer ${isActive
-                    ? 'bg-primary-soft text-primary font-semibold'
-                    : 'text-textSecondary hover:text-foreground hover:bg-card-subtle'
+                  ? 'bg-primary-soft text-primary font-semibold'
+                  : 'text-textSecondary hover:text-foreground hover:bg-card-subtle'
                   }`}
               >
                 <div className="w-7 h-7 flex items-center justify-center flex-shrink-0">
