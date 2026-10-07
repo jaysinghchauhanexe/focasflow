@@ -503,6 +503,37 @@ export const applyFont = (fontName: string) => {
 };
 
 // Persistence helper
+import { Store } from '@tauri-apps/plugin-store';
+
+let tauriStore: Store | null = null;
+try {
+  if (window.__TAURI_INTERNALS__) {
+    tauriStore = new Store('focusflow-data.bin');
+  }
+} catch (e) {
+  console.log('Tauri store not available');
+}
+
+export const syncFromTauriStore = async (set: any) => {
+  if (!tauriStore) return;
+  try {
+    const keys = ['tasks', 'habits', 'routines', 'goals', 'history', 'settings', 'sidebar_collapsed', 'app_site_focus'];
+    let stateUpdates: any = {};
+    for (const key of keys) {
+      const val = await tauriStore.get(key);
+      if (val !== null && val !== undefined) {
+        localStorage.setItem(`focusflow_${key}`, JSON.stringify(val));
+        stateUpdates[key === 'sidebar_collapsed' ? 'isSidebarCollapsed' : key === 'app_site_focus' ? 'appSiteFocusData' : key] = val;
+      }
+    }
+    if (Object.keys(stateUpdates).length > 0) {
+      set((state: any) => ({ ...stateUpdates }));
+    }
+  } catch (e) {
+    console.error('Error syncing from Tauri store', e);
+  }
+};
+
 const loadPersisted = <T>(key: string, fallback: T): T => {
   try {
     const item = localStorage.getItem(`focusflow_${key}`);
@@ -515,6 +546,9 @@ const loadPersisted = <T>(key: string, fallback: T): T => {
 const savePersisted = <T>(key: string, value: T) => {
   try {
     localStorage.setItem(`focusflow_${key}`, JSON.stringify(value));
+    if (tauriStore) {
+      tauriStore.set(key, value).then(() => tauriStore!.save()).catch(e => console.error(e));
+    }
   } catch (e) {
     console.error('Storage error:', e);
   }
@@ -1006,8 +1040,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   addCustomCategory: (cat) => {
     set((state) => {
       const existing = state.settings.customCategories || [];
-      const updated = [...existing.filter(c => c.id !== cat.id), cat];
-      const updatedSettings: AppSettings = { ...state.settings, customCategories: updated };
+      const updated = [...existing.filter(c => c.id !== cat.id && c.label.toLowerCase() !== cat.label.toLowerCase()), cat];
+      const deletedCats = (state.settings.deletedCategories || []).filter(c => c.toLowerCase() !== cat.label.toLowerCase());
+      const updatedSettings: AppSettings = { 
+        ...state.settings, 
+        customCategories: updated,
+        deletedCategories: deletedCats
+      };
       savePersisted('settings', updatedSettings);
       return { settings: updatedSettings };
     });

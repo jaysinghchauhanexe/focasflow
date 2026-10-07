@@ -441,6 +441,7 @@ pub fn run() {
     let _ = init_database();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             use tauri::Manager;

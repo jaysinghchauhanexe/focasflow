@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useAppStore, applyTheme, applyFont } from './store/useAppStore';
+import { useAppStore, applyTheme, applyFont, syncFromTauriStore } from './store/useAppStore';
 import { Sidebar } from './components/Sidebar';
 import { TodayView } from './views/TodayView';
 import { TasksView } from './views/TasksView';
@@ -29,6 +29,7 @@ export const App: React.FC = () => {
   const { currentTab, replanDay, settings, isFocusTimerRunning, setFocusElapsedSeconds } = useAppStore();
 
   useEffect(() => {
+    syncFromTauriStore(useAppStore.setState);
     // Initial calculation of daily capacity and schedule
     replanDay();
     const cleanupClickSounds = setupGlobalClickSoundListener();

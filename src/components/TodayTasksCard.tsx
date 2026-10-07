@@ -76,14 +76,28 @@ export const TodayTasksCard: React.FC = () => {
 
   const displayedTasks = filteredTasks.slice(0, 8);
 
-  const getCategoryClass = (cat: Category) => {
-    switch (cat) {
-      case 'Health': return 'badge-health';
-      case 'Work': return 'badge-work';
-      case 'Personal': return 'badge-personal';
-      case 'Learning': return 'badge-learning';
-      default: return 'badge-neutral';
+  const getCategoryStyle = (catStr: string, isCompleted: boolean) => {
+    const custom = settings.customCategories?.find((c) => c.label === catStr);
+    const baseClass = `px-3 py-1 rounded-xl text-[11.5px] font-medium transition-all group-hover:scale-105 duration-200 ${isCompleted ? 'opacity-50' : ''}`;
+    
+    if (custom && custom.colorClass && custom.colorClass.startsWith('#')) {
+      return {
+        className: baseClass,
+        style: { backgroundColor: `${custom.colorClass}1f`, color: custom.colorClass }
+      };
     }
+    
+    let colorClass = 'badge-neutral';
+    switch (catStr) {
+      case 'Health': colorClass = 'badge-health'; break;
+      case 'Work': colorClass = 'badge-work'; break;
+      case 'Personal': colorClass = 'badge-personal'; break;
+      case 'Learning': colorClass = 'badge-learning'; break;
+    }
+    return {
+      className: `${baseClass} ${colorClass}`,
+      style: undefined
+    };
   };
 
   const getPriorityDot = (t: Task) => {
@@ -207,9 +221,8 @@ export const TodayTasksCard: React.FC = () => {
                   {/* Middle & Right: Category Badge + Time + Live Timer + Actions */}
                   <div className="flex items-center gap-3 sm:gap-3.5 flex-shrink-0">
                     <span
-                      className={`px-3 py-1 rounded-xl text-[11.5px] font-medium transition-all group-hover:scale-105 duration-200 ${
-                        isCompleted ? 'opacity-50' : ''
-                      } ${getCategoryClass(task.category)}`}
+                      className={getCategoryStyle(task.category, isCompleted).className}
+                      style={getCategoryStyle(task.category, isCompleted).style}
                     >
                       {task.category}
                     </span>

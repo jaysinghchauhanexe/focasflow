@@ -345,14 +345,28 @@ export const TasksView: React.FC = () => {
     return `${m}m`;
   };
 
-  const getCategoryClass = (cat: string) => {
-    switch (cat) {
-      case 'Health': return 'badge-health';
-      case 'Work': return 'badge-work';
-      case 'Personal': return 'badge-personal';
-      case 'Learning': return 'badge-learning';
-      default: return 'badge-neutral';
+  const getCategoryStyle = (cat: string, isCompleted: boolean) => {
+    const custom = settings.customCategories?.find((c) => c.label === cat);
+    const baseClass = `px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${isCompleted ? 'opacity-50' : ''}`;
+    
+    if (custom && custom.colorClass && custom.colorClass.startsWith('#')) {
+      return {
+        className: baseClass,
+        style: { backgroundColor: `${custom.colorClass}1f`, color: custom.colorClass }
+      };
     }
+    
+    let colorClass = 'badge-neutral';
+    switch (cat) {
+      case 'Health': colorClass = 'badge-health'; break;
+      case 'Work': colorClass = 'badge-work'; break;
+      case 'Personal': colorClass = 'badge-personal'; break;
+      case 'Learning': colorClass = 'badge-learning'; break;
+    }
+    return {
+      className: `${baseClass} ${colorClass}`,
+      style: undefined
+    };
   };
 
   // Dots are strictly reserved for priority levels
@@ -572,9 +586,8 @@ export const TasksView: React.FC = () => {
         {/* Right: Category Badge + Time + Live Timer + Focus Play + Menu */}
         <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
           <span
-            className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${
-              isCompleted ? 'opacity-50' : ''
-            } ${getCategoryClass(task.category)}`}
+            className={getCategoryStyle(task.category, isCompleted).className}
+            style={getCategoryStyle(task.category, isCompleted).style}
           >
             {task.category}
           </span>
@@ -727,7 +740,7 @@ export const TasksView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-5 animate-fade-in pb-12 sm:pb-16 select-none max-w-[1600px] mx-auto">
+    <div className="space-y-5 animate-fade-in select-none max-w-[1600px] mx-auto">
       {/* 1. TOP PAGE TITLE CARD */}
       <div className="bg-card rounded-[28px] p-6 sm:p-7 flex flex-wrap items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-4">
