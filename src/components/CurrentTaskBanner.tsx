@@ -45,9 +45,12 @@ export const CurrentTaskBanner: React.FC = () => {
     setFocusElapsedSeconds
   } = useAppStore();
 
-  const activeTasks = tasks.filter(
-    (t) => (t.scheduledDate === selectedDate || !t.scheduledDate) && t.status !== 'completed' && t.status !== 'skipped'
-  );
+  const activeTasks = tasks.filter((t) => {
+    if (t.status === 'completed' || t.status === 'skipped') return false;
+    if (t.scheduledDate === selectedDate) return true;
+    if (!t.scheduledDate) return true;
+    return true; // Recognize active tasks across flow
+  });
 
   const currentTask = (activeFocusTaskId ? activeTasks.find(t => t.id === activeFocusTaskId) : null) || activeTasks[0];
 

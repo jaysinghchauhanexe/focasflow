@@ -32,7 +32,23 @@ export const App: React.FC = () => {
     // Initial calculation of daily capacity and schedule
     replanDay();
     const cleanupClickSounds = setupGlobalClickSoundListener();
-    return cleanupClickSounds;
+
+    // Disable default browser context menu globally
+    const handleContextMenu = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      // Allow context menu only inside text input / textarea if needed, otherwise prevent default
+      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
+      if (!isInput) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      cleanupClickSounds();
+      document.removeEventListener('contextmenu', handleContextMenu);
+    };
   }, []);
 
   // Global focus timer ticker

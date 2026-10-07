@@ -15,35 +15,36 @@ export const QuickActionsCard: React.FC = () => {
 
   const actions = [
     { label: 'Add Task', icon: Plus, onClick: () => openTaskModal(), bg: 'bg-primary-soft text-primary' },
-    { label: 'Breathing Reset', icon: Wind, onClick: () => openBreathingModal(), bg: 'bg-tag-personalBg text-tag-personal' },
+    { label: 'Breathing', icon: Wind, onClick: () => openBreathingModal(), bg: 'bg-tag-personalBg text-tag-personal' },
     { label: 'New Habit', icon: Target, onClick: () => openHabitModal(), bg: 'bg-tag-learningBg text-tag-learning' },
-    { label: 'AI Plan Assist', icon: Sparkles, onClick: () => openAiModal(), bg: 'bg-tag-healthBg text-tag-health' },
+    { label: 'AI Planner', icon: Sparkles, onClick: () => openAiModal(), bg: 'bg-tag-healthBg text-tag-health' },
   ];
 
   const todayHabits = habits.slice(0, 3);
 
   return (
-    <div className="w-full bg-card rounded-[28px] p-6 sm:p-7 shadow-soft select-none flex flex-col justify-between transition-colors">
+    <div className="w-full bg-card rounded-[28px] p-5 sm:p-6 md:p-7 shadow-soft select-none flex flex-col justify-between transition-colors">
       <div>
-        <h3 className="text-[22px] sm:text-[24px] font-serif font-medium text-foreground tracking-tight mb-4">
+        <h3 className="text-[20px] sm:text-[22px] md:text-[24px] font-serif font-medium text-foreground tracking-tight mb-3.5 sm:mb-4">
           Quick Actions
         </h3>
 
-        {/* 2x2 Grid of Calming Actions */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        {/* 2x2 Grid of Calming Actions with Perfect Responsive Wrapping */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-2.5 mb-5 sm:mb-6">
           {actions.map((action, idx) => {
             const Icon = action.icon;
             return (
               <button
                 key={idx}
+                type="button"
                 onClick={action.onClick}
-                className={`flex items-center justify-center gap-2 py-3.5 px-3 rounded-[18px] ${action.bg} text-[13px] font-semibold transition-all duration-150 group shadow-xs hover:scale-[1.02] hover:opacity-90`}
+                className={`flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-3 rounded-[16px] sm:rounded-[18px] ${action.bg} text-[12px] sm:text-[12.5px] font-semibold transition-all duration-150 group shadow-xs hover:scale-[1.02] hover:opacity-90 cursor-pointer`}
               >
                 <Icon
-                  size={16}
-                  className="group-hover:scale-110 transition-transform"
+                  size={15}
+                  className="group-hover:scale-110 transition-transform flex-shrink-0"
                 />
-                <span className="truncate">{action.label}</span>
+                <span className="whitespace-nowrap leading-none">{action.label}</span>
               </button>
             );
           })}

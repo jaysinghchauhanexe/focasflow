@@ -140,14 +140,21 @@ export const setupGlobalClickSoundListener = () => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      // Check if clicked element or its ancestors is an interactive button or clickable
+      // Check if clicked element or its ancestors is an actual interactive control
       const interactiveEl = target.closest<HTMLElement>(
         'button, [role="button"], [role="tab"], [role="switch"], [role="menuitem"], ' +
-        'input[type="button"], input[type="submit"], input[type="reset"], input[type="checkbox"], input[type="radio"], ' +
-        'select, a, [data-clickable="true"], .cursor-pointer'
+        'input, select, textarea, a[href], [data-clickable="true"]'
       );
 
       if (!interactiveEl) return;
+
+      // If clicked on a modal backdrop or dialog overlay wrapper, do NOT play sound
+      if (
+        interactiveEl.classList.contains('fixed') &&
+        interactiveEl.classList.contains('inset-0')
+      ) {
+        return;
+      }
 
       // If marked as completion trigger or explicitly disabled click sound, ignore
       if (

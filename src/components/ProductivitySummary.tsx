@@ -26,7 +26,7 @@ const stationIcons: Record<string, any> = {
 /* Dynamic Time-of-Day Serene Sky Illustration (Morning, Afternoon, Evening/Sunset, Night) */
 export const DiurnalSkyIllustration: React.FC<{ className?: string; svgClassName?: string }> = ({
   className = '',
-  svgClassName = 'w-[190px] sm:w-[220px] h-[72px]',
+  svgClassName = 'w-[130px] sm:w-[150px] 2xl:w-[190px] h-[52px] sm:h-[60px]',
 }) => {
   const hour = new Date().getHours();
 
@@ -327,35 +327,35 @@ export const ProductivitySummary: React.FC = () => {
     <div className="w-full min-h-[350px] bg-card rounded-[28px] p-4 sm:p-5 md:p-6 shadow-soft select-none flex flex-col justify-between gap-3 sm:gap-3.5 relative overflow-hidden transition-colors">
 
       {/* 1. TOP ROW: Counter + Adaptive Sunset Illustration + Responsive Daily Focus Capacity */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-3.5 min-w-0">
         {/* Left: Outcomes Remaining + Fading Sunset Illustration */}
-        <div className="flex items-center justify-between sm:justify-start gap-3 sm:gap-4 flex-shrink-0">
+        <div className="flex items-center justify-between sm:justify-start gap-3 sm:gap-3.5 flex-shrink-0 min-w-0">
           <div
             onClick={() => navigateToTasks({ status: 'pending' })}
             className="flex-shrink-0 cursor-pointer group/counter transition-transform hover:scale-105 active:scale-95"
             title="Click to view pending outcomes in My Tasks"
           >
             <div className="flex items-baseline leading-none">
-              <span className="text-foreground tracking-tight text-[38px] sm:text-[46px] md:text-[50px] font-serif font-medium group-hover/counter:text-primary transition-colors">
+              <span className="text-foreground tracking-tight text-[36px] sm:text-[42px] md:text-[48px] font-serif font-medium group-hover/counter:text-primary transition-colors">
                 {remainingCount}
               </span>
-              <span className="text-[15px] sm:text-[18px] font-normal text-textSecondary font-sans ml-1.5">
+              <span className="text-[14px] sm:text-[16px] font-normal text-textSecondary font-sans ml-1.5">
                 left
               </span>
             </div>
-            <p className="text-[12px] sm:text-[12.5px] text-mutedText font-normal mt-0.5 sm:mt-1 tracking-tight whitespace-nowrap">
+            <p className="text-[11.5px] sm:text-[12px] text-mutedText font-normal mt-0.5 sm:mt-1 tracking-tight whitespace-nowrap">
               Today's Outcomes
             </p>
           </div>
 
           {/* Dynamic Sky Illustration (Morning, Afternoon, Evening/Sunset, Night) */}
-          <DiurnalSkyIllustration className="hidden xl:flex flex-shrink min-w-0" />
+          <DiurnalSkyIllustration className="hidden 2xl:flex flex-shrink min-w-0" />
         </div>
 
         {/* Right: Daily Focus Capacity Card */}
-        <div className="bg-background rounded-[22px] p-2.5 sm:p-3 md:p-3.5 flex flex-col justify-center flex-1 sm:max-w-[340px] transition-colors">
+        <div className="bg-background rounded-[22px] p-2.5 sm:p-3 flex flex-col justify-center flex-1 min-w-0 sm:max-w-[320px] transition-colors">
           <div className="flex items-center justify-between mb-1.5 sm:mb-2 px-1">
-            <span className="text-[12.5px] sm:text-[13px] font-medium text-foreground tracking-tight">
+            <span className="text-[12px] sm:text-[12.5px] font-medium text-foreground tracking-tight">
               Daily Focus
             </span>
             {capacity.isOverloaded && (

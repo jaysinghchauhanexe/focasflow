@@ -5,6 +5,7 @@ import { Plus, Search, Check, Play, Pause, MoreHorizontal, ArrowRight, Clock, Tr
 import { formatTime12h } from '../engine/scheduler';
 import { DoodleTasks } from '../components/DoodleIllustrations';
 import { CustomSelect } from '../components/CustomSelect';
+import { WeekDateStrip } from '../components/WeekDateStrip';
 
 export const TasksView: React.FC = () => {
   const {
@@ -64,21 +65,29 @@ export const TasksView: React.FC = () => {
     return `${m}:${String(s).padStart(2, '0')}`;
   };
 
+  const { selectedDate } = useAppStore();
+  const [dateFilterMode, setDateFilterMode] = useState<'all' | 'selected'>('all');
+
   const hasActiveFilters =
     taskCategoryFilter !== 'All' ||
     (taskPriorityFilter !== 'All' && taskPriorityFilter !== 'all') ||
     (taskStatusFilter !== 'All' && taskStatusFilter !== 'all') ||
+    dateFilterMode !== 'all' ||
     taskSearchQuery.trim().length > 0;
 
   const clearAllFilters = () => {
     setTaskCategoryFilter('All');
     setTaskPriorityFilter('All');
     setTaskStatusFilter('All');
+    setDateFilterMode('all');
     setTaskSearchQuery('');
   };
 
   const filteredTasks = tasks.filter((t) => {
     if (taskSearchQuery && !t.title.toLowerCase().includes(taskSearchQuery.toLowerCase())) return false;
+    if (dateFilterMode === 'selected') {
+      if (t.scheduledDate && t.scheduledDate !== selectedDate) return false;
+    }
     if (taskCategoryFilter !== 'All' && t.category !== taskCategoryFilter) return false;
     if (taskPriorityFilter !== 'All' && taskPriorityFilter !== 'all') {
       if (taskPriorityFilter === 'important') {
@@ -144,8 +153,37 @@ export const TasksView: React.FC = () => {
         </button>
       </div>
 
+      {/* Week Date Strip Calendar Navigation */}
+      <WeekDateStrip />
+
       {/* Filter and Search Bar */}
       <div className="bg-card rounded-[24px] p-4 flex flex-wrap items-center gap-3 transition-colors">
+        {/* Date Scope Toggle */}
+        <div className="flex items-center bg-card-subtle p-1 rounded-xl border border-borderToken">
+          <button
+            type="button"
+            onClick={() => setDateFilterMode('all')}
+            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              dateFilterMode === 'all'
+                ? 'bg-card text-foreground shadow-xs'
+                : 'text-mutedText hover:text-foreground'
+            }`}
+          >
+            All Dates
+          </button>
+          <button
+            type="button"
+            onClick={() => setDateFilterMode('selected')}
+            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              dateFilterMode === 'selected'
+                ? 'bg-primary text-white shadow-xs'
+                : 'text-mutedText hover:text-foreground'
+            }`}
+          >
+            Selected Day ({selectedDate ? selectedDate.slice(5) : 'Today'})
+          </button>
+        </div>
+
         {/* Search */}
         <div className="flex-1 min-w-[200px] flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-card-subtle">
           <Search size={15} className="text-mutedText" />
@@ -238,6 +276,10 @@ export const TasksView: React.FC = () => {
                 <div
                   key={task.id}
                   style={{ animationDelay: `${idx * 35}ms` }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setActiveMenuId(activeMenuId === task.id ? null : task.id);
+                  }}
                   className={`group relative flex items-center justify-between py-3.5 px-2 transition-spring hover:bg-card-subtle rounded-xl animate-enter-up ${
                     activeMenuId === task.id ? 'z-30' : 'z-0'
                   }`}

@@ -30,7 +30,12 @@ export function calculateDayCapacity(
   activeFocusTaskId: string | null = null,
   focusElapsedSeconds: number = 0
 ): DayCapacity {
-  const dayTasks = tasks.filter(t => (t.scheduledDate === date || (!t.scheduledDate && t.status !== 'completed' && t.status !== 'skipped')));
+  const dayTasks = tasks.filter((t) => {
+    if (t.scheduledDate === date) return true;
+    if (t.status !== 'completed' && t.status !== 'skipped') return true;
+    if (t.status === 'completed' && (!t.scheduledDate || t.scheduledDate === date)) return true;
+    return false;
+  });
   
   const wakeM = timeToMinutes(settings.wakeTime || '07:00');
   const sleepM = timeToMinutes(settings.sleepTime || '23:00');

@@ -29,7 +29,7 @@ export const Sidebar: React.FC = () => {
     navigateToTasks
   } = useAppStore();
 
-  const pendingTasksCount = tasks.filter(t => t.status !== 'completed').length || 10;
+  const pendingTasksCount = tasks.filter(t => t.status !== 'completed' && t.status !== 'skipped').length;
 
   // Keyboard shortcut (Ctrl+B / Cmd+B) for quick collapse
   useEffect(() => {
@@ -45,7 +45,7 @@ export const Sidebar: React.FC = () => {
 
   const mainNavItems = [
     { id: 'today', label: 'Dashboard', icon: Home },
-    { id: 'tasks', label: 'My Tasks', icon: CheckSquare, badge: pendingTasksCount },
+    { id: 'tasks', label: 'My Tasks', icon: CheckSquare, badge: pendingTasksCount > 0 ? pendingTasksCount : undefined },
     { id: 'ai-planner', label: 'FocusFlow AI', icon: Sparkles },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'schedule', label: 'Calendar', icon: Calendar },

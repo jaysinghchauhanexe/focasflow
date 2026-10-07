@@ -1,4 +1,5 @@
-export type Priority = 'critical' | 'important' | 'flexible' | 'optional';
+export type DefaultPriority = 'important' | 'flexible' | 'optional';
+export type Priority = 'important' | 'flexible' | 'optional' | 'critical' | (string & {});
 export type TaskStatus = 'pending' | 'active' | 'completed' | 'skipped' | 'moved';
 export type Category = 'Health' | 'Work' | 'Personal' | 'Learning' | 'Neutral';
 export type EnergyLevel = 'high' | 'medium' | 'low';
@@ -15,6 +16,7 @@ export interface Task {
   scheduledDate?: string; // YYYY-MM-DD
   scheduledStart?: string; // HH:mm
   scheduledEnd?: string; // HH:mm
+  timeMode?: 'duration' | 'scheduled';
   category: Category;
   projectId?: string;
   energyLevel?: EnergyLevel;
@@ -154,6 +156,7 @@ export interface AiOperation {
   target_date?: string;
   start_time?: string;
   end_time?: string;
+  time_mode?: 'duration' | 'scheduled';
   frequency?: string;
   preferred_time?: 'morning' | 'afternoon' | 'evening';
   notes?: string;

@@ -9,23 +9,40 @@ export const TaskModal: React.FC = () => {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [duration, setDuration] = useState(60);
+  const [duration, setDuration] = useState(45);
   const [category, setCategory] = useState<Category>('Work');
   const [priority, setPriority] = useState<Priority>('important');
   const [deadline, setDeadline] = useState('');
   const [scheduledStart, setScheduledStart] = useState('');
+  const [scheduledEnd, setScheduledEnd] = useState('');
   const [flexibility, setFlexibility] = useState<'flexible' | 'fixed'>('flexible');
+  const [timeMode, setTimeMode] = useState<'duration' | 'scheduled'>('duration');
+  const [taskDate, setTaskDate] = useState<string>(selectedDate || new Date().toISOString().split('T')[0]);
+
+  const [customPriorityInput, setCustomPriorityInput] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customPriorities, setCustomPriorities] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('focusflow_custom_priorities');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     if (editingTask) {
       setTitle(editingTask.title);
       setDescription(editingTask.description || '');
-      setDuration(editingTask.duration || 60);
+      setDuration(editingTask.duration || 45);
       setCategory(editingTask.category || 'Work');
       setPriority(editingTask.priority || 'important');
       setDeadline(editingTask.deadline || '');
       setScheduledStart(editingTask.scheduledStart || '');
+      setScheduledEnd(editingTask.scheduledEnd || '');
       setFlexibility(editingTask.flexibility || 'flexible');
+      setTimeMode(editingTask.scheduledStart ? 'scheduled' : (editingTask.timeMode || 'duration'));
+      setTaskDate(editingTask.scheduledDate || selectedDate || new Date().toISOString().split('T')[0]);
     } else {
       setTitle('');
       setDescription('');
@@ -34,15 +51,46 @@ export const TaskModal: React.FC = () => {
       setPriority('important');
       setDeadline('');
       setScheduledStart('');
+      setScheduledEnd('');
       setFlexibility('flexible');
+      setTimeMode('duration');
+      setTaskDate(selectedDate || new Date().toISOString().split('T')[0]);
     }
-  }, [editingTask, isTaskModalOpen]);
+    setShowCustomInput(false);
+    setCustomPriorityInput('');
+  }, [editingTask, isTaskModalOpen, selectedDate]);
 
   if (!isTaskModalOpen) return null;
+
+  // Calculate live estimated completion time from now
+  const getEstimatedCompletionTime = (mins: number) => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() + mins);
+    const h = d.getHours();
+    const m = d.getMinutes();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const formattedH = h % 12 || 12;
+    const formattedM = m < 10 ? `0${m}` : m;
+    return `${formattedH}:${formattedM} ${ampm}`;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+
+    let finalStart = scheduledStart || undefined;
+    let finalEnd = scheduledEnd || undefined;
+    if (timeMode === 'duration') {
+      finalStart = undefined;
+      finalEnd = undefined;
+    } else if (finalStart && !finalEnd) {
+      // Calculate end time from start + duration
+      const [sh, sm] = finalStart.split(':').map(Number);
+      const totalMins = sh * 60 + sm + Number(duration);
+      const eh = Math.floor(totalMins / 60) % 24;
+      const em = totalMins % 60;
+      finalEnd = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+    }
 
     if (editingTask) {
       updateTask({
@@ -52,9 +100,12 @@ export const TaskModal: React.FC = () => {
         duration: Number(duration),
         category,
         priority,
+        scheduledDate: taskDate,
         deadline: deadline || undefined,
-        scheduledStart: scheduledStart || undefined,
-        flexibility,
+        scheduledStart: finalStart,
+        scheduledEnd: finalEnd,
+        timeMode,
+        flexibility: timeMode === 'scheduled' ? flexibility : 'flexible',
       });
     } else {
       addTask({
@@ -64,16 +115,34 @@ export const TaskModal: React.FC = () => {
         category,
         priority,
         status: 'pending',
-        scheduledDate: selectedDate,
+        scheduledDate: taskDate,
         deadline: deadline || undefined,
-        scheduledStart: scheduledStart || undefined,
-        flexibility,
+        scheduledStart: finalStart,
+        scheduledEnd: finalEnd,
+        timeMode,
+        flexibility: timeMode === 'scheduled' ? flexibility : 'flexible',
       });
     }
   };
 
+  const saveCustomPriority = (newTag: string) => {
+    const trimmed = newTag.trim();
+    if (!trimmed) return;
+    if (!customPriorities.includes(trimmed)) {
+      const next = [...customPriorities, trimmed];
+      setCustomPriorities(next);
+      try {
+        localStorage.setItem('focusflow_custom_priorities', JSON.stringify(next));
+      } catch {}
+    }
+    setPriority(trimmed);
+    setCustomPriorityInput('');
+    setShowCustomInput(false);
+  };
+
   const categories: Category[] = ['Health', 'Work', 'Personal', 'Learning', 'Neutral'];
-  const priorities: {
+
+  const defaultPriorities: {
     id: Priority;
     label: string;
     desc: string;
@@ -83,19 +152,10 @@ export const TaskModal: React.FC = () => {
     textClass: string;
   }[] = [
     {
-      id: 'critical',
-      label: 'Critical',
-      desc: 'Must happen today',
-      activeClass: 'bg-[#E5484D]/15 border-[#E5484D]/25',
-      inactiveClass: 'bg-[#E5484D]/[0.03] border-[#E5484D]/10 hover:border-[#E5484D]/20 hover:bg-[#E5484D]/[0.07]',
-      dotClass: 'bg-[#E5484D]',
-      textClass: 'text-[#E5484D]',
-    },
-    {
       id: 'important',
       label: 'Important',
-      desc: 'Should happen today',
-      activeClass: 'bg-[#F97316]/15 border-[#F97316]/25',
+      desc: 'Must / should happen today',
+      activeClass: 'bg-[#F97316]/15 border-[#F97316]/30',
       inactiveClass: 'bg-[#F97316]/[0.03] border-[#F97316]/10 hover:border-[#F97316]/20 hover:bg-[#F97316]/[0.07]',
       dotClass: 'bg-[#F97316]',
       textClass: 'text-[#EA580C] dark:text-[#FB923C]',
@@ -103,8 +163,8 @@ export const TaskModal: React.FC = () => {
     {
       id: 'flexible',
       label: 'Flexible',
-      desc: 'Can move if needed',
-      activeClass: 'bg-[#D97706]/15 border-[#D97706]/25',
+      desc: 'Can move if schedule shifts',
+      activeClass: 'bg-[#D97706]/15 border-[#D97706]/30',
       inactiveClass: 'bg-[#D97706]/[0.03] border-[#D97706]/10 hover:border-[#D97706]/20 hover:bg-[#D97706]/[0.07]',
       dotClass: 'bg-[#D97706]',
       textClass: 'text-[#D97706]',
@@ -112,8 +172,8 @@ export const TaskModal: React.FC = () => {
     {
       id: 'optional',
       label: 'Optional',
-      desc: 'Only if time permits',
-      activeClass: 'bg-[#64748B]/15 border-[#64748B]/25',
+      desc: 'Only if extra time permits',
+      activeClass: 'bg-[#64748B]/15 border-[#64748B]/30',
       inactiveClass: 'bg-[#64748B]/[0.03] border-[#64748B]/10 hover:border-[#64748B]/20 hover:bg-[#64748B]/[0.07]',
       dotClass: 'bg-[#64748B]',
       textClass: 'text-[#475569] dark:text-[#94A3B8]',
@@ -122,7 +182,7 @@ export const TaskModal: React.FC = () => {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none cursor-pointer"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none"
       onClick={closeTaskModal}
     >
       <div 
@@ -135,8 +195,9 @@ export const TaskModal: React.FC = () => {
             {editingTask ? 'Edit Outcome' : 'Add New Outcome'}
           </h3>
           <button
+            type="button"
             onClick={closeTaskModal}
-            className="w-8 h-8 rounded-full bg-card-subtle hover:bg-card-muted text-mutedText hover:text-foreground flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-card-subtle hover:bg-card-muted text-mutedText hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
           >
             <X size={17} />
           </button>
@@ -160,28 +221,18 @@ export const TaskModal: React.FC = () => {
             />
           </div>
 
-          {/* Duration & Category Grid */}
+          {/* Date & Category Grid */}
           <div className="grid grid-cols-2 gap-3.5">
             <div>
               <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
-                Estimated Duration
+                Target Date
               </label>
-              <div className="flex items-center gap-1.5">
-                {[15, 30, 45, 60, 90].map((mins) => (
-                  <button
-                    key={mins}
-                    type="button"
-                    onClick={() => setDuration(mins)}
-                    className={`flex-1 py-1.5 rounded-xl text-[12px] font-medium transition-all ${
-                      duration === mins
-                        ? 'bg-primary text-white shadow-xs'
-                        : 'bg-card-subtle text-textSecondary hover:bg-card-muted border border-borderToken'
-                    }`}
-                  >
-                    {mins}m
-                  </button>
-                ))}
-              </div>
+              <input
+                type="date"
+                value={taskDate}
+                onChange={(e) => setTaskDate(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
+              />
             </div>
 
             <div>
@@ -196,36 +247,198 @@ export const TaskModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Priority Model */}
+          {/* Time Preference: Estimated Duration vs Scheduled Time Window */}
+          <div className="p-3.5 rounded-2xl bg-card-subtle border border-borderToken space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider">
+                Timing & Schedule Mode
+              </label>
+              <div className="flex items-center bg-card p-0.5 rounded-xl border border-borderToken">
+                <button
+                  type="button"
+                  onClick={() => setTimeMode('duration')}
+                  className={`px-3 py-1 rounded-lg text-[12px] font-medium transition-all cursor-pointer ${
+                    timeMode === 'duration'
+                      ? 'bg-primary text-white font-semibold shadow-xs'
+                      : 'text-mutedText hover:text-foreground'
+                  }`}
+                >
+                  ⏱️ Estimated Duration
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimeMode('scheduled')}
+                  className={`px-3 py-1 rounded-lg text-[12px] font-medium transition-all cursor-pointer ${
+                    timeMode === 'scheduled'
+                      ? 'bg-primary text-white font-semibold shadow-xs'
+                      : 'text-mutedText hover:text-foreground'
+                  }`}
+                >
+                  🗓️ Scheduled Time
+                </button>
+              </div>
+            </div>
+
+            {timeMode === 'duration' ? (
+              <div className="space-y-2 animate-fade-in">
+                <div className="flex items-center gap-1.5">
+                  {[15, 30, 45, 60, 90, 120].map((mins) => (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => setDuration(mins)}
+                      className={`flex-1 py-1.5 rounded-xl text-[12px] font-medium transition-all cursor-pointer ${
+                        duration === mins
+                          ? 'bg-primary text-white shadow-xs'
+                          : 'bg-card text-textSecondary hover:bg-card-muted border border-borderToken'
+                      }`}
+                    >
+                      {mins}m
+                    </button>
+                  ))}
+                </div>
+                {/* Live Estimated Completion Hint */}
+                <div className="flex items-center justify-between text-[11.5px] text-mutedText px-1 pt-1">
+                  <span>Flexible focus block ({duration}m)</span>
+                  <span className="text-primary font-medium">
+                    ✨ Finishes by ~{getEstimatedCompletionTime(duration)} if started now
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 pt-1 animate-fade-in">
+                <div>
+                  <label className="block text-[11px] font-medium text-mutedText mb-1">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    required={timeMode === 'scheduled'}
+                    value={scheduledStart}
+                    onChange={(e) => setScheduledStart(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-xl bg-card border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-mutedText mb-1">
+                    End Time (Optional)
+                  </label>
+                  <input
+                    type="time"
+                    value={scheduledEnd}
+                    onChange={(e) => setScheduledEnd(e.target.value)}
+                    placeholder="Auto from duration"
+                    className="w-full px-3 py-1.5 rounded-xl bg-card border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Priority Level */}
           <div>
-            <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
-              Priority Level
-            </label>
-            <div className="grid grid-cols-2 gap-2.5">
-              {priorities.map((p) => {
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider">
+                Priority Level
+              </label>
+              {!showCustomInput ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCustomInput(true)}
+                  className="text-[11.5px] font-medium text-primary hover:underline cursor-pointer"
+                >
+                  + Add Custom Tag
+                </button>
+              ) : null}
+            </div>
+
+            {/* Custom Priority Input */}
+            {showCustomInput && (
+              <div className="flex items-center gap-2 mb-2.5 animate-fade-in">
+                <input
+                  type="text"
+                  value={customPriorityInput}
+                  onChange={(e) => setCustomPriorityInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      saveCustomPriority(customPriorityInput);
+                    }
+                  }}
+                  placeholder="Enter custom priority tag..."
+                  className="flex-1 px-3 py-1.5 rounded-xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => saveCustomPriority(customPriorityInput)}
+                  className="px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary-hover transition-colors cursor-pointer"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCustomInput(false);
+                    setCustomPriorityInput('');
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl bg-card-subtle text-mutedText hover:text-foreground text-xs transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {/* 3 Default Priority Cards */}
+            <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+              {defaultPriorities.map((p) => {
                 const isSelected = priority === p.id;
                 return (
                   <button
                     key={p.id}
                     type="button"
                     onClick={() => setPriority(p.id)}
-                    className={`p-3 rounded-2xl text-left border transition-all cursor-pointer relative overflow-hidden shadow-none outline-none ${
+                    className={`p-2.5 sm:p-3 rounded-2xl text-left border transition-all cursor-pointer relative overflow-hidden shadow-none outline-none ${
                       isSelected ? p.activeClass : p.inactiveClass
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-0.5">
+                    <div className="flex items-center gap-1.5 mb-0.5">
                       <span className={`w-2 h-2 rounded-full flex-shrink-0 ${p.dotClass}`} />
-                      <span className={`text-[13px] font-semibold ${isSelected ? p.textClass : 'text-foreground'}`}>
+                      <span className={`text-[12.5px] sm:text-[13px] font-semibold ${isSelected ? p.textClass : 'text-foreground'}`}>
                         {p.label}
                       </span>
                     </div>
-                    <span className={`block text-[11.5px] pl-4 ${isSelected ? p.textClass + ' opacity-90' : 'text-mutedText'}`}>
+                    <span className={`block text-[10.5px] sm:text-[11px] pl-3.5 leading-tight ${isSelected ? p.textClass + ' opacity-90' : 'text-mutedText'}`}>
                       {p.desc}
                     </span>
                   </button>
                 );
               })}
             </div>
+
+            {/* Custom Created Priority Badges if any exist */}
+            {customPriorities.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap mt-2.5 pt-2 border-t border-borderToken/50">
+                <span className="text-[11px] text-mutedText font-medium">Custom tags:</span>
+                {customPriorities.map((tag) => {
+                  const isSel = priority === tag;
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setPriority(tag)}
+                      className={`px-2.5 py-1 rounded-xl text-[11.5px] font-medium transition-all cursor-pointer border ${
+                        isSel
+                          ? 'bg-primary-soft text-primary border-primary font-semibold'
+                          : 'bg-card-subtle text-textSecondary border-borderToken hover:text-foreground'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Description */}

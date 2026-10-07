@@ -61,9 +61,12 @@ export const TodayTasksCard: React.FC = () => {
     return `${m}:${String(s).padStart(2, '0')}`;
   };
 
-  const dayTasks = tasks.filter(
-    (t) => t.scheduledDate === selectedDate || (!t.scheduledDate && t.status !== 'completed' && t.status !== 'skipped')
-  );
+  const dayTasks = tasks.filter((t) => {
+    if (t.scheduledDate === selectedDate) return true;
+    if (t.status !== 'completed' && t.status !== 'skipped') return true;
+    if (t.status === 'completed' && (!t.scheduledDate || t.scheduledDate === selectedDate)) return true;
+    return false;
+  });
 
   const filteredTasks = dayTasks.filter((t) => {
     if (activeFilter === 'important') return t.priority === 'critical' || t.priority === 'important';
@@ -71,7 +74,7 @@ export const TodayTasksCard: React.FC = () => {
     return true;
   });
 
-  const displayedTasks = filteredTasks.slice(0, 6);
+  const displayedTasks = filteredTasks.slice(0, 8);
 
   const getCategoryClass = (cat: Category) => {
     switch (cat) {
@@ -161,6 +164,10 @@ export const TodayTasksCard: React.FC = () => {
                 <div
                   key={task.id}
                   style={{ animationDelay: `${idx * 45}ms` }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setActiveMenuId(activeMenuId === task.id ? null : task.id);
+                  }}
                   className={`group relative flex items-center justify-between py-3.5 px-2 transition-spring hover:bg-card-subtle rounded-xl animate-enter-up ${
                     activeMenuId === task.id ? 'z-30' : 'z-0'
                   }`}
