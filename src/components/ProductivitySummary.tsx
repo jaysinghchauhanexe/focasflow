@@ -221,7 +221,8 @@ export const ProductivitySummary: React.FC = () => {
     toggleLofi,
     setLofiStation,
     lofiVolume,
-    setLofiVolume
+    setLofiVolume,
+    navigateToTasks
   } = useAppStore();
 
   const capacity = getDayCapacity();
@@ -298,9 +299,13 @@ export const ProductivitySummary: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
         {/* Left: Outcomes Remaining + Fading Sunset Illustration */}
         <div className="flex items-center justify-between sm:justify-start gap-3 sm:gap-4 flex-shrink-0">
-          <div className="flex-shrink-0">
+          <div
+            onClick={() => navigateToTasks({ status: 'pending' })}
+            className="flex-shrink-0 cursor-pointer group/counter transition-transform hover:scale-105 active:scale-95"
+            title="Click to view pending outcomes in My Tasks"
+          >
             <div className="flex items-baseline leading-none">
-              <span className="text-foreground tracking-tight text-[38px] sm:text-[46px] md:text-[50px] font-serif font-medium">
+              <span className="text-foreground tracking-tight text-[38px] sm:text-[46px] md:text-[50px] font-serif font-medium group-hover/counter:text-primary transition-colors">
                 {remainingCount}
               </span>
               <span className="text-[15px] sm:text-[18px] font-normal text-textSecondary font-sans ml-1.5">
@@ -525,14 +530,18 @@ export const ProductivitySummary: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. BOTTOM ROW: 3 Distinct Taller Metric Cards with Vertically Centered Flow */}
+      {/* 3. BOTTOM ROW: 3 Distinct Taller Metric Cards Linked to My Tasks with Active Filters */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {/* Card 1: Important Priority */}
-        <div className="bg-[#E5484D]/[0.08] rounded-[20px] sm:rounded-[22px] p-2.5 sm:p-3.5 md:p-4 min-h-[86px] sm:min-h-[96px] relative overflow-hidden flex items-center gap-2 sm:gap-3.5 transition-all">
+        <div
+          onClick={() => navigateToTasks({ priority: 'important' })}
+          className="bg-[#E5484D]/[0.08] hover:bg-[#E5484D]/[0.14] rounded-[20px] sm:rounded-[22px] p-2.5 sm:p-3.5 md:p-4 min-h-[86px] sm:min-h-[96px] relative overflow-hidden flex items-center gap-2 sm:gap-3.5 transition-all cursor-pointer hover:scale-[1.02] active:scale-98 group shadow-2xs"
+          title="Click to view Important Priority outcomes in My Tasks"
+        >
           <CornerBlob className="text-[#E5484D]/[0.12]" />
 
           {/* Centered Icon Badge */}
-          <div className="relative z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#E5484D]/[0.12] flex items-center justify-center text-[#E5484D] flex-shrink-0">
+          <div className="relative z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#E5484D]/[0.12] flex items-center justify-center text-[#E5484D] flex-shrink-0 group-hover:scale-110 transition-transform">
             <Flag size={15} fill="currentColor" />
           </div>
 
@@ -551,11 +560,15 @@ export const ProductivitySummary: React.FC = () => {
         </div>
 
         {/* Card 2: Flexible Outcomes */}
-        <div className="bg-[#D97706]/[0.08] rounded-[20px] sm:rounded-[22px] p-2.5 sm:p-3.5 md:p-4 min-h-[86px] sm:min-h-[96px] relative overflow-hidden flex items-center gap-2 sm:gap-3.5 transition-all">
+        <div
+          onClick={() => navigateToTasks({ priority: 'flexible' })}
+          className="bg-[#D97706]/[0.08] hover:bg-[#D97706]/[0.14] rounded-[20px] sm:rounded-[22px] p-2.5 sm:p-3.5 md:p-4 min-h-[86px] sm:min-h-[96px] relative overflow-hidden flex items-center gap-2 sm:gap-3.5 transition-all cursor-pointer hover:scale-[1.02] active:scale-98 group shadow-2xs"
+          title="Click to view Flexible Outcomes in My Tasks"
+        >
           <CornerBlob className="text-[#D97706]/[0.12]" />
 
           {/* Centered Icon Badge */}
-          <div className="relative z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#D97706]/[0.12] flex items-center justify-center text-[#D97706] flex-shrink-0">
+          <div className="relative z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#D97706]/[0.12] flex items-center justify-center text-[#D97706] flex-shrink-0 group-hover:scale-110 transition-transform">
             <Calendar size={15} />
           </div>
 
@@ -574,11 +587,15 @@ export const ProductivitySummary: React.FC = () => {
         </div>
 
         {/* Card 3: Completed Today */}
-        <div className="bg-[#16A34A]/[0.08] rounded-[20px] sm:rounded-[22px] p-2.5 sm:p-3.5 md:p-4 min-h-[86px] sm:min-h-[96px] relative overflow-hidden flex items-center gap-2 sm:gap-3.5 transition-all">
+        <div
+          onClick={() => navigateToTasks({ status: 'completed' })}
+          className="bg-[#16A34A]/[0.08] hover:bg-[#16A34A]/[0.14] rounded-[20px] sm:rounded-[22px] p-2.5 sm:p-3.5 md:p-4 min-h-[86px] sm:min-h-[96px] relative overflow-hidden flex items-center gap-2 sm:gap-3.5 transition-all cursor-pointer hover:scale-[1.02] active:scale-98 group shadow-2xs"
+          title="Click to view Completed tasks in My Tasks"
+        >
           <CornerBlob className="text-[#16A34A]/[0.12]" />
 
           {/* Centered Icon Badge */}
-          <div className="relative z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#16A34A]/[0.12] flex items-center justify-center text-[#16A34A] flex-shrink-0">
+          <div className="relative z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#16A34A]/[0.12] flex items-center justify-center text-[#16A34A] flex-shrink-0 group-hover:scale-110 transition-transform">
             <Check size={16} strokeWidth={2.8} />
           </div>
 

@@ -195,3 +195,23 @@ export interface DayCapacity {
   remainingTasksCount: number;
   suggestions: SchedulerSuggestion[];
 }
+
+export interface AnalyticsFilter {
+  category?: string; // 'All' | 'Work' | 'Health' | 'Personal' | 'Learning'
+  priority?: string; // 'all' | 'critical' | 'important' | 'flexible' | 'optional'
+  status?: string; // 'all' | 'completed' | 'pending' | 'in_progress'
+  site?: string; // e.g. 'github.com', 'figma.com', 'notion.so', etc.
+  timeRange?: 'today' | 'week' | 'month' | 'all';
+}
+
+export interface AppSiteFocusItem {
+  id: string;
+  name: string;
+  domain: string;
+  category: Category;
+  durationMinutes: number;
+  icon: string; // icon identifier / Lucide name
+  isProductive: boolean;
+  color: string;
+}
+

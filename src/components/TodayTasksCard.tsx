@@ -19,6 +19,7 @@ export const TodayTasksCard: React.FC = () => {
     moveTaskLater,
     skipTask,
     setCurrentTab,
+    navigateToTasks,
     activeFocusTaskId,
     isFocusTimerRunning,
     focusElapsedSeconds,
@@ -394,10 +395,14 @@ export const TodayTasksCard: React.FC = () => {
       {/* Bottom Link: "View all tasks" */}
       <div className="pt-4 mt-2 text-center border-t border-borderToken">
         <button
-          onClick={() => setCurrentTab('tasks')}
-          className="text-[13px] font-medium text-primary hover:underline underline-offset-4 tracking-wide"
+          onClick={() =>
+            navigateToTasks({
+              priority: activeFilter === 'important' ? 'important' : activeFilter === 'regular' ? 'flexible' : 'All',
+            })
+          }
+          className="text-[13px] font-medium text-primary hover:underline underline-offset-4 tracking-wide cursor-pointer"
         >
-          View all tasks & backlog →
+          View all tasks & backlog {activeFilter !== 'all' ? `(${activeFilter})` : ''} →
         </button>
       </div>
     </div>

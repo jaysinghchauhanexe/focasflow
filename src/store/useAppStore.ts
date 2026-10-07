@@ -15,13 +15,15 @@ import {
   Priority,
   Category,
   AppTheme,
-  LofiStationId
+  LofiStationId,
+  AnalyticsFilter,
+  AppSiteFocusItem
 } from '../types';
 import { calculateDayCapacity, buildDaySchedule } from '../engine/scheduler';
 import { playCompletionSound } from '../utils/soundEffects';
 
 interface AppState {
-  currentTab: 'today' | 'tasks' | 'habits' | 'routines' | 'goals' | 'schedule' | 'history' | 'settings' | 'preferences';
+  currentTab: 'today' | 'tasks' | 'analytics' | 'habits' | 'routines' | 'goals' | 'schedule' | 'history' | 'settings' | 'preferences';
   selectedDate: string; // YYYY-MM-DD
   tasks: Task[];
   habits: Habit[];
@@ -30,6 +32,7 @@ interface AppState {
   scheduleBlocks: ScheduleBlock[];
   history: HistoryLog[];
   settings: AppSettings;
+  appSiteFocusData: AppSiteFocusItem[];
   
   // Modals & UI States
   isTaskModalOpen: boolean;
@@ -47,6 +50,22 @@ interface AppState {
   setSidebarCollapsed: (collapsed: boolean) => void;
   activeFilter: 'all' | 'important' | 'regular';
   searchQuery: string;
+
+  // Task Filters State (synchronized across views and sidebar)
+  taskCategoryFilter: string;
+  taskPriorityFilter: string;
+  taskStatusFilter: string;
+  taskSearchQuery: string;
+  setTaskCategoryFilter: (category: string) => void;
+  setTaskPriorityFilter: (priority: string) => void;
+  setTaskStatusFilter: (status: string) => void;
+  setTaskSearchQuery: (query: string) => void;
+  navigateToTasks: (filters?: { category?: string; priority?: string; status?: string; search?: string }) => void;
+
+  // Analytics Filter & Navigation
+  analyticsFilter: AnalyticsFilter;
+  setAnalyticsFilter: (filter: Partial<AnalyticsFilter>) => void;
+  navigateToAnalytics: (filters?: Partial<AnalyticsFilter>) => void;
 
   // Focus Timer States
   activeFocusTaskId: string | null;
@@ -495,6 +514,17 @@ const loadedSettings: AppSettings = {
     ...(rawLoadedSettings.preferences || {}),
   },
 };
+const initialAppSites: AppSiteFocusItem[] = [
+  { id: 'site-1', name: 'VS Code & Terminals', domain: 'code.visualstudio.com', category: 'Work', durationMinutes: 245, icon: 'Code2', isProductive: true, color: '#38BDF8' },
+  { id: 'site-2', name: 'GitHub Repos & PRs', domain: 'github.com', category: 'Work', durationMinutes: 135, icon: 'GitPullRequest', isProductive: true, color: '#A855F7' },
+  { id: 'site-3', name: 'Figma UI/UX Design', domain: 'figma.com', category: 'Work', durationMinutes: 110, icon: 'Layout', isProductive: true, color: '#F97316' },
+  { id: 'site-4', name: 'Notion Knowledge Base', domain: 'notion.so', category: 'Learning', durationMinutes: 85, icon: 'BookOpen', isProductive: true, color: '#10B981' },
+  { id: 'site-5', name: 'Linear Issue Tracker', domain: 'linear.app', category: 'Work', durationMinutes: 60, icon: 'CheckSquare', isProductive: true, color: '#6366F1' },
+  { id: 'site-6', name: 'FocusFlow Web & Docs', domain: 'focusflow.app', category: 'Personal', durationMinutes: 45, icon: 'Compass', isProductive: true, color: '#EC4899' },
+  { id: 'site-7', name: 'YouTube Ambient Study', domain: 'youtube.com', category: 'Learning', durationMinutes: 55, icon: 'Headphones', isProductive: true, color: '#E11D48' },
+  { id: 'site-8', name: 'Mindful Meditation & Health', domain: 'health.flow', category: 'Health', durationMinutes: 30, icon: 'Heart', isProductive: true, color: '#22C55E' },
+];
+
 applyTheme(loadedSettings.theme || 'green');
 applyFont(loadedSettings.fontHeading || 'Gilda Display');
 
@@ -508,6 +538,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   scheduleBlocks: [],
   history: loadPersisted('history', initialHistory),
   settings: loadedSettings,
+  appSiteFocusData: loadPersisted('app_site_focus', initialAppSites),
 
   isOnboardingOpen: !loadedSettings.hasCompletedOnboarding,
   isTaskModalOpen: false,
@@ -533,6 +564,41 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   activeFilter: 'all',
   searchQuery: '',
+
+  // Task Filters State (synchronized across views and sidebar)
+  taskCategoryFilter: 'All',
+  taskPriorityFilter: 'All',
+  taskStatusFilter: 'All',
+  taskSearchQuery: '',
+  setTaskCategoryFilter: (category) => set({ taskCategoryFilter: category }),
+  setTaskPriorityFilter: (priority) => set({ taskPriorityFilter: priority }),
+  setTaskStatusFilter: (status) => set({ taskStatusFilter: status }),
+  setTaskSearchQuery: (query) => set({ taskSearchQuery: query }),
+  navigateToTasks: (filters) => set((state) => ({
+    currentTab: 'tasks',
+    taskCategoryFilter: filters?.category !== undefined ? filters.category : 'All',
+    taskPriorityFilter: filters?.priority !== undefined ? filters.priority : 'All',
+    taskStatusFilter: filters?.status !== undefined ? filters.status : 'All',
+    taskSearchQuery: filters?.search !== undefined ? filters.search : '',
+  })),
+
+  // Analytics Filter & Navigation
+  analyticsFilter: {
+    timeRange: 'today',
+    category: 'All',
+    priority: 'all',
+    status: 'all',
+  },
+  setAnalyticsFilter: (filter) => set((state) => ({
+    analyticsFilter: { ...state.analyticsFilter, ...filter }
+  })),
+  navigateToAnalytics: (filters) => set((state) => ({
+    currentTab: 'analytics',
+    analyticsFilter: {
+      ...state.analyticsFilter,
+      ...(filters || {})
+    }
+  })),
 
   // Focus Timer States
   activeFocusTaskId: null,

@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Task, Category, Priority } from '../types';
-import { Plus, Search, Check, MoreHorizontal, Edit2, Trash2, FastForward } from 'lucide-react';
+import { Plus, Search, Check, MoreHorizontal, Edit2, Trash2, FastForward, X } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
 import { DoodleTasks } from '../components/DoodleIllustrations';
 import { CustomSelect } from '../components/CustomSelect';
 
 export const TasksView: React.FC = () => {
-  const { tasks, toggleTaskStatus, deleteTask, openTaskModal, moveTaskToTomorrow } = useAppStore();
-  const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [selectedPriority, setSelectedPriority] = useState<string>('All');
+  const {
+    tasks,
+    toggleTaskStatus,
+    deleteTask,
+    openTaskModal,
+    moveTaskToTomorrow,
+    taskCategoryFilter,
+    taskPriorityFilter,
+    taskStatusFilter,
+    taskSearchQuery,
+    setTaskCategoryFilter,
+    setTaskPriorityFilter,
+    setTaskStatusFilter,
+    setTaskSearchQuery,
+  } = useAppStore();
+
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const menuContainerRef = React.useRef<HTMLDivElement>(null);
 
@@ -32,10 +44,35 @@ export const TasksView: React.FC = () => {
     };
   }, [activeMenuId]);
 
+  const hasActiveFilters =
+    taskCategoryFilter !== 'All' ||
+    (taskPriorityFilter !== 'All' && taskPriorityFilter !== 'all') ||
+    (taskStatusFilter !== 'All' && taskStatusFilter !== 'all') ||
+    taskSearchQuery.trim().length > 0;
+
+  const clearAllFilters = () => {
+    setTaskCategoryFilter('All');
+    setTaskPriorityFilter('All');
+    setTaskStatusFilter('All');
+    setTaskSearchQuery('');
+  };
+
   const filteredTasks = tasks.filter((t) => {
-    if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
-    if (selectedCategory !== 'All' && t.category !== selectedCategory) return false;
-    if (selectedPriority !== 'All' && t.priority !== selectedPriority) return false;
+    if (taskSearchQuery && !t.title.toLowerCase().includes(taskSearchQuery.toLowerCase())) return false;
+    if (taskCategoryFilter !== 'All' && t.category !== taskCategoryFilter) return false;
+    if (taskPriorityFilter !== 'All' && taskPriorityFilter !== 'all') {
+      if (taskPriorityFilter === 'important') {
+        if (t.priority !== 'critical' && t.priority !== 'important') return false;
+      } else if (taskPriorityFilter === 'flexible') {
+        if (t.priority !== 'flexible' && t.priority !== 'optional') return false;
+      } else if (t.priority !== taskPriorityFilter) {
+        return false;
+      }
+    }
+    if (taskStatusFilter !== 'All' && taskStatusFilter !== 'all') {
+      if (taskStatusFilter === 'completed' && t.status !== 'completed') return false;
+      if (taskStatusFilter === 'pending' && t.status === 'completed') return false;
+    }
     return true;
   });
 
@@ -86,12 +123,12 @@ export const TasksView: React.FC = () => {
       {/* Filter and Search Bar */}
       <div className="bg-card rounded-[24px] p-4 flex flex-wrap items-center gap-3 transition-colors">
         {/* Search */}
-        <div className="flex-1 min-w-[220px] flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-card-subtle">
+        <div className="flex-1 min-w-[200px] flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-card-subtle">
           <Search size={15} className="text-mutedText" />
           <input
             type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={taskSearchQuery}
+            onChange={(e) => setTaskSearchQuery(e.target.value)}
             placeholder="Search outcomes..."
             className="w-full bg-transparent text-[13.5px] text-foreground placeholder-mutedText outline-none"
           />
@@ -99,9 +136,9 @@ export const TasksView: React.FC = () => {
 
         {/* Category Filter */}
         <CustomSelect
-          value={selectedCategory}
-          onChange={(val) => setSelectedCategory(val)}
-          className="w-44"
+          value={taskCategoryFilter}
+          onChange={(val) => setTaskCategoryFilter(val)}
+          className="w-40"
           options={[
             { value: 'All', label: 'All Categories' },
             { value: 'Work', label: 'Work' },
@@ -113,9 +150,9 @@ export const TasksView: React.FC = () => {
 
         {/* Priority Filter */}
         <CustomSelect
-          value={selectedPriority}
-          onChange={(val) => setSelectedPriority(val)}
-          className="w-44"
+          value={taskPriorityFilter}
+          onChange={(val) => setTaskPriorityFilter(val)}
+          className="w-40"
           options={[
             { value: 'All', label: 'All Priorities' },
             { value: 'critical', label: 'Critical' },
@@ -124,6 +161,29 @@ export const TasksView: React.FC = () => {
             { value: 'optional', label: 'Optional' },
           ]}
         />
+
+        {/* Status Filter */}
+        <CustomSelect
+          value={taskStatusFilter}
+          onChange={(val) => setTaskStatusFilter(val)}
+          className="w-38"
+          options={[
+            { value: 'All', label: 'All Statuses' },
+            { value: 'pending', label: 'Pending / Active' },
+            { value: 'completed', label: 'Completed' },
+          ]}
+        />
+
+        {hasActiveFilters && (
+          <button
+            onClick={clearAllFilters}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary-soft rounded-xl transition-all cursor-pointer"
+            title="Reset active filters"
+          >
+            <X size={14} />
+            <span>Reset Filters</span>
+          </button>
+        )}
       </div>
 
       {/* Tasks Table */}

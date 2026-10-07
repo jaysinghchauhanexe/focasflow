@@ -3,11 +3,12 @@ import { useAppStore } from '../store/useAppStore';
 import {
   Home,
   CheckSquare,
+  BarChart3,
   Calendar,
   Target,
   Compass,
   Repeat,
-  BarChart2,
+  BookOpen,
   Sparkles,
   Settings,
   SlidersHorizontal,
@@ -24,7 +25,8 @@ export const Sidebar: React.FC = () => {
     openBreathingModal,
     tasks,
     isSidebarCollapsed,
-    toggleSidebar
+    toggleSidebar,
+    navigateToTasks
   } = useAppStore();
 
   const pendingTasksCount = tasks.filter(t => t.status !== 'completed').length || 10;
@@ -44,11 +46,12 @@ export const Sidebar: React.FC = () => {
   const mainNavItems = [
     { id: 'today', label: 'Dashboard', icon: Home },
     { id: 'tasks', label: 'My Tasks', icon: CheckSquare, badge: pendingTasksCount },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'schedule', label: 'Calendar', icon: Calendar },
     { id: 'habits', label: 'Habits', icon: Target },
     { id: 'routines', label: 'Routines', icon: Repeat },
     { id: 'goals', label: 'Vision & Goals', icon: Compass },
-    { id: 'history', label: 'Reflections', icon: BarChart2 },
+    { id: 'history', label: 'Reflections', icon: BookOpen },
     { id: 'breathing', label: 'Breathing', icon: Wind, isBreathing: true },
     { id: 'ai-planner', label: 'AI Assistant', icon: Sparkles, isAction: true },
   ];
@@ -156,6 +159,8 @@ export const Sidebar: React.FC = () => {
                     openAiModal();
                   } else if (item.isBreathing) {
                     openBreathingModal();
+                  } else if (item.id === 'tasks') {
+                    navigateToTasks();
                   } else {
                     setCurrentTab(item.id as any);
                   }
