@@ -15,30 +15,65 @@ export const AiCommandBar: React.FC = () => {
     'Add 30 min reading every evening',
   ];
 
-  const toggleSpeechRecognition = () => {
-    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRec) {
-      alert('Voice dictation is supported in Chrome, Edge, and Chromium-based browsers.');
-      return;
-    }
+  const recognitionRef = React.useRef<any>(null);
 
+  const toggleSpeechRecognition = async () => {
     if (isListening) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+      }
       setIsListening(false);
       return;
     }
 
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      alert('Voice dictation is supported in modern Chrome, Edge, and Chromium-based browsers.');
+      return;
+    }
+
     try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+    } catch {
+      alert('Microphone permission denied. Please allow microphone access in browser settings.');
+      return;
+    }
+
+    try {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {}
+      }
+
       const recognition = new SpeechRec();
-      recognition.continuous = false;
+      recognitionRef.current = recognition;
+      recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
 
+      const initialText = inputVal;
+
       recognition.onstart = () => setIsListening(true);
       recognition.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((r: any) => r[0].transcript)
-          .join('');
-        setInputVal(transcript);
+        let finalTrans = '';
+        let interimTrans = '';
+        for (let i = 0; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTrans += event.results[i][0].transcript;
+          } else {
+            interimTrans += event.results[i][0].transcript;
+          }
+        }
+        const currentSpoken = (finalTrans || interimTrans).trim();
+        if (currentSpoken) {
+          const sep = initialText && !initialText.endsWith(' ') ? ' ' : '';
+          setInputVal(initialText ? `${initialText}${sep}${currentSpoken}` : currentSpoken);
+        }
       };
       recognition.onerror = () => setIsListening(false);
       recognition.onend = () => setIsListening(false);

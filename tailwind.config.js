@@ -51,9 +51,18 @@ export default {
         'subcard': '18px',
       },
       boxShadow: {
+        'none': 'none',
+        'sm': 'none',
+        'DEFAULT': 'none',
+        'md': 'none',
+        'lg': 'none',
+        'xl': 'none',
+        '2xl': 'none',
+        'inner': 'none',
         'soft': 'none',
         'float': 'none',
         'glow': 'none',
+        'xs': 'none',
       }
     },
   },

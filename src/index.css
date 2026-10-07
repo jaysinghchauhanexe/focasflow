@@ -491,3 +491,9 @@ input[type="reset"]:active {
   animation: faceJoyful 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 1;
   transform-origin: center;
 }
+
+/* Zero Shadows Policy - Strict Flat Aesthetic */
+*, ::before, ::after {
+  box-shadow: none !important;
+}
+

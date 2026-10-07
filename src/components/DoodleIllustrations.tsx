@@ -792,3 +792,104 @@ export const DoodleWindClouds: React.FC<DoodleProps> = ({ size = 64, className =
     />
   </svg>
 );
+
+/**
+ * 8. DoodleAnalytics — Hand-drawn bar chart, trending growth arrow & sparkles for analytics
+ */
+export const DoodleAnalytics: React.FC<DoodleProps> = ({ size = 64, className = '' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 100 100"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={`inline-block ${className}`}
+  >
+    {/* Twinkle Stars */}
+    <path
+      d="M18 18L20 22L24 23.5L20 25L18 29L16 25L12 23.5L16 22Z"
+      fill="var(--tag-learning, #F59E0B)"
+    />
+    <path
+      d="M84 20L85.5 23L88.5 24.5L85.5 26L84 29L82.5 26L79.5 24.5L82.5 23Z"
+      fill="var(--tag-personal, #EC4899)"
+    />
+
+    {/* Back Card Plate */}
+    <rect
+      x="18"
+      y="22"
+      width="64"
+      height="62"
+      rx="14"
+      fill="var(--color-primary)"
+      fillOpacity="0.12"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.5"
+    />
+
+    {/* Bar 1 (Short) */}
+    <rect
+      x="26"
+      y="54"
+      width="10"
+      height="22"
+      rx="3"
+      fill="#FFFFFF"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.2"
+    />
+
+    {/* Bar 2 (Medium) */}
+    <rect
+      x="40"
+      y="42"
+      width="10"
+      height="34"
+      rx="3"
+      fill="var(--tag-learning, #F59E0B)"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.2"
+    />
+
+    {/* Bar 3 (Tall - Theme Primary) */}
+    <rect
+      x="54"
+      y="32"
+      width="10"
+      height="44"
+      rx="3"
+      fill="var(--color-primary)"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.2"
+    />
+
+    {/* Bar 4 (Peak) */}
+    <rect
+      x="68"
+      y="24"
+      width="10"
+      height="52"
+      rx="3"
+      fill="var(--tag-health, #10B981)"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.2"
+    />
+
+    {/* Growth Trend Line with Arrow */}
+    <path
+      d="M24 50 L38 38 L52 28 L74 14"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M62 14 H74 V26"
+      stroke="var(--color-text, #111827)"
+      strokeWidth="2.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);

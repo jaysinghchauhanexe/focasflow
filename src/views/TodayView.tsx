@@ -4,7 +4,6 @@ import { ProductivitySummary } from '../components/ProductivitySummary';
 import { CurrentTaskBanner } from '../components/CurrentTaskBanner';
 import { TodayTasksCard } from '../components/TodayTasksCard';
 import { QuickActionsCard } from '../components/QuickActionsCard';
-import { AiCommandBar } from '../components/AiCommandBar';
 
 export const TodayView: React.FC = () => {
   return (
@@ -31,9 +30,6 @@ export const TodayView: React.FC = () => {
           <QuickActionsCard />
         </div>
       </div>
-
-      {/* Natural Language AI Command Bar */}
-      <AiCommandBar />
     </div>
   );
 };

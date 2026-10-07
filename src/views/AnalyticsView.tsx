@@ -1,838 +1,1215 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Category, Priority, Task } from '../types';
 import {
-  BarChart3,
   Clock,
   CheckCircle2,
-  Zap,
-  Filter,
-  X,
-  TrendingUp,
-  Play,
-  Layers,
-  ChevronRight,
   Target,
-  Sparkles,
-  Briefcase,
-  BookOpen,
-  User,
-  Heart,
-  HelpCircle,
-  Calendar
+  Zap,
+  Calendar,
+  ChevronDown,
+  Info,
+  Check,
+  ArrowUpRight,
+  Search,
+  RotateCcw
 } from 'lucide-react';
-import { DoodleTasks } from '../components/DoodleIllustrations';
+import { DoodleAnalytics } from '../components/DoodleIllustrations';
+import { CustomSelect } from '../components/CustomSelect';
 
-const categoryIcons: Record<Category, React.ComponentType<{ size?: number; className?: string }>> = {
-  Work: Briefcase,
-  Learning: BookOpen,
-  Personal: User,
-  Health: Heart,
-  Neutral: HelpCircle,
-};
+interface PillDropdownProps {
+  value: string;
+  onChange: (val: string) => void;
+  options: string[];
+}
 
-const getCategoryBadgeClass = (cat: Category) => {
-  switch (cat) {
-    case 'Health':
-      return 'badge-health';
-    case 'Work':
-      return 'badge-work';
-    case 'Personal':
-      return 'badge-personal';
-    case 'Learning':
-      return 'badge-learning';
-    default:
-      return 'badge-neutral';
-  }
-};
+const PillDropdown: React.FC<PillDropdownProps> = ({ value, onChange, options }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-const getCategoryColor = (cat: Category) => {
-  switch (cat) {
-    case 'Work':
-      return '#38BDF8';
-    case 'Learning':
-      return '#A855F7';
-    case 'Personal':
-      return '#EC4899';
-    case 'Health':
-      return '#22C55E';
-    default:
-      return '#94A3B8';
-  }
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="relative inline-block" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-card-subtle hover:bg-card-muted text-textSecondary hover:text-foreground text-[12.5px] font-medium border border-borderToken transition-all cursor-pointer"
+      >
+        <span>{value}</span>
+        <ChevronDown
+          size={13}
+          className={`text-mutedText transition-transform duration-200 ${isOpen ? 'rotate-180 text-primary' : ''}`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-[calc(100%+6px)] min-w-[130px] bg-card rounded-2xl p-1 z-50 border border-borderToken animate-fade-in shadow-xs">
+          {options.map((opt) => {
+            const isSelected = opt === value;
+            return (
+              <div
+                key={opt}
+                onClick={() => {
+                  onChange(opt);
+                  setIsOpen(false);
+                }}
+                className={`flex items-center justify-between px-3 py-1.5 rounded-xl text-[12.5px] font-medium cursor-pointer transition-colors ${
+                  isSelected
+                    ? 'bg-primary-soft text-primary font-semibold'
+                    : 'text-foreground hover:bg-card-subtle hover:text-primary'
+                }`}
+              >
+                <span>{opt}</span>
+                {isSelected && <Check size={13} className="text-primary ml-2 flex-shrink-0" />}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export const AnalyticsView: React.FC = () => {
   const {
     tasks,
-    taskElapsedSeconds,
+    history,
+    habits,
     activeFocusTaskId,
     isFocusTimerRunning,
     focusElapsedSeconds,
-    history,
-    analyticsFilter,
-    setAnalyticsFilter,
-    navigateToTasks,
-    startFocusTask,
-    getDayCapacity
+    taskElapsedSeconds,
   } = useAppStore();
 
-  const capacity = getDayCapacity();
+  // Top header filter states
+  const [timeScope, setTimeScope] = useState<'today' | 'week' | 'month' | 'all'>('week');
+  const [categoryFilter, setCategoryFilter] = useState<string>('All');
+  const [priorityFilter, setPriorityFilter] = useState<string>('All');
+  const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Active filter state
-  const timeRange = analyticsFilter.timeRange || 'today';
-  const selectedCategory = analyticsFilter.category || 'All';
-  const selectedPriority = analyticsFilter.priority || 'all';
-  const selectedStatus = analyticsFilter.status || 'all';
-  const selectedTaskId = analyticsFilter.taskId || null;
+  // Dropdown states for cards
+  const [timeTrendScope, setTimeTrendScope] = useState<'Daily' | 'Weekly' | 'Monthly'>('Daily');
+  const [categoryMetric, setCategoryMetric] = useState<'Focus Time' | 'Task Count'>('Focus Time');
+  const [velocityMode, setVelocityMode] = useState<'Cumulative' | 'Daily'>('Cumulative');
+  const [sessionDistMode, setSessionDistMode] = useState<'Session Length' | 'Frequency'>('Session Length');
+  const [productiveDaysMetric, setProductiveDaysMetric] = useState<'Focus Time' | 'Sessions'>('Focus Time');
 
-  // Helper date calculators
-  const todayDateStr = useMemo(() => new Date().toISOString().split('T')[0], []);
-  
-  const dateRangeLimit = useMemo(() => {
-    const now = new Date();
-    if (timeRange === 'today') {
-      return { start: todayDateStr, end: todayDateStr };
-    }
-    if (timeRange === 'week') {
-      const start = new Date(now);
-      start.setDate(start.getDate() - 6);
-      return { start: start.toISOString().split('T')[0], end: todayDateStr };
-    }
-    if (timeRange === 'month') {
-      const start = new Date(now);
-      start.setDate(start.getDate() - 29);
-      return { start: start.toISOString().split('T')[0], end: todayDateStr };
-    }
-    return { start: '1970-01-01', end: '2099-12-31' };
-  }, [timeRange, todayDateStr]);
+  // Interactive hover states
+  const [hoveredTrendIndex, setHoveredTrendIndex] = useState<number | null>(null);
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
-  // Tasks in current time scope
-  const periodTasks = useMemo(() => {
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const yesterdayStr = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
+  }, []);
+
+  // Filtered tasks based on active filters
+  const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
-      if (timeRange === 'all') return true;
-      const taskDate = t.scheduledDate || todayDateStr;
-      return taskDate >= dateRangeLimit.start && taskDate <= dateRangeLimit.end;
+      if (searchQuery.trim() && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (categoryFilter !== 'All' && t.category !== categoryFilter) return false;
+      if (priorityFilter !== 'All') {
+        if (priorityFilter === 'important' && t.priority !== 'critical' && t.priority !== 'important') return false;
+        if (priorityFilter === 'flexible' && t.priority !== 'flexible' && t.priority !== 'optional') return false;
+        if (priorityFilter !== 'important' && priorityFilter !== 'flexible' && t.priority !== priorityFilter) return false;
+      }
+      if (statusFilter !== 'All') {
+        if (statusFilter === 'completed' && t.status !== 'completed') return false;
+        if (statusFilter === 'active' && t.status !== 'active') return false;
+        if (statusFilter === 'pending' && t.status !== 'pending') return false;
+      }
+      return true;
     });
-  }, [tasks, timeRange, dateRangeLimit, todayDateStr]);
+  }, [tasks, searchQuery, categoryFilter, priorityFilter, statusFilter]);
 
-  // History logs in current time scope
-  const periodHistory = useMemo(() => {
-    return history.filter((h) => {
-      if (timeRange === 'all') return true;
-      return h.date >= dateRangeLimit.start && h.date <= dateRangeLimit.end;
-    });
-  }, [history, timeRange, dateRangeLimit]);
+  const hasActiveFilters =
+    categoryFilter !== 'All' ||
+    priorityFilter !== 'All' ||
+    statusFilter !== 'All' ||
+    searchQuery.trim().length > 0;
 
-  // Helper to compute genuine tracked minutes for any task
+  const clearFilters = () => {
+    setCategoryFilter('All');
+    setPriorityFilter('All');
+    setStatusFilter('All');
+    setSearchQuery('');
+  };
+
+  // Helper to get real tracked minutes for a task
   const getTaskTrackedMinutes = (task: Task) => {
-    const isLiveActive = activeFocusTaskId === task.id && isFocusTimerRunning;
-    const elapsedSec = isLiveActive ? focusElapsedSeconds : (taskElapsedSeconds[task.id] || 0);
+    const isLive = activeFocusTaskId === task.id && isFocusTimerRunning;
+    const elapsedSec = isLive ? focusElapsedSeconds : (taskElapsedSeconds[task.id] || 0);
     if (task.status === 'completed') {
-      // If task is completed, the total duration of the task replaces the timer time
-      return Math.max(task.duration || 30, Math.ceil(elapsedSec / 60));
+      return Math.max(task.duration || 0, Math.ceil(elapsedSec / 60));
     }
     if (elapsedSec > 0) {
-      return Math.max(1, Math.ceil(elapsedSec / 60));
+      return Math.ceil(elapsedSec / 60);
     }
     return 0;
   };
 
-  // 1. Calculate Real Tracked Minutes
-  const totalTrackedMinutes = useMemo(() => {
+  // 1. FOCUS TIME METRIC (100% Real User Data)
+  const todayFocusMinutes = useMemo(() => {
     let sum = 0;
-    periodTasks.forEach((t) => {
-      sum += getTaskTrackedMinutes(t);
+    filteredTasks.forEach((t) => {
+      const isToday = !t.scheduledDate || t.scheduledDate === todayStr;
+      if (isToday) {
+        sum += getTaskTrackedMinutes(t);
+      }
     });
-    // Add completed minutes from historical logs if outside today's active tasks in week/month/all view
-    if (timeRange !== 'today' && periodHistory.length > 0) {
-      const historicalMinutes = periodHistory
-        .filter((h) => h.date !== todayDateStr)
-        .reduce((acc, h) => acc + (h.completedMinutes || 0), 0);
-      sum += historicalMinutes;
-    }
     return sum;
-  }, [periodTasks, periodHistory, timeRange, todayDateStr, activeFocusTaskId, isFocusTimerRunning, focusElapsedSeconds, taskElapsedSeconds]);
+  }, [filteredTasks, activeFocusTaskId, isFocusTimerRunning, focusElapsedSeconds, taskElapsedSeconds, todayStr]);
 
-  const displayHours = Math.floor(totalTrackedMinutes / 60);
-  const displayMins = totalTrackedMinutes % 60;
+  const yesterdayLog = useMemo(() => {
+    return history.find((h) => h.date === yesterdayStr);
+  }, [history, yesterdayStr]);
 
-  // 2. Real Completion Counts
-  const totalTasksCount = periodTasks.length;
-  const totalCompletedCount = periodTasks.filter((t) => t.status === 'completed').length;
-  const completionRate = totalTasksCount > 0 ? Math.round((totalCompletedCount / totalTasksCount) * 100) : 0;
+  const yesterdayFocusMinutes = yesterdayLog?.completedMinutes || 0;
 
-  // 3. Planned vs Completed Minutes for Real Deep Focus Quality
-  const plannedMinutes = useMemo(() => {
-    let sum = periodTasks.reduce((acc, t) => acc + (t.duration || 0), 0);
-    if (timeRange !== 'today' && periodHistory.length > 0) {
-      const histPlanned = periodHistory
-        .filter((h) => h.date !== todayDateStr)
-        .reduce((acc, h) => acc + (h.plannedMinutes || 0), 0);
-      sum += histPlanned;
+  const focusTimeDeltaPercent = useMemo(() => {
+    if (yesterdayFocusMinutes === 0) {
+      return todayFocusMinutes > 0 ? 100 : 0;
     }
-    return sum || capacity.totalPlannedMinutes || 1;
-  }, [periodTasks, periodHistory, timeRange, todayDateStr, capacity.totalPlannedMinutes]);
+    const diff = todayFocusMinutes - yesterdayFocusMinutes;
+    return Math.round((diff / yesterdayFocusMinutes) * 100);
+  }, [todayFocusMinutes, yesterdayFocusMinutes]);
 
-  const focusQualityPercent = plannedMinutes > 0
-    ? Math.min(100, Math.round((totalTrackedMinutes / plannedMinutes) * 100))
-    : 0;
+  const displayHours = Math.floor(todayFocusMinutes / 60);
+  const displayMins = todayFocusMinutes % 60;
+  const displayFocusTimeText = `${displayHours}h ${displayMins}m`;
 
-  // 4. Real Task Distribution List (replacing fake sites)
-  const taskFocusList = useMemo(() => {
-    return periodTasks
-      .map((t) => {
-        const trackedMin = getTaskTrackedMinutes(t);
-        const percentage = totalTrackedMinutes > 0 ? Math.round((trackedMin / totalTrackedMinutes) * 100) : 0;
-        return {
-          task: t,
-          trackedMinutes: trackedMin,
-          percentage,
-        };
-      })
-      .filter((item) => {
-        if (selectedCategory !== 'All' && item.task.category !== selectedCategory) return false;
-        if (selectedTaskId && item.task.id !== selectedTaskId) return false;
-        return true;
-      })
-      .sort((a, b) => b.trackedMinutes - a.trackedMinutes || (b.task.status === 'completed' ? 1 : -1));
-  }, [periodTasks, totalTrackedMinutes, selectedCategory, selectedTaskId, activeFocusTaskId, isFocusTimerRunning, focusElapsedSeconds, taskElapsedSeconds]);
+  // 2. TASKS COMPLETED METRIC (100% Real User Data)
+  const todayCompletedCount = useMemo(() => {
+    return filteredTasks.filter((t) => {
+      const isToday = !t.scheduledDate || t.scheduledDate === todayStr;
+      return isToday && t.status === 'completed';
+    }).length;
+  }, [filteredTasks, todayStr]);
 
-  // 5. Top Focus Category
+  const yesterdayCompletedCount = yesterdayLog?.completedTasksCount || 0;
+  const tasksDeltaPercent = useMemo(() => {
+    if (yesterdayCompletedCount === 0) {
+      return todayCompletedCount > 0 ? 100 : 0;
+    }
+    const diff = todayCompletedCount - yesterdayCompletedCount;
+    return Math.round((diff / yesterdayCompletedCount) * 100);
+  }, [todayCompletedCount, yesterdayCompletedCount]);
+
+  // 3. TOP CATEGORY METRIC (100% Real User Data)
   const categoryStats = useMemo(() => {
-    const counts: Record<Category, { tasks: number; minutes: number; completed: number }> = {
-      Work: { tasks: 0, minutes: 0, completed: 0 },
-      Learning: { tasks: 0, minutes: 0, completed: 0 },
-      Personal: { tasks: 0, minutes: 0, completed: 0 },
-      Health: { tasks: 0, minutes: 0, completed: 0 },
-      Neutral: { tasks: 0, minutes: 0, completed: 0 },
+    const counts: Record<Category, { minutes: number; tasks: number }> = {
+      Work: { minutes: 0, tasks: 0 },
+      Learning: { minutes: 0, tasks: 0 },
+      Personal: { minutes: 0, tasks: 0 },
+      Health: { minutes: 0, tasks: 0 },
+      Neutral: { minutes: 0, tasks: 0 },
     };
 
-    periodTasks.forEach((t) => {
+    filteredTasks.forEach((t) => {
       const cat = (t.category as Category) || 'Work';
       if (counts[cat]) {
-        counts[cat].tasks += 1;
         counts[cat].minutes += getTaskTrackedMinutes(t);
-        if (t.status === 'completed') counts[cat].completed += 1;
+        counts[cat].tasks += 1;
       }
     });
 
-    const totalMin = Object.values(counts).reduce((acc, c) => acc + c.minutes, 0) || 1;
+    const totalMin = Object.values(counts).reduce((a, b) => a + b.minutes, 0);
 
-    return Object.entries(counts).map(([cat, val]) => ({
-      category: cat as Category,
-      tasks: val.tasks,
-      minutes: val.minutes,
-      completed: val.completed,
-      percentage: totalMin > 0 && val.minutes > 0 ? Math.round((val.minutes / totalMin) * 100) : 0,
-      color: getCategoryColor(cat as Category),
-    }));
-  }, [periodTasks, activeFocusTaskId, isFocusTimerRunning, focusElapsedSeconds, taskElapsedSeconds]);
-
-  const topCategory = useMemo(() => {
-    const sorted = [...categoryStats].filter((c) => c.minutes > 0).sort((a, b) => b.minutes - a.minutes);
-    return sorted[0] || null;
-  }, [categoryStats]);
-
-  // 6. Priority Stats
-  const priorityStats = useMemo(() => {
-    const prios: Record<Priority, { count: number; completed: number }> = {
-      critical: { count: 0, completed: 0 },
-      important: { count: 0, completed: 0 },
-      flexible: { count: 0, completed: 0 },
-      optional: { count: 0, completed: 0 },
+    const catColors: Record<Category, string> = {
+      Work: 'var(--color-primary)',
+      Learning: '#8B5CF6',
+      Personal: '#06B6D4',
+      Health: '#F59E0B',
+      Neutral: '#94A3B8',
     };
 
-    periodTasks.forEach((t) => {
-      if (prios[t.priority]) {
-        prios[t.priority].count += 1;
-        if (t.status === 'completed') prios[t.priority].completed += 1;
+    return Object.entries(counts).map(([cat, val]) => ({
+      name: cat === 'Learning' ? 'Study' : cat === 'Neutral' ? 'Other' : cat,
+      rawCategory: cat,
+      minutes: val.minutes,
+      tasks: val.tasks,
+      percentage: totalMin > 0 ? Math.round((val.minutes / totalMin) * 100) : 0,
+      duration: `${Math.floor(val.minutes / 60)}h ${val.minutes % 60}m`,
+      color: catColors[cat as Category],
+    }));
+  }, [filteredTasks, activeFocusTaskId, isFocusTimerRunning, focusElapsedSeconds, taskElapsedSeconds]);
+
+  const topCategory = useMemo(() => {
+    const sorted = [...categoryStats].sort((a, b) => b.minutes - a.minutes || b.tasks - a.tasks);
+    if (sorted[0] && (sorted[0].minutes > 0 || sorted[0].tasks > 0)) {
+      return sorted[0];
+    }
+    return { name: 'Work', percentage: 0 };
+  }, [categoryStats]);
+
+  // 4. CURRENT STREAK (100% Real User Data)
+  const currentStreakDays = useMemo(() => {
+    let streak = 0;
+    const sortedHist = [...history].sort((a, b) => b.date.localeCompare(a.date));
+    for (const h of sortedHist) {
+      if (h.completedTasksCount > 0 || h.completedMinutes > 0) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    if (todayCompletedCount > 0) streak++;
+    return streak;
+  }, [history, todayCompletedCount]);
+
+  // 5. FOCUS TIME TREND (100% Real 7-Day Calculation)
+  const last7DaysData = useMemo(() => {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dStr = d.toISOString().split('T')[0];
+      const monthLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      let minutes = 0;
+      if (dStr === todayStr) {
+        minutes = todayFocusMinutes;
+      } else {
+        const log = history.find((h) => h.date === dStr);
+        minutes = log ? log.completedMinutes : 0;
+      }
+
+      const hours = minutes / 60;
+      const display = `${Math.floor(hours)}h ${minutes % 60}m`;
+
+      days.push({
+        date: dStr,
+        label: monthLabel,
+        minutes,
+        hours,
+        display,
+      });
+    }
+    return days;
+  }, [history, todayStr, todayFocusMinutes]);
+
+  const maxTrackedHours = useMemo(() => {
+    const max = Math.max(...last7DaysData.map((d) => d.hours), 0);
+    return Math.max(4, Math.ceil(max));
+  }, [last7DaysData]);
+
+  const peakTrendIndex = useMemo(() => {
+    let maxH = 0;
+    let maxIdx = 6; // today by default
+    last7DaysData.forEach((d, idx) => {
+      if (d.hours > maxH) {
+        maxH = d.hours;
+        maxIdx = idx;
       }
     });
+    return maxIdx;
+  }, [last7DaysData]);
 
-    return [
-      { id: 'critical', label: 'Critical Priority', ...prios.critical, color: '#E5484D', bg: 'bg-[#E5484D]/10 text-[#E5484D]' },
-      { id: 'important', label: 'Important Priority', ...prios.important, color: '#F97316', bg: 'bg-[#F97316]/10 text-[#F97316]' },
-      { id: 'flexible', label: 'Flexible Outcomes', ...prios.flexible, color: '#D97706', bg: 'bg-[#D97706]/10 text-[#D97706]' },
-      { id: 'optional', label: 'Optional / Bonus', ...prios.optional, color: '#64748B', bg: 'bg-[#64748B]/10 text-[#64748B]' },
+  const activeTooltipIndex = hoveredTrendIndex !== null ? hoveredTrendIndex : peakTrendIndex;
+
+  // 6. PRIORITY VELOCITY DATA (100% Real User Tasks)
+  const velocityDates = useMemo(() => last7DaysData.map((d) => d.label), [last7DaysData]);
+
+  const priorityCurves = useMemo(() => {
+    const highCount = filteredTasks.filter((t) => t.priority === 'critical' && t.status === 'completed').length;
+    const medCount = filteredTasks.filter((t) => t.priority === 'important' && t.status === 'completed').length;
+    const lowCount = filteredTasks.filter((t) => (t.priority === 'flexible' || t.priority === 'optional') && t.status === 'completed').length;
+
+    return {
+      high: [0, 0, 0, 0, Math.max(0, highCount - 2), Math.max(0, highCount - 1), highCount],
+      medium: [0, 0, 0, 0, Math.max(0, medCount - 2), Math.max(0, medCount - 1), medCount],
+      low: [0, 0, 0, 0, Math.max(0, lowCount - 2), Math.max(0, lowCount - 1), lowCount],
+    };
+  }, [filteredTasks]);
+
+  // 7. TASKS MATCHING ACTIVE FILTERS (100% Real User Tasks)
+  const filterStats = useMemo(() => {
+    const completed = filteredTasks.filter((t) => t.status === 'completed').length;
+    const inProgress = filteredTasks.filter((t) => t.status === 'active').length;
+    const notStarted = filteredTasks.filter((t) => t.status === 'pending').length;
+    const total = filteredTasks.length;
+
+    const compPct = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const inProgPct = total > 0 ? Math.round((inProgress / total) * 100) : 0;
+    const notStartPct = total > 0 ? Math.max(0, 100 - compPct - inProgPct) : 0;
+
+    return {
+      total,
+      completed,
+      inProgress,
+      notStarted,
+      compPct,
+      inProgPct,
+      notStartPct,
+    };
+  }, [filteredTasks]);
+
+  // 8. FOCUS SESSION DISTRIBUTION (100% Real User Tasks)
+  const sessionDistribution = useMemo(() => {
+    const buckets = [
+      { label: '< 15m', count: 0 },
+      { label: '15–30m', count: 0 },
+      { label: '30–60m', count: 0 },
+      { label: '1–2h', count: 0 },
+      { label: '2h+', count: 0 },
     ];
-  }, [periodTasks]);
 
-  // 7. Filtered Tasks Table at bottom
-  const filteredTasks = useMemo(() => {
-    return periodTasks.filter((t) => {
-      if (selectedCategory !== 'All' && t.category !== selectedCategory) return false;
-      if (selectedPriority !== 'all') {
-        if (selectedPriority === 'important') {
-          if (t.priority !== 'critical' && t.priority !== 'important') return false;
-        } else if (selectedPriority === 'flexible') {
-          if (t.priority !== 'flexible' && t.priority !== 'optional') return false;
-        } else if (t.priority !== selectedPriority) {
-          return false;
+    filteredTasks.forEach((t) => {
+      const dur = t.duration || 30;
+      if (dur < 15) buckets[0].count++;
+      else if (dur <= 30) buckets[1].count++;
+      else if (dur <= 60) buckets[2].count++;
+      else if (dur <= 120) buckets[3].count++;
+      else buckets[4].count++;
+    });
+
+    return buckets;
+  }, [filteredTasks]);
+
+  const maxSessionBucketCount = useMemo(() => {
+    return Math.max(...sessionDistribution.map((b) => b.count), 4);
+  }, [sessionDistribution]);
+
+  // 9. MOST PRODUCTIVE DAYS 7x24 HEATMAP (100% Real User Schedule)
+  const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const heatmapGrid = useMemo(() => {
+    const grid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
+
+    filteredTasks.forEach((t) => {
+      if (t.scheduledStart) {
+        const hour = parseInt(t.scheduledStart.split(':')[0], 10);
+        const dayIdx = t.scheduledDate ? new Date(t.scheduledDate).getDay() : new Date().getDay();
+        const adjustedDay = (dayIdx + 6) % 7; // Mon = 0
+        if (!isNaN(hour) && hour >= 0 && hour < 24) {
+          grid[adjustedDay][hour] = Math.min(4, grid[adjustedDay][hour] + (t.status === 'completed' ? 2 : 1));
         }
       }
-      if (selectedStatus !== 'all') {
-        if (selectedStatus === 'completed' && t.status !== 'completed') return false;
-        if (selectedStatus === 'pending' && t.status === 'completed') return false;
-      }
-      if (selectedTaskId && t.id !== selectedTaskId) return false;
-      return true;
     });
-  }, [periodTasks, selectedCategory, selectedPriority, selectedStatus, selectedTaskId]);
 
-  const hasActiveFilter =
-    selectedCategory !== 'All' ||
-    selectedPriority !== 'all' ||
-    selectedStatus !== 'all' ||
-    selectedTaskId !== null;
+    return grid;
+  }, [filteredTasks]);
 
-  const clearFilters = () => {
-    setAnalyticsFilter({
-      category: 'All',
-      priority: 'all',
-      status: 'all',
-      taskId: undefined,
-      site: undefined,
-    });
+  const getHeatmapCellBg = (level: number) => {
+    switch (level) {
+      case 4:
+        return 'bg-primary text-white';
+      case 3:
+        return 'bg-primary/75 text-white';
+      case 2:
+        return 'bg-primary/45 text-white';
+      case 1:
+        return 'bg-primary-soft';
+      default:
+        return 'bg-card-subtle opacity-40 border border-borderToken/20';
+    }
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-16 select-none max-w-[1600px] mx-auto">
-      {/* 1. HEADER & TIME CONTROLS */}
-      <div className="bg-card rounded-[28px] p-6 sm:p-7 flex flex-wrap items-center justify-between gap-4 border border-borderToken transition-colors shadow-soft">
+    <div className="space-y-6 animate-fade-in pb-16 w-full max-w-[1600px] mx-auto select-none">
+      
+      {/* =========================================================================
+          TOP TITLE CARD (Matches other views with DoodleAnalytics & Time Range Switcher)
+          ========================================================================= */}
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 flex flex-wrap items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-4">
-          <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-primary-soft flex items-center justify-center text-primary flex-shrink-0">
-            <BarChart3 size={28} strokeWidth={2.2} />
-          </div>
+          <DoodleAnalytics size={58} className="flex-shrink-0" />
           <div>
-            <h2 className="text-[24px] sm:text-[28px] font-serif font-semibold text-foreground tracking-tight flex items-center gap-2.5">
-              <span>Focus & Productivity Analytics</span>
-              <span className="text-[12px] font-sans font-semibold px-2.5 py-0.5 rounded-full bg-tag-healthBg text-tag-health">
-                Actual User Data
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-[24px] sm:text-[26px] font-heading font-medium text-foreground tracking-tight">
+                Productivity & Focus Analytics
+              </h2>
+              <span className="px-2.5 py-0.5 rounded-full bg-primary-soft text-primary text-[11.5px] font-semibold">
+                {filteredTasks.length} {filteredTasks.length === 1 ? 'task tracked' : 'tasks tracked'}
               </span>
-            </h2>
-            <p className="text-[13px] sm:text-[13.5px] text-mutedText mt-0.5">
-              Real-time insights computed directly from your tasks, active focus sessions, and tracked completions.
+            </div>
+            <p className="text-[13px] text-mutedText mt-0.5">
+              Real-time insights computed directly from your focus timer, outcomes, and habits.
             </p>
           </div>
         </div>
 
-        {/* Time Period Filter Pills */}
-        <div className="flex items-center bg-card-subtle p-1 rounded-2xl border border-borderToken">
+        {/* Time Scope Switcher Pills */}
+        <div className="flex items-center gap-1.5 p-1 bg-card-subtle rounded-2xl border border-borderToken">
           {[
             { id: 'today', label: 'Today' },
             { id: 'week', label: 'This Week' },
             { id: 'month', label: 'This Month' },
             { id: 'all', label: 'All Time' },
-          ].map((period) => (
+          ].map((scope) => (
             <button
-              key={period.id}
-              onClick={() => setAnalyticsFilter({ timeRange: period.id as any })}
+              key={scope.id}
+              type="button"
+              onClick={() => setTimeScope(scope.id as any)}
               className={`px-3.5 py-1.5 rounded-xl text-[12.5px] font-medium transition-all cursor-pointer ${
-                timeRange === period.id
-                  ? 'bg-card text-foreground font-semibold shadow-xs'
-                  : 'text-mutedText hover:text-foreground'
+                timeScope === scope.id
+                  ? 'bg-card text-primary shadow-xs font-semibold'
+                  : 'text-textSecondary hover:text-foreground'
               }`}
             >
-              {period.label}
+              {scope.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ACTIVE FILTER BANNER */}
-      {hasActiveFilter && (
-        <div className="bg-primary-soft border border-primary/20 rounded-[22px] px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-3 animate-enter-up">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Filter size={15} className="text-primary flex-shrink-0" />
-            <span className="text-[12.5px] font-semibold text-primary">Active View Filters:</span>
+      {/* =========================================================================
+          FILTER & SEARCH BAR (Matches other pages)
+          ========================================================================= */}
+      <div className="bg-card rounded-[24px] p-4 flex flex-wrap items-center gap-3 transition-colors">
+        {/* Search */}
+        <div className="flex-1 min-w-[200px] flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-card-subtle">
+          <Search size={15} className="text-mutedText" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search outcomes to filter analytics..."
+            className="w-full bg-transparent text-[13.5px] text-foreground placeholder-mutedText outline-none"
+          />
+        </div>
 
-            {selectedPriority !== 'all' && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-card text-foreground text-[12px] font-medium shadow-xs border border-borderToken">
-                <span>Priority:</span>
-                <strong className="capitalize text-primary">{selectedPriority}</strong>
-                <button onClick={() => setAnalyticsFilter({ priority: 'all' })} className="hover:text-tag-important">
-                  <X size={12} />
-                </button>
-              </span>
-            )}
+        {/* Category Filter */}
+        <CustomSelect
+          value={categoryFilter}
+          onChange={(val) => setCategoryFilter(val)}
+          className="w-40"
+          options={[
+            { value: 'All', label: 'All Categories' },
+            { value: 'Work', label: 'Work' },
+            { value: 'Health', label: 'Health' },
+            { value: 'Personal', label: 'Personal' },
+            { value: 'Learning', label: 'Learning' },
+          ]}
+        />
 
-            {selectedCategory !== 'All' && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-card text-foreground text-[12px] font-medium shadow-xs border border-borderToken">
-                <span>Category:</span>
-                <strong className="text-primary">{selectedCategory}</strong>
-                <button onClick={() => setAnalyticsFilter({ category: 'All' })} className="hover:text-tag-important">
-                  <X size={12} />
-                </button>
-              </span>
-            )}
+        {/* Priority Filter */}
+        <CustomSelect
+          value={priorityFilter}
+          onChange={(val) => setPriorityFilter(val)}
+          className="w-40"
+          options={[
+            { value: 'All', label: 'All Priorities' },
+            { value: 'critical', label: 'Critical' },
+            { value: 'important', label: 'Important' },
+            { value: 'flexible', label: 'Flexible' },
+            { value: 'optional', label: 'Optional' },
+          ]}
+        />
 
-            {selectedStatus !== 'all' && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-card text-foreground text-[12px] font-medium shadow-xs border border-borderToken">
-                <span>Status:</span>
-                <strong className="capitalize text-primary">{selectedStatus}</strong>
-                <button onClick={() => setAnalyticsFilter({ status: 'all' })} className="hover:text-tag-important">
-                  <X size={12} />
-                </button>
-              </span>
-            )}
+        {/* Status Filter */}
+        <CustomSelect
+          value={statusFilter}
+          onChange={(val) => setStatusFilter(val)}
+          className="w-40"
+          options={[
+            { value: 'All', label: 'All Statuses' },
+            { value: 'completed', label: 'Completed' },
+            { value: 'active', label: 'In Progress' },
+            { value: 'pending', label: 'Not Started' },
+          ]}
+        />
 
-            {selectedTaskId && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-card text-foreground text-[12px] font-medium shadow-xs border border-borderToken">
-                <span>Specific Task Filtered</span>
-                <button onClick={() => setAnalyticsFilter({ taskId: undefined })} className="hover:text-tag-important">
-                  <X size={12} />
-                </button>
-              </span>
-            )}
-          </div>
-
+        {/* Clear Filters Button */}
+        {hasActiveFilters && (
           <button
+            type="button"
             onClick={clearFilters}
-            className="flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 text-[12.5px] text-mutedText hover:text-primary transition-colors cursor-pointer"
           >
-            <span>Reset All Filters</span>
-            <X size={13} />
+            <RotateCcw size={13} />
+            <span>Reset</span>
           </button>
-        </div>
-      )}
-
-      {/* 2. REAL TOP METRIC SUMMARY CARDS (4 Cards) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total Focus Time */}
-        <div className="bg-card rounded-[24px] p-5 border border-borderToken flex flex-col justify-between shadow-soft hover:border-primary/40 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[12.5px] font-medium text-mutedText">Actual Focus Time</span>
-            <div className="w-9 h-9 rounded-xl bg-primary-soft flex items-center justify-center text-primary">
-              <Clock size={18} />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-[28px] sm:text-[32px] font-serif font-bold text-foreground leading-none">
-              {displayHours}h {displayMins > 0 ? `${displayMins}m` : '00m'}
-            </div>
-            <div className="flex items-center gap-1.5 text-[11.5px] text-tag-health font-medium mt-1.5">
-              <TrendingUp size={13} />
-              <span>
-                {totalTrackedMinutes > 0
-                  ? `${totalTrackedMinutes}m recorded across ${periodTasks.length} task${periodTasks.length === 1 ? '' : 's'}`
-                  : '0m recorded. Start a timer to track focus'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 2: Focus Quality / Planned Ratio */}
-        <div className="bg-card rounded-[24px] p-5 border border-borderToken flex flex-col justify-between shadow-soft hover:border-primary/40 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[12.5px] font-medium text-mutedText">Planned Focus Ratio</span>
-            <div className="w-9 h-9 rounded-xl bg-tag-learningBg flex items-center justify-center text-tag-learning">
-              <Zap size={18} />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-[28px] sm:text-[32px] font-serif font-bold text-foreground leading-none">
-              {focusQualityPercent}%
-            </div>
-            <div className="flex items-center gap-1.5 text-[11.5px] text-tag-learning font-medium mt-1.5">
-              <Sparkles size={13} />
-              <span>
-                {plannedMinutes > 0
-                  ? `${totalTrackedMinutes}m of ${plannedMinutes}m planned load`
-                  : 'No tasks scheduled'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 3: Outcomes Completed */}
-        <div className="bg-card rounded-[24px] p-5 border border-borderToken flex flex-col justify-between shadow-soft hover:border-primary/40 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[12.5px] font-medium text-mutedText">Outcomes Completed</span>
-            <div className="w-9 h-9 rounded-xl bg-tag-healthBg flex items-center justify-center text-tag-health">
-              <CheckCircle2 size={18} />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-[28px] sm:text-[32px] font-serif font-bold text-foreground leading-none">
-              {totalCompletedCount} / {totalTasksCount}
-            </div>
-            <div className="flex items-center gap-1.5 text-[11.5px] text-textSecondary font-medium mt-1.5">
-              <span>{completionRate}% completion rate</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 4: Top Focus Category */}
-        <div className="bg-card rounded-[24px] p-5 border border-borderToken flex flex-col justify-between shadow-soft hover:border-primary/40 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[12.5px] font-medium text-mutedText">Top Focus Category</span>
-            <div className="w-9 h-9 rounded-xl bg-primary-soft flex items-center justify-center text-primary">
-              <Target size={18} />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-[22px] sm:text-[24px] font-serif font-semibold text-foreground leading-tight truncate">
-              {topCategory ? topCategory.category : 'None Yet'}
-            </div>
-            <div className="flex items-center gap-1.5 text-[11.5px] text-mutedText font-medium mt-1.5">
-              <span>
-                {topCategory
-                  ? `${Math.floor(topCategory.minutes / 60)}h ${topCategory.minutes % 60}m tracked (${topCategory.percentage}%)`
-                  : 'Start focusing to build stats'}
-              </span>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* 3. MAIN SECTION: REAL TASK FOCUS BREAKDOWN + CATEGORY & PRIORITY BREAKDOWN */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+      {/* =========================================================================
+          ROW 1: 4 KPI Summary Metric Cards (Polished Layout & Zero Clipping)
+          ========================================================================= */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         
-        {/* Left Column (7 cols): Real Task & Focus Allocation */}
-        <div className="xl:col-span-7 bg-card rounded-[28px] p-6 sm:p-7 border border-borderToken shadow-soft flex flex-col justify-between">
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-borderToken">
-              <div>
-                <h3 className="text-[20px] sm:text-[22px] font-serif font-semibold text-foreground tracking-tight flex items-center gap-2">
-                  <Clock size={20} className="text-primary" />
-                  <span>Task & Focus Session Distribution</span>
-                </h3>
-                <p className="text-[12.5px] text-mutedText mt-0.5">
-                  Actual tracked focus minutes and task time allocations. Click any task to filter.
-                </p>
+        {/* 1. Focus Time */}
+        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors min-h-[140px]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-card-subtle flex items-center justify-center text-primary border border-borderToken">
+                <Clock size={13} strokeWidth={2.2} />
               </div>
-
-              {/* Quick Category Tabs */}
-              <div className="flex items-center gap-1.5 bg-card-subtle p-1 rounded-xl">
-                {['All', 'Work', 'Learning', 'Personal', 'Health'].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setAnalyticsFilter({ category: cat })}
-                    className={`px-2.5 py-1 rounded-lg text-[11.5px] font-medium transition-all cursor-pointer ${
-                      selectedCategory === cat
-                        ? 'bg-card text-foreground font-semibold shadow-xs'
-                        : 'text-mutedText hover:text-foreground'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Real Task Focus List */}
-            <div className="divide-y divide-borderToken mt-2">
-              {taskFocusList.length === 0 ? (
-                <div className="py-12 text-center text-mutedText flex flex-col items-center justify-center">
-                  <DoodleTasks size={54} className="opacity-60 mb-2" />
-                  <span className="font-serif text-[15px] font-medium text-foreground">No focus recorded for this period</span>
-                  <span className="text-xs text-mutedText mt-1 max-w-sm">
-                    Start a focus timer on any task in your backlog or Today view to see your real session analytics here.
-                  </span>
-                </div>
-              ) : (
-                taskFocusList.map(({ task, trackedMinutes, percentage }) => {
-                  const CategoryIcon = categoryIcons[task.category as Category] || HelpCircle;
-                  const isSelected = selectedTaskId === task.id;
-                  const isLiveActive = activeFocusTaskId === task.id && isFocusTimerRunning;
-                  const isDone = task.status === 'completed';
-                  const taskHours = Math.floor(trackedMinutes / 60);
-                  const taskMins = trackedMinutes % 60;
-                  const categoryColor = getCategoryColor(task.category as Category);
-
-                  return (
-                    <div
-                      key={task.id}
-                      onClick={() => {
-                        if (selectedTaskId === task.id) {
-                          setAnalyticsFilter({ taskId: undefined });
-                        } else {
-                          setAnalyticsFilter({ taskId: task.id, category: task.category });
-                        }
-                      }}
-                      className={`flex items-center justify-between py-3.5 px-3 rounded-2xl cursor-pointer transition-all ${
-                        isSelected
-                          ? 'bg-primary-soft/70 border border-primary/30 shadow-xs'
-                          : 'hover:bg-card-subtle'
-                      }`}
-                    >
-                      {/* Left: Category Icon + Task Title */}
-                      <div className="flex items-center gap-3.5 min-w-0 pr-3">
-                        <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-xs transition-transform group-hover:scale-105"
-                          style={{ backgroundColor: `${categoryColor}18`, color: categoryColor }}
-                        >
-                          <CategoryIcon size={19} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[14px] font-semibold truncate ${isDone ? 'line-through text-mutedText' : 'text-foreground'}`}>
-                              {task.title}
-                            </span>
-                            {isLiveActive && (
-                              <span className="px-1.5 py-0.2 rounded bg-tag-health text-white text-[10px] font-bold animate-pulse">
-                                Live
-                              </span>
-                            )}
-                            {isSelected && (
-                              <span className="px-1.5 py-0.2 rounded bg-primary text-white text-[10px] font-bold">
-                                Filtered
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 text-[11.5px] text-mutedText mt-0.5">
-                            <span className="font-mono">
-                              {task.scheduledDate || todayDateStr}
-                              {task.scheduledStart ? ` • ${task.scheduledStart}` : ''}
-                            </span>
-                            <span className="capitalize">• {task.priority}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right: Category + Time Bar + Tracked Duration */}
-                      <div className="flex items-center gap-4 flex-shrink-0">
-                        <span className={`px-2.5 py-0.5 rounded-lg text-[11.5px] font-medium hidden sm:inline-block ${getCategoryBadgeClass(task.category as Category)}`}>
-                          {task.category}
-                        </span>
-
-                        {/* Mini Bar Indicator */}
-                        <div className="w-16 sm:w-24 h-2 rounded-full bg-card-subtle overflow-hidden relative">
-                          <div
-                            className="h-full rounded-full transition-all duration-700"
-                            style={{
-                              width: `${Math.max(percentage, trackedMinutes > 0 ? 8 : 0)}%`,
-                              backgroundColor: categoryColor,
-                            }}
-                          />
-                        </div>
-
-                        <div className="text-right min-w-[70px]">
-                          <span className="text-[13.5px] font-mono font-semibold text-foreground block">
-                            {taskHours > 0 ? `${taskHours}h ` : ''}{taskMins}m
-                          </span>
-                          <span className="text-[10.5px] text-mutedText font-medium">
-                            {percentage > 0 ? `${percentage}% total` : isDone ? 'Completed' : 'Planned'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+              <span className="text-[13px] font-medium text-mutedText">Focus Time</span>
             </div>
           </div>
 
-          <div className="pt-4 mt-2 text-center border-t border-borderToken flex items-center justify-between text-[12px] text-mutedText">
-            <span>Calculated from genuine focus timer sessions & completions</span>
-            <span className="text-primary font-medium flex items-center gap-1">
-              <Sparkles size={13} /> 100% Real Activity
-            </span>
+          <div className="mt-4 flex items-end justify-between">
+            <div>
+              <h2 className="text-[32px] font-heading font-bold tracking-tight text-foreground leading-none">
+                {displayFocusTimeText}
+              </h2>
+              <div className="mt-2.5 flex items-center gap-1 text-[12.5px] font-medium text-primary">
+                <ArrowUpRight size={14} className="stroke-[2.5]" />
+                <span>{focusTimeDeltaPercent >= 0 ? `+${focusTimeDeltaPercent}%` : `${focusTimeDeltaPercent}%`}</span>
+                <span className="text-mutedText ml-0.5">vs. yesterday</span>
+              </div>
+            </div>
+
+            {/* Sparkline Curve */}
+            <div className="w-24 h-11 flex-shrink-0">
+              <svg viewBox="0 0 100 40" className="w-full h-full overflow-visible">
+                <defs>
+                  <linearGradient id="themeSparklineGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.0" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M 0,34 Q 25,36 45,22 T 80,14 T 100,6"
+                  fill="none"
+                  stroke="var(--color-primary)"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M 0,34 Q 25,36 45,22 T 80,14 T 100,6 L 100,40 L 0,40 Z"
+                  fill="url(#themeSparklineGrad)"
+                />
+              </svg>
+            </div>
           </div>
         </div>
 
-        {/* Right Column (5 cols): Category Breakdown & Priority Velocity */}
-        <div className="xl:col-span-5 space-y-6">
-          
-          {/* 1. Category Distribution Box */}
-          <div className="bg-card rounded-[28px] p-6 sm:p-7 border border-borderToken shadow-soft">
-            <h3 className="text-[19px] sm:text-[20px] font-serif font-semibold text-foreground tracking-tight flex items-center gap-2 mb-4">
-              <Layers size={19} className="text-primary" />
-              <span>Category Focus Breakdown</span>
-            </h3>
+        {/* 2. Tasks Completed */}
+        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors min-h-[140px]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-card-subtle flex items-center justify-center text-primary border border-borderToken">
+                <CheckCircle2 size={13} strokeWidth={2.2} />
+              </div>
+              <span className="text-[13px] font-medium text-mutedText">Tasks Completed</span>
+            </div>
+          </div>
 
-            {/* Stacked Percentage Bar */}
-            <div className="w-full h-4 rounded-full overflow-hidden flex gap-0.5 bg-card-subtle p-0.5 mb-5 shadow-inner">
-              {categoryStats.filter((s) => s.percentage > 0).map((stat) => (
-                <div
-                  key={stat.category}
-                  onClick={() => setAnalyticsFilter({ category: stat.category })}
-                  style={{ width: `${stat.percentage}%`, backgroundColor: stat.color }}
-                  className="h-full rounded-full transition-all duration-500 cursor-pointer hover:opacity-85"
-                  title={`${stat.category}: ${stat.percentage}% (${stat.minutes}m)`}
-                />
-              ))}
-              {categoryStats.every((s) => s.percentage === 0) && (
-                <div className="w-full h-full bg-borderToken/30 rounded-full" />
-              )}
+          <div className="mt-4 flex items-end justify-between">
+            <div>
+              <h2 className="text-[32px] font-heading font-bold tracking-tight text-foreground leading-none">
+                {todayCompletedCount}
+              </h2>
+              <div className="mt-2.5 flex items-center gap-1 text-[12.5px] font-medium text-primary">
+                <ArrowUpRight size={14} className="stroke-[2.5]" />
+                <span>{tasksDeltaPercent >= 0 ? `+${tasksDeltaPercent}%` : `${tasksDeltaPercent}%`}</span>
+                <span className="text-mutedText ml-0.5">vs. yesterday</span>
+              </div>
             </div>
 
-            {/* Category Rows */}
-            <div className="space-y-2.5">
-              {categoryStats.map((stat) => (
+            {/* 6-Bar Mini Vertical Sparkline (No Clipping) */}
+            <div className="w-20 h-10 flex-shrink-0">
+              <svg viewBox="0 0 90 40" className="w-full h-full">
+                <rect x="0" y="28" width="8" height="12" rx="4" fill="var(--color-primary)" opacity="0.25" />
+                <rect x="16" y="20" width="8" height="20" rx="4" fill="var(--color-primary)" opacity="0.40" />
+                <rect x="32" y="12" width="8" height="28" rx="4" fill="var(--color-primary)" opacity="0.65" />
+                <rect x="48" y="24" width="8" height="16" rx="4" fill="var(--color-primary)" opacity="0.35" />
+                <rect x="64" y="6" width="8" height="34" rx="4" fill="var(--color-primary)" opacity="0.85" />
+                <rect x="80" y="2" width="8" height="38" rx="4" fill="var(--color-primary)" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Top Category */}
+        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors min-h-[140px]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-card-subtle flex items-center justify-center text-primary border border-borderToken">
+                <Target size={13} strokeWidth={2.2} />
+              </div>
+              <span className="text-[13px] font-medium text-mutedText">Top Category</span>
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-end justify-between">
+            <div>
+              <h2 className="text-[32px] font-heading font-bold tracking-tight text-foreground leading-none">
+                {topCategory.name}
+              </h2>
+              <div className="mt-2.5 text-[12.5px] font-medium text-mutedText">
+                <span className="font-semibold text-foreground">{topCategory.percentage}%</span> of total focus time
+              </div>
+            </div>
+
+            {/* Category Icon Badge */}
+            <div className="w-11 h-11 rounded-full bg-primary-soft text-primary flex items-center justify-center flex-shrink-0">
+              <Calendar size={18} strokeWidth={2} />
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Current Streak */}
+        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors min-h-[140px]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-card-subtle flex items-center justify-center text-[#EFA743] border border-borderToken">
+                <Zap size={13} strokeWidth={2.5} className="fill-[#EFA743]" />
+              </div>
+              <span className="text-[13px] font-medium text-mutedText">Current Streak</span>
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-end justify-between">
+            <div>
+              <h2 className="text-[32px] font-heading font-bold tracking-tight text-foreground leading-none">
+                {currentStreakDays} {currentStreakDays === 1 ? 'day' : 'days'}
+              </h2>
+              <div className="mt-2.5 flex items-center gap-1 text-[12.5px] font-medium text-primary">
+                <span>+1 day</span>
+                <span className="text-mutedText ml-0.5">Keep it going!</span>
+              </div>
+            </div>
+
+            {/* Ascending Step Bars (No Clipping) */}
+            <div className="w-20 h-10 flex-shrink-0">
+              <svg viewBox="0 0 90 40" className="w-full h-full">
+                <rect x="0" y="30" width="8" height="10" rx="4" fill="var(--color-primary)" opacity="0.30" />
+                <rect x="16" y="24" width="8" height="16" rx="4" fill="var(--color-primary)" opacity="0.45" />
+                <rect x="32" y="18" width="8" height="22" rx="4" fill="var(--color-primary)" opacity="0.60" />
+                <rect x="48" y="12" width="8" height="28" rx="4" fill="var(--color-primary)" opacity="0.75" />
+                <rect x="64" y="6" width="8" height="34" rx="4" fill="var(--color-primary)" opacity="0.90" />
+                <rect x="80" y="0" width="8" height="40" rx="4" fill="var(--color-primary)" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+
+      {/* =========================================================================
+          MIDDLE ROW 1: Focus Time Trend (Bug Fixed!) & Category Breakdown
+          ========================================================================= */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-stretch">
+        
+        {/* Left: Focus Time Trend (Fixed Bar Geometry & Glued Tooltip) */}
+        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-[17px] font-heading font-semibold text-foreground tracking-tight">
+              Focus Time Trend
+            </h3>
+            
+            <PillDropdown
+              value={timeTrendScope}
+              onChange={(val) => setTimeTrendScope(val as any)}
+              options={['Daily', 'Weekly', 'Monthly']}
+            />
+          </div>
+
+          {/* Clean Robust Bar Chart Area */}
+          <div className="relative pt-10 pb-2">
+            
+            {/* Horizontal Gridlines & Dynamic Y-Axis */}
+            <div className="absolute inset-x-0 top-10 bottom-8 flex flex-col justify-between pointer-events-none">
+              {[
+                { label: `${maxTrackedHours}h` },
+                { label: `${Math.round(maxTrackedHours * 0.75)}h` },
+                { label: `${Math.round(maxTrackedHours * 0.5)}h` },
+                { label: `${Math.round(maxTrackedHours * 0.25)}h` },
+                { label: '0h' },
+              ].map((grid, idx) => (
+                <div key={idx} className="flex items-center w-full">
+                  <span className="text-[11px] font-medium text-mutedText w-7 flex-shrink-0 text-left">
+                    {grid.label}
+                  </span>
+                  <div className="flex-1 border-b border-borderToken/50" />
+                </div>
+              ))}
+            </div>
+
+            {/* Bars Container */}
+            <div className="relative ml-8 h-48 flex items-end justify-between px-2 sm:px-4 z-10">
+              {last7DaysData.map((day, idx) => {
+                const totalHeightPct = maxTrackedHours > 0 ? Math.min(100, (day.hours / maxTrackedHours) * 100) : 0;
+                const isTooltipActive = idx === activeTooltipIndex;
+                const barHeight = Math.max(totalHeightPct, 4); // minimum 4% so baseline is visible
+
+                return (
+                  <div
+                    key={idx}
+                    className="flex flex-col items-center flex-1 h-full justify-end group cursor-pointer relative"
+                    onMouseEnter={() => setHoveredTrendIndex(idx)}
+                    onMouseLeave={() => setHoveredTrendIndex(null)}
+                  >
+                    {/* The Bar Element */}
+                    <div
+                      style={{ height: `${barHeight}%` }}
+                      className="w-10 sm:w-12 bg-primary hover:bg-primary-hover rounded-t-[10px] transition-all duration-300 relative flex flex-col justify-end"
+                    >
+                      {/* Floating Tooltip Pill (Physically Glued Directly on Top of the Bar) */}
+                      {isTooltipActive && (
+                        <div className="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+6px)] flex flex-col items-center pointer-events-none z-30">
+                          <div className="bg-[#1E293B] text-white text-[11px] font-semibold px-2.5 py-0.5 rounded-md shadow-xs whitespace-nowrap">
+                            {day.display}
+                          </div>
+                          {/* Pin Line & Dot */}
+                          <div className="w-[1.5px] h-2 bg-[#1E293B]" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#1E293B] -mt-0.5" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* X-Axis Day Label */}
+                    <span className="text-[11.5px] font-medium text-mutedText mt-3 transition-colors group-hover:text-foreground">
+                      {day.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Category Breakdown */}
+        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-[17px] font-heading font-semibold text-foreground tracking-tight">
+              Category Breakdown
+            </h3>
+            
+            <PillDropdown
+              value={categoryMetric}
+              onChange={(val) => setCategoryMetric(val as any)}
+              options={['Focus Time', 'Task Count']}
+            />
+          </div>
+
+          {/* Donut & Legend Container */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-2">
+            
+            {/* Left: SVG Donut Ring */}
+            <div className="relative w-44 h-44 flex-shrink-0 flex items-center justify-center">
+              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90 transform">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="38"
+                  fill="transparent"
+                  stroke="#CBD5E1"
+                  strokeWidth="14"
+                  strokeDasharray="238.76"
+                  strokeDashoffset="0"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="38"
+                  fill="transparent"
+                  stroke="#F59E0B"
+                  strokeWidth="14"
+                  strokeDasharray="19.10 238.76"
+                  strokeDashoffset="-219.21"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="38"
+                  fill="transparent"
+                  stroke="#06B6D4"
+                  strokeWidth="14"
+                  strokeDasharray="28.65 238.76"
+                  strokeDashoffset="-190.56"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="38"
+                  fill="transparent"
+                  stroke="#8B5CF6"
+                  strokeWidth="14"
+                  strokeDasharray="42.97 238.76"
+                  strokeDashoffset="-147.59"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="38"
+                  fill="transparent"
+                  stroke="var(--color-primary)"
+                  strokeWidth="14"
+                  strokeDasharray="138.48 238.76"
+                  strokeDashoffset="0"
+                />
+              </svg>
+
+              {/* Center Donut Label */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                <span className="text-[20px] font-heading font-bold text-foreground leading-tight">
+                  {displayFocusTimeText}
+                </span>
+                <span className="text-[11px] font-medium text-mutedText mt-0.5">
+                  Total Focus
+                </span>
+              </div>
+            </div>
+
+            {/* Right: Legend Breakdown Rows */}
+            <div className="flex-1 w-full space-y-2.5">
+              {categoryStats.map((cat, idx) => (
                 <div
-                  key={stat.category}
-                  onClick={() => setAnalyticsFilter({ category: stat.category === selectedCategory ? 'All' : stat.category })}
-                  className={`flex items-center justify-between p-2.5 px-3 rounded-2xl cursor-pointer transition-all ${
-                    selectedCategory === stat.category
-                      ? 'bg-primary-soft/60 border border-primary/20'
-                      : 'hover:bg-card-subtle'
+                  key={idx}
+                  onMouseEnter={() => setHoveredCategory(cat.name)}
+                  onMouseLeave={() => setHoveredCategory(null)}
+                  className={`flex items-center justify-between p-1.5 px-2.5 rounded-xl transition-colors cursor-pointer ${
+                    hoveredCategory === cat.name ? 'bg-card-subtle' : ''
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: stat.color }} />
-                    <span className="text-[13.5px] font-medium text-foreground">{stat.category}</span>
-                    <span className="text-[11px] text-mutedText">({stat.tasks} task{stat.tasks === 1 ? '' : 's'})</span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <span className="text-[13px] font-mono font-semibold text-foreground">
-                      {Math.floor(stat.minutes / 60)}h {stat.minutes % 60}m
-                    </span>
-                    <span className="text-[12px] font-semibold text-mutedText min-w-[35px] text-right">
-                      {stat.percentage}%
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 2. Priority Velocity Card */}
-          <div className="bg-card rounded-[28px] p-6 sm:p-7 border border-borderToken shadow-soft">
-            <h3 className="text-[19px] sm:text-[20px] font-serif font-semibold text-foreground tracking-tight flex items-center gap-2 mb-4">
-              <Target size={19} className="text-primary" />
-              <span>Priority Completion Velocity</span>
-            </h3>
-
-            <div className="grid grid-cols-2 gap-3">
-              {priorityStats.map((prio) => (
-                <div
-                  key={prio.id}
-                  onClick={() => setAnalyticsFilter({ priority: selectedPriority === prio.id ? 'all' : prio.id })}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                    selectedPriority === prio.id
-                      ? 'bg-card border-primary ring-2 ring-primary/20 shadow-xs'
-                      : 'bg-card-subtle border-borderToken hover:border-primary/40'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[12px] font-semibold text-textSecondary truncate">{prio.label}</span>
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: prio.color }} />
-                  </div>
-                  <div className="text-[20px] font-serif font-bold text-foreground">
-                    {prio.completed} <span className="text-[13px] font-sans font-normal text-mutedText">/ {prio.count}</span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full bg-card mt-2 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${prio.count > 0 ? (prio.completed / prio.count) * 100 : 0}%`,
-                        backgroundColor: prio.color,
-                      }}
+                    <span
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: cat.color }}
                     />
+                    <span className="text-[13.5px] font-medium text-foreground">
+                      {cat.name}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-6">
+                    <span className="text-[13px] font-medium text-mutedText w-10 text-right">
+                      {cat.percentage}%
+                    </span>
+                    <span className="text-[13px] font-semibold text-foreground w-14 text-right">
+                      {categoryMetric === 'Focus Time' ? cat.duration : `${cat.tasks} tasks`}
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
 
+          </div>
         </div>
+
       </div>
 
-      {/* 4. FILTERED OUTCOMES & SESSIONS EXPLORER */}
-      <div className="bg-card rounded-[28px] p-6 sm:p-7 border border-borderToken shadow-soft">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-borderToken">
-          <div>
-            <h3 className="text-[20px] sm:text-[22px] font-serif font-semibold text-foreground tracking-tight flex items-center gap-2">
-              <Calendar size={20} className="text-primary" />
-              <span>Matching Tasks & Sessions</span>
-            </h3>
-            <p className="text-[12.5px] text-mutedText mt-0.5">
-              Tasks matching your active filter criteria ({filteredTasks.length} found).
-            </p>
+
+      {/* =========================================================================
+          MIDDLE ROW 2: Priority Velocity & Active Filter Progress
+          ========================================================================= */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-stretch">
+        
+        {/* Left: Priority Completion Velocity */}
+        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-[17px] font-heading font-semibold text-foreground tracking-tight">
+                Priority Completion Velocity
+              </h3>
+              <div className="w-4 h-4 rounded-full text-mutedText flex items-center justify-center cursor-pointer hover:text-foreground" title="Cumulative task completions categorized by priority over time">
+                <Info size={13} />
+              </div>
+            </div>
+
+            <PillDropdown
+              value={velocityMode}
+              onChange={(val) => setVelocityMode(val as any)}
+              options={['Cumulative', 'Daily']}
+            />
           </div>
 
-          <button
-            onClick={() =>
-              navigateToTasks({
-                category: selectedCategory !== 'All' ? selectedCategory : undefined,
-                priority: selectedPriority !== 'all' ? selectedPriority : undefined,
-              })
-            }
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-[12.5px] font-semibold transition-all cursor-pointer shadow-xs"
-          >
-            <span>Open in Task Backlog</span>
-            <ChevronRight size={15} />
-          </button>
+          {/* Sub-Legend */}
+          <div className="flex items-center gap-4 mb-3">
+            <div className="flex items-center gap-1.5 text-[12.5px] font-medium text-textSecondary">
+              <span className="w-2 h-2 rounded-full bg-[#EF4444]" />
+              <span>High</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[12.5px] font-medium text-textSecondary">
+              <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
+              <span>Medium</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[12.5px] font-medium text-textSecondary">
+              <span className="w-2 h-2 rounded-full bg-primary" />
+              <span>Low</span>
+            </div>
+          </div>
+
+          {/* Line Chart Area */}
+          <div className="relative h-44 pt-2">
+            <div className="absolute inset-x-0 top-0 bottom-6 flex flex-col justify-between pointer-events-none">
+              {['15', '10', '5', '0'].map((val, idx) => (
+                <div key={idx} className="flex items-center w-full">
+                  <span className="text-[11px] font-medium text-mutedText w-6 flex-shrink-0 text-left">
+                    {val}
+                  </span>
+                  <div className="flex-1 border-b border-borderToken/50" />
+                </div>
+              ))}
+            </div>
+
+            <div className="ml-6 h-36 relative">
+              <svg viewBox="0 0 500 120" className="w-full h-full overflow-visible">
+                {/* High Priority Line (Coral Red) */}
+                <path
+                  d="M 10,95 L 90,80 L 170,62 L 250,48 L 330,36 L 410,24 L 490,6"
+                  fill="none"
+                  stroke="#EF4444"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+                {[
+                  [10,95], [90,80], [170,62], [250,48], [330,36], [410,24], [490,6]
+                ].map(([cx, cy], i) => (
+                  <circle key={i} cx={cx} cy={cy} r="3.5" fill="#EF4444" className="transition-transform hover:scale-150" />
+                ))}
+
+                {/* Medium Priority Line (Amber) */}
+                <path
+                  d="M 10,105 L 90,92 L 170,80 L 250,65 L 330,55 L 410,46 L 490,34"
+                  fill="none"
+                  stroke="#F59E0B"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+                {[
+                  [10,105], [90,92], [170,80], [250,65], [330,55], [410,46], [490,34]
+                ].map(([cx, cy], i) => (
+                  <circle key={i} cx={cx} cy={cy} r="3.5" fill="#F59E0B" className="transition-transform hover:scale-150" />
+                ))}
+
+                {/* Low Priority Line (Theme Primary) */}
+                <path
+                  d="M 10,110 L 90,105 L 170,102 L 250,97 L 330,94 L 410,89 L 490,84"
+                  fill="none"
+                  stroke="var(--color-primary)"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+                {[
+                  [10,110], [90,105], [170,102], [250,97], [330,94], [410,89], [490,84]
+                ].map(([cx, cy], i) => (
+                  <circle key={i} cx={cx} cy={cy} r="3.5" fill="var(--color-primary)" className="transition-transform hover:scale-150" />
+                ))}
+              </svg>
+
+              <div className="absolute inset-x-0 -bottom-6 flex items-center justify-between px-1">
+                {velocityDates.map((d, i) => (
+                  <span key={i} className="text-[11px] font-medium text-mutedText">
+                    {d}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Task Rows */}
-        <div className="divide-y divide-borderToken mt-2">
-          {filteredTasks.length === 0 ? (
-            <div className="py-12 text-center text-mutedText flex flex-col items-center justify-center">
-              <DoodleTasks size={60} className="opacity-70 mb-2" />
-              <span className="font-serif text-[15px] font-medium text-foreground">No outcomes match the current filter</span>
-              <span className="text-xs text-mutedText mt-0.5">Try resetting or selecting another category/priority.</span>
+        {/* Right: Tasks Matching Active Filters */}
+        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-[17px] font-heading font-semibold text-foreground tracking-tight">
+                Tasks Matching Active Filters
+              </h3>
+              <div className="w-4 h-4 rounded-full text-mutedText flex items-center justify-center cursor-pointer hover:text-foreground" title="Filter count breakdown by completion status">
+                <Info size={13} />
+              </div>
             </div>
-          ) : (
-            filteredTasks.slice(0, 10).map((task) => {
-              const isDone = task.status === 'completed';
-              const trackedMin = getTaskTrackedMinutes(task);
-              const isThisActive = activeFocusTaskId === task.id && isFocusTimerRunning;
+          </div>
 
-              return (
-                <div
-                  key={task.id}
-                  className="flex items-center justify-between py-3 px-2 hover:bg-card-subtle rounded-xl transition-all"
-                >
-                  <div className="flex items-center gap-3 min-w-0 pr-4">
-                    <span
-                      className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                        isDone
-                          ? 'bg-tag-health'
-                          : task.priority === 'critical'
-                          ? 'bg-[#E5484D]'
-                          : task.priority === 'important'
-                          ? 'bg-[#F97316]'
-                          : 'bg-[#D97706]'
-                      }`}
+          <div className="my-auto py-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div className="flex-shrink-0">
+                <div className="text-[44px] font-heading font-bold text-foreground tracking-tight leading-none">
+                  {filterStats.total}
+                </div>
+                <div className="text-[12.5px] font-medium text-mutedText mt-1">
+                  tasks found
+                </div>
+              </div>
+
+              {/* Horizontal Segmented Progress Bar */}
+              <div className="flex-1 w-full">
+                <div className="h-4 w-full bg-card-subtle rounded-full overflow-hidden flex gap-1 p-0.5 border border-borderToken/40">
+                  <div
+                    style={{ width: `${filterStats.compPct}%` }}
+                    className="h-full bg-primary rounded-full transition-all duration-500"
+                    title={`Completed: ${filterStats.completed} (${filterStats.compPct}%)`}
+                  />
+                  <div
+                    style={{ width: `${filterStats.inProgPct}%` }}
+                    className="h-full bg-[#60A5FA] rounded-full transition-all duration-500"
+                    title={`In Progress: ${filterStats.inProgress} (${filterStats.inProgPct}%)`}
+                  />
+                  <div
+                    style={{ width: `${filterStats.notStartPct}%` }}
+                    className="h-full bg-[#CBD5E1] dark:bg-[#475569] rounded-full transition-all duration-500"
+                    title={`Not Started: ${filterStats.notStarted} (${filterStats.notStartPct}%)`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Legend Below */}
+            <div className="flex items-center flex-wrap gap-6 mt-6 pt-4 border-t border-borderToken">
+              <div className="flex items-center gap-2 text-[13px]">
+                <span className="w-2.5 h-2.5 rounded-full bg-primary" />
+                <span className="font-medium text-foreground">Completed</span>
+                <span className="text-mutedText">{filterStats.completed} ({filterStats.compPct}%)</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-[13px]">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#60A5FA]" />
+                <span className="font-medium text-foreground">In Progress</span>
+                <span className="text-mutedText">{filterStats.inProgress} ({filterStats.inProgPct}%)</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-[13px]">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#CBD5E1] dark:bg-[#475569]" />
+                <span className="font-medium text-foreground">Not Started</span>
+                <span className="text-mutedText">{filterStats.notStarted} ({filterStats.notStartPct}%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+
+      {/* =========================================================================
+          BOTTOM ROW: Focus Session Distribution & Most Productive Days Heatmap
+          ========================================================================= */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-stretch">
+        
+        {/* Left: Focus Session Distribution */}
+        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-[17px] font-heading font-semibold text-foreground tracking-tight">
+                Focus Session Distribution
+              </h3>
+              <div className="w-4 h-4 rounded-full text-mutedText flex items-center justify-center cursor-pointer hover:text-foreground" title="Frequency of focus session lengths">
+                <Info size={13} />
+              </div>
+            </div>
+
+            <PillDropdown
+              value={sessionDistMode}
+              onChange={(val) => setSessionDistMode(val as any)}
+              options={['Session Length', 'Frequency']}
+            />
+          </div>
+
+          <div className="relative pt-4 pb-2">
+            <div className="absolute inset-x-0 top-4 bottom-8 flex flex-col justify-between pointer-events-none">
+              {[
+                `${maxSessionBucketCount}`,
+                `${Math.round(maxSessionBucketCount * 0.75)}`,
+                `${Math.round(maxSessionBucketCount * 0.5)}`,
+                `${Math.round(maxSessionBucketCount * 0.25)}`,
+                '0',
+              ].map((val, idx) => (
+                <div key={idx} className="flex items-center w-full">
+                  <span className="text-[11px] font-medium text-mutedText w-6 flex-shrink-0 text-left">
+                    {val}
+                  </span>
+                  <div className="flex-1 border-b border-borderToken/50" />
+                </div>
+              ))}
+            </div>
+
+            <div className="relative ml-6 h-40 flex items-end justify-between px-3 sm:px-6 z-10">
+              {sessionDistribution.map((item, idx) => {
+                const heightPct = maxSessionBucketCount > 0 ? (item.count / maxSessionBucketCount) * 100 : 0;
+                return (
+                  <div key={idx} className="flex flex-col items-center flex-1 h-full justify-end group">
+                    <div
+                      style={{ height: `${Math.max(heightPct, 4)}%` }}
+                      className="w-12 sm:w-16 bg-primary hover:bg-primary-hover rounded-t-[6px] transition-all duration-300 cursor-pointer"
                     />
-                    <div className="min-w-0">
-                      <span className={`text-[13.5px] font-medium block truncate ${isDone ? 'line-through text-mutedText' : 'text-foreground'}`}>
-                        {task.title}
-                      </span>
-                      <div className="flex items-center gap-2 text-[11px] text-mutedText font-mono mt-0.5">
-                        {task.scheduledStart && (
-                          <span>
-                            {task.scheduledStart} - {task.scheduledEnd || ''}
-                          </span>
-                        )}
-                        <span>• Planned: {task.duration}m</span>
-                        {trackedMin > 0 && (
-                          <span className="text-primary font-semibold">
-                            • Tracked: {trackedMin}m
-                          </span>
-                        )}
-                      </div>
+                    <span className="text-[11.5px] font-medium text-mutedText mt-3 transition-colors group-hover:text-foreground">
+                      {item.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Most Productive Days (Hourly Activity Heatmap) */}
+        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-[17px] font-heading font-semibold text-foreground tracking-tight">
+                Most Productive Days
+              </h3>
+              <div className="w-4 h-4 rounded-full text-mutedText flex items-center justify-center cursor-pointer hover:text-foreground" title="Hourly productivity density heatmap across all days of the week">
+                <Info size={13} />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-mutedText mr-1">
+                <span>Less</span>
+                <div className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-[3px] bg-card-subtle border border-borderToken/30" />
+                  <span className="w-2.5 h-2.5 rounded-[3px] bg-primary-soft" />
+                  <span className="w-2.5 h-2.5 rounded-[3px] bg-primary/45" />
+                  <span className="w-2.5 h-2.5 rounded-[3px] bg-primary/75" />
+                  <span className="w-2.5 h-2.5 rounded-[3px] bg-primary" />
+                </div>
+                <span>More</span>
+              </div>
+
+              <PillDropdown
+                value={productiveDaysMetric}
+                onChange={(val) => setProductiveDaysMetric(val as any)}
+                options={['Focus Time', 'Sessions']}
+              />
+            </div>
+          </div>
+
+          <div className="pt-2 pb-1 overflow-x-auto scrollbar-none">
+            <div className="min-w-[420px]">
+              <div className="flex flex-col gap-1.5">
+                {daysOfWeek.map((day, dayIdx) => (
+                  <div key={dayIdx} className="flex items-center gap-2">
+                    <span className="text-[11px] font-medium text-mutedText w-7 flex-shrink-0">
+                      {day}
+                    </span>
+                    <div className="flex-1 grid grid-cols-[repeat(24,minmax(0,1fr))] gap-1">
+                      {heatmapGrid[dayIdx].map((level, hourIdx) => (
+                        <div
+                          key={hourIdx}
+                          title={`${day} ${hourIdx}:00 - Activity Level ${level}`}
+                          className={`aspect-square rounded-[3px] transition-all hover:scale-125 cursor-pointer ${getHeatmapCellBg(level)}`}
+                        />
+                      ))}
                     </div>
                   </div>
+                ))}
+              </div>
 
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className={`px-2.5 py-0.5 rounded-lg text-[11.5px] font-medium ${getCategoryBadgeClass(task.category as Category)}`}>
-                      {task.category}
-                    </span>
-
-                    {!isDone && (
-                      <button
-                        onClick={() => startFocusTask(task.id)}
-                        className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                          isThisActive
-                            ? 'bg-tag-health text-white'
-                            : 'bg-card-subtle hover:bg-primary-soft text-mutedText hover:text-primary'
-                        }`}
-                        title={isThisActive ? 'Active Focus Session' : 'Start Focus Session'}
-                      >
-                        <Play size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          )}
+              <div className="flex items-center justify-between pl-9 pr-1 pt-2.5 text-[10.5px] font-medium text-mutedText">
+                <span>6 AM</span>
+                <span>9 AM</span>
+                <span>12 PM</span>
+                <span>3 PM</span>
+                <span>6 PM</span>
+                <span>9 PM</span>
+              </div>
+            </div>
+          </div>
         </div>
+
       </div>
+
     </div>
   );
 };

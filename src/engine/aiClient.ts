@@ -1,6 +1,91 @@
 import { AiRequestContext, AiResponsePayload, Task, Habit, AppSettings } from '../types';
 import { runInAppInference, extractJsonFromText } from './webLlmService';
 
+export function hasExplicitActionIntent(userMessage: string): boolean {
+  const msg = userMessage.toLowerCase().trim();
+
+  // Pure conversational / praise / casual remarks (no action intent)
+  const isCasualPraise = /\b(you are|you're|good job|great job|well done|thank you|thanks|hello|hi|hey|cool|nice|awesome|amazing|who are you|how are you|love this|tell me|what is|how do)\b/i.test(msg);
+
+  const hasAddAction = /\b(add|schedule|create|plan|todo|remind me|set up)\b/i.test(msg) ||
+    /\b(\d+m|\d+\s*min|\d+\s*hour)\s+(task|block|session)\b/i.test(msg) ||
+    /\b(meeting|sync|call|appointment)\s+at\s+\d+/i.test(msg);
+
+  const hasDeleteAction = /\b(delete|remove|clear|drop|cancel task|trash)\b/i.test(msg);
+
+  const hasModifyAction = /\b(change|update|make it|refine|instead|reschedule|move|postpone|skip|mark done|complete)\b/i.test(msg);
+
+  const hasOrganizeAction = /\b(reorganize|replan|organize my (day|tasks|schedule)|optimize schedule)\b/i.test(msg);
+
+  if (isCasualPraise && !hasAddAction && !hasDeleteAction && !hasModifyAction && !hasOrganizeAction) {
+    return false;
+  }
+
+  return hasAddAction || hasDeleteAction || hasModifyAction || hasOrganizeAction;
+}
+
+export function sanitizeAssistantMessage(
+  rawMsg: string,
+  userMessage: string,
+  ops: any[]
+): string {
+  const userClean = userMessage.toLowerCase().trim();
+  const rawClean = (rawMsg || '').trim();
+  const rawCleanLower = rawClean.toLowerCase();
+
+  const isPraise = /\b(you are (the )?(great|best|awesome|cool|smart|good|nice|helpful|goat)|you're (the )?(great|best|awesome|cool|smart|good|nice|helpful|goat)|great job|good job|well done|love this|amazing|awesome|so cool|nice work|i love you|u r the best|u r great)\b/i.test(userClean);
+  const isGreeting = /^(hello|hi|hey|greetings|good morning|good afternoon|good evening|yo|hola)\b/i.test(userClean);
+  const isGratitude = /^(thanks|thank you|thx|tysm|appreciate it)\b/i.test(userClean);
+  const isQuestion = /^(who are you|what can you do|how are you|what is this|help|what can i do)\b/i.test(userClean);
+
+  // If user gave praise, prevent echoing ("You are the great", "You are the best", etc.)
+  if (isPraise && (!ops || ops.length === 0)) {
+    const isEchoPraise =
+      /^you are (the )?(great|best|awesome|cool|smart|good|nice|helpful|goat)[\.\!\?]*$/i.test(rawCleanLower) ||
+      /^you're (the )?(great|best|awesome|cool|smart|good|nice|helpful|goat)[\.\!\?]*$/i.test(rawCleanLower) ||
+      rawCleanLower.replace(/[^a-z]/g, '') === userClean.replace(/[^a-z]/g, '') ||
+      rawClean.length < 5;
+
+    if (isEchoPraise || !rawClean) {
+      return "Thank you so much! I'm here to help you stay focused, organized, and calm. Let me know whenever you'd like to adjust tasks or plan your schedule.";
+    }
+  }
+
+  // If user gave greeting and no ops
+  if (isGreeting && (!ops || ops.length === 0)) {
+    const isEchoGreeting =
+      rawCleanLower.replace(/[^a-z]/g, '') === userClean.replace(/[^a-z]/g, '') ||
+      rawClean.length < 4;
+    if (isEchoGreeting || !rawClean) {
+      return "Hello! How can I help you organize your tasks or optimize your schedule today?";
+    }
+  }
+
+  // If user gave gratitude and no ops
+  if (isGratitude && (!ops || ops.length === 0)) {
+    const isEchoGratitude =
+      rawCleanLower.replace(/[^a-z]/g, '') === userClean.replace(/[^a-z]/g, '') ||
+      rawClean.length < 5;
+    if (isEchoGratitude || !rawClean) {
+      return "You're very welcome! Let me know if you'd like to adjust any focus blocks.";
+    }
+  }
+
+  // If user asked what it is and no ops
+  if (isQuestion && (!ops || ops.length === 0)) {
+    if (rawClean.length < 10 || rawCleanLower.includes('you are the')) {
+      return "I am your FocasFlow AI assistant. I can help you schedule tasks, add fixed commitments, rearrange overloaded days, or create daily habits.";
+    }
+  }
+
+  // Fallback if model returned exact parrot of user prompt
+  if (rawCleanLower.replace(/[^a-z0-9]/g, '') === userClean.replace(/[^a-z0-9]/g, '') && (!ops || ops.length === 0)) {
+    return "Got it! How can I help you with your schedule or tasks?";
+  }
+
+  return rawClean || (ops.length > 0 ? "Here is the updated schedule proposal:" : "How can I help you today?");
+}
+
 export async function sendAiCommand(
   userMessage: string,
   tasks: Task[],
@@ -52,11 +137,16 @@ MANDATORY ACTION EXECUTION RULES:
    - Output ONLY the single UPDATE_TASK operation for THAT task:
       { "op_type": "UPDATE_TASK", "title": "Fix AI", "duration_minutes": 15, "priority": "important", "category": "Personal" }
    - NEVER create multiple tasks or recreate other unrelated tasks when refining a single task.
-2. TASK DELETION AUTHORITY: You have full permissions to delete tasks. When the user asks to delete or remove tasks:
-   - For a single task: { "op_type": "DELETE_TASK", "title": "Task title or number" }
-   - For multiple tasks or ranges (e.g. "delete task 1 task 2 task 3", "tasks 1 through 10"): Generate a DELETE_TASK item for each requested task in "operations": [ {"op_type": "DELETE_TASK", "title": "task 1"}, {"op_type": "DELETE_TASK", "title": "task 2"}, ... ]
-   - For all tasks: [ {"op_type": "DELETE_TASK", "title": "all"} ]
-3. GREETINGS & CASUAL CHAT: If the user is just saying hello or asking questions without wanting to modify tasks, return "operations": [] and reply helpfully in "message".
+2. TASK DELETION AUTHORITY & PRONOUN RESOLUTION: When the user asks to delete, remove, or drop tasks (e.g. "delete it", "can you delete it?", "remove that task", "delete temp"):
+   - Resolve pronouns like "it", "that", "this task" to the most recently created or discussed task in the conversation history!
+   - Output { "op_type": "DELETE_TASK", "title": "Resolved Task Title" }
+   - NEVER output conversational text or questions like "can you delete it?" as the task title!
+3. GREETINGS, PRAISE, COMPLIMENTS & CASUAL CHAT:
+   - When the user sends compliments, praise (e.g. "you are the great", "you're the best", "good job", "thanks"), greetings ("hello", "hi"), questions, or casual conversation WITHOUT an explicit command to add/delete/change tasks:
+   - MANDATORY: YOU MUST SET "operations": [] (EMPTY ARRAY)!
+   - NEVER create, delete, or modify any task on casual chatter!
+   - Reply warmly and politely with genuine appreciation (e.g. "Thank you so much! I'm here to help you stay focused and organized. What would you like to work on today?").
+   - CRITICAL: NEVER parrot or echo the user's praise or words back at them (do NOT reply "You are the great." or "You are the best!")!
 4. ADDING TASKS: When the user asks to add or schedule tasks, generate "ADD_TASK" with title, duration_minutes, priority, and category.
 5. MOVING / SKIPPING / COMPLETING / UPDATING: Generate "MOVE_TASK", "SKIP_TASK", "COMPLETE_TASK", or "UPDATE_TASK".
 
@@ -64,7 +154,7 @@ Supported op_types: "ADD_TASK", "DELETE_TASK", "UPDATE_TASK", "MOVE_TASK", "SKIP
 
 Return ONLY valid JSON matching this schema:
 {
-  "message": "Short friendly confirmation message of what was executed",
+  "message": "Friendly, articulate assistant response. If user gave praise or greeting, thank them warmly and offer assistance. NEVER echo the user's prompt back.",
   "operations": [
     {
       "op_type": "DELETE_TASK" | "ADD_TASK" | "MOVE_TASK" | "SKIP_TASK" | "COMPLETE_TASK" | "CREATE_HABIT" | "ADD_COMMITMENT",
@@ -77,7 +167,12 @@ Return ONLY valid JSON matching this schema:
     }
   ],
   "suggestions": []
-}`;
+}
+
+Examples:
+- User: "you are the best" -> { "message": "Thank you! Happy to help keep you focused and organized. What's on your agenda?", "operations": [] }
+- User: "hello" -> { "message": "Hi! How can I help you with your tasks or schedule today?", "operations": [] }
+- User: "delete it" -> { "message": "Removed task from your schedule.", "operations": [{ "op_type": "DELETE_TASK", "title": "temp" }] }`;
 
   const provider = settings.aiProvider || 'in_app';
 
@@ -92,6 +187,11 @@ Return ONLY valid JSON matching this schema:
         let ops = Array.isArray(parsed.operations) ? parsed.operations : [];
         let msg = parsed.message || (ops.length ? `Processed with in-app ${inAppModel}` : text);
 
+        // Sanitize: If user had no explicit action intent (e.g. praised "you are the great"), force operations to empty!
+        if (!hasExplicitActionIntent(userMessage)) {
+          ops = [];
+        }
+
         if (ops.length === 0 && (userMessage.toLowerCase().includes('delete') || userMessage.toLowerCase().includes('remove'))) {
           const fallback = parseClientHeuristic(userMessage, context);
           if (fallback.operations.length > 0) {
@@ -101,6 +201,7 @@ Return ONLY valid JSON matching this schema:
         }
 
         ops = preserveRefinedTaskProperties(ops, userMessage, context);
+        msg = sanitizeAssistantMessage(msg, userMessage, ops);
 
         return {
           message: msg,
@@ -123,8 +224,9 @@ Return ONLY valid JSON matching this schema:
           };
         }
 
+        const sanitizedMsg = sanitizeAssistantMessage(text, userMessage, []);
         return {
-          message: text,
+          message: sanitizedMsg,
           operations: [],
           suggestions: [],
           engineSource: 'in_app_webgpu',
@@ -137,7 +239,9 @@ Return ONLY valid JSON matching this schema:
       const heuristicRes = parseClientHeuristic(userMessage, context);
       return {
         ...heuristicRes,
-        warning: `In-app model execution notice: ${err?.message || 'In-app weights not loaded'}. If running on WebGPU, try Qwen 2.5 1.5B or re-download.`,
+        engineSource: 'heuristic_fallback',
+        modelUsed: 'Offline Rule-Based Heuristic',
+        warning: `AI Model is offline or unreachable (${err?.message || 'weights not loaded'}). Responded using offline heuristic rule engine.`,
       };
     }
   }
@@ -162,9 +266,19 @@ Return ONLY valid JSON matching this schema:
           const fallbackRes = parseClientHeuristic(userMessage, context);
           return {
             ...fallbackRes,
+            engineSource: 'heuristic_fallback',
+            modelUsed: 'Offline Rule-Based Heuristic',
             warning: `Model "${localModel}" is not downloaded in Ollama (Installed: ${installedModels.join(', ')}). Run "ollama run ${localModel}" or switch model.`,
           };
         }
+      } else {
+        const fallbackRes = parseClientHeuristic(userMessage, context);
+        return {
+          ...fallbackRes,
+          engineSource: 'heuristic_fallback',
+          modelUsed: 'Offline Rule-Based Heuristic',
+          warning: `Local Ollama server is offline or unreachable at ${endpoint}. Responded using offline heuristic rule engine.`,
+        };
       }
 
       const cleanHistory = history
@@ -198,6 +312,11 @@ Return ONLY valid JSON matching this schema:
             let ops = Array.isArray(parsed.operations) ? parsed.operations : [];
             let msg = parsed.message || `Processed with local ${localModel}`;
 
+            // Sanitize: If user had no explicit action intent (e.g. praised "you are the great"), force operations to empty!
+            if (!hasExplicitActionIntent(userMessage)) {
+              ops = [];
+            }
+
             // Safety check: if user asked to delete but model hallucinated no ops or a refusal message
             if (ops.length === 0 && (userMessage.toLowerCase().includes('delete') || userMessage.toLowerCase().includes('remove'))) {
               const fallback = parseClientHeuristic(userMessage, context);
@@ -208,6 +327,7 @@ Return ONLY valid JSON matching this schema:
             }
 
             ops = preserveRefinedTaskProperties(ops, userMessage, context);
+            msg = sanitizeAssistantMessage(msg, userMessage, ops);
 
             return {
               message: msg,
@@ -231,8 +351,9 @@ Return ONLY valid JSON matching this schema:
               };
             }
 
+            const sanitizedMsg = sanitizeAssistantMessage(content, userMessage, []);
             return {
-              message: content,
+              message: sanitizedMsg,
               operations: [],
               suggestions: [],
               engineSource: 'ollama_local',
@@ -244,6 +365,13 @@ Return ONLY valid JSON matching this schema:
       }
     } catch (err) {
       console.warn('Local Ollama call error, falling back to local heuristic parser:', err);
+      const fallbackRes = parseClientHeuristic(userMessage, context);
+      return {
+        ...fallbackRes,
+        engineSource: 'heuristic_fallback',
+        modelUsed: 'Offline Rule-Based Heuristic',
+        warning: `AI Model is offline or unreachable at ${endpoint}. Responded using offline heuristic rule engine.`,
+      };
     }
   }
 
@@ -254,8 +382,43 @@ Return ONLY valid JSON matching this schema:
     return result;
   } catch (err) {
     // 4. Fallback to client-side heuristic parser
-    return parseClientHeuristic(userMessage, context);
+    const fallbackRes = parseClientHeuristic(userMessage, context);
+    return {
+      ...fallbackRes,
+      engineSource: 'heuristic_fallback',
+      modelUsed: 'Offline Rule-Based Heuristic',
+      warning: 'AI Model is offline. Responded using offline heuristic rule engine.',
+    };
   }
+}
+
+// Helper to resolve referential pronouns like "it", "that", "the previous task" from conversation history or tasks
+function extractRecentTaskTitle(context: AiRequestContext): string | null {
+  const history = context.conversation_history || [];
+  for (let i = history.length - 1; i >= 0; i--) {
+    const hText = history[i].content;
+    
+    // Look for quoted titles: "temp", 'temp'
+    const singleQuoted = hText.match(/['"]([^'"]+)['"]/);
+    if (singleQuoted && !['critical', 'important', 'flexible', 'optional', 'work', 'learning', 'personal', 'health'].includes(singleQuoted[1].toLowerCase())) {
+      return singleQuoted[1];
+    }
+
+    // Look for phrases like: Task 'temp' has been..., task temp created, etc.
+    const taskMatch = hText.match(/(?:task|created|scheduled|added|updated)\s+(?:called\s+)?['"]?([a-zA-Z0-9\s_-]+?)['"]?(?:\s+has|\s+for|\s+at|\s+as|\s+today|\s+tomorrow|\.|\,|$)/i);
+    if (taskMatch && taskMatch[1] && !['the', 'a', 'it', 'this', 'that', 'personal', 'work', 'optional'].includes(taskMatch[1].trim().toLowerCase())) {
+      return taskMatch[1].trim();
+    }
+  }
+
+  // If not found in history, check active tasks in context
+  if (context.remaining_tasks && context.remaining_tasks.length > 0) {
+    const lastTaskStr = context.remaining_tasks[context.remaining_tasks.length - 1];
+    const match = lastTaskStr.match(/"([^"]+)"/);
+    if (match) return match[1];
+  }
+
+  return null;
 }
 
 function parseClientHeuristic(userMessage: string, context: AiRequestContext): AiResponsePayload {
@@ -263,10 +426,41 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
   const operations: any[] = [];
   let message = '';
 
-  // 1. Casual Greetings & Conversational Queries (No tasks added!)
+  // 1. Casual Greetings, Praise, Conversational Queries, & Model Status Check
+  const isPraise = /^(you are (the )?(great|best|awesome|cool|smart|good|nice|helpful)|you're (the )?(great|best|awesome|cool|smart|good|nice|helpful)|great job|good job|well done|love this|amazing|awesome|so cool|nice work|i love you)(\s*.*)?$/i.test(msg);
   const isGreeting = /^(hello|hi|hey|greetings|good morning|good afternoon|good evening|yo|hola)(\s+.*)?$/i.test(msg);
   const isQuestion = /^(who are you|what can you do|how are you|what is this|help|what can i do)(\s*\??)$/i.test(msg);
   const isGratitude = /^(thanks|thank you|awesome|great|cool|ok|okay|got it)(\s*.*)?$/i.test(msg);
+  const isOnlineQuery = /^(is the model online|are you online|is ai online|is model online|model status|is ollama online|status)(\s*\??)$/i.test(msg);
+
+  if (isPraise) {
+    return {
+      message: "Thank you so much! I'm glad I can help you stay focused and peaceful. Let me know whenever you'd like to adjust your tasks or schedule.",
+      operations: [],
+      suggestions: [
+        'Organize my tasks for today',
+        'Add a 30m deep work block',
+      ],
+      engineSource: 'heuristic_fallback',
+      modelUsed: 'Offline Rule-Based Heuristic',
+      latencyMs: 1,
+    };
+  }
+
+  if (isOnlineQuery) {
+    return {
+      message: "The AI model is currently offline or unreachable. FocasFlow is responding using its built-in offline heuristic engine. You can check your model setup in Settings → AI Configuration.",
+      operations: [],
+      suggestions: [
+        'Check model status in AI Configuration',
+        'Add task "Learn Rust" for 60m',
+      ],
+      engineSource: 'heuristic_fallback',
+      modelUsed: 'Offline Rule-Based Heuristic',
+      latencyMs: 1,
+      warning: 'AI Model is offline. Running on offline heuristic mode.',
+    };
+  }
 
   if (isGreeting) {
     return {
@@ -276,7 +470,11 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
         'Schedule 45m DSA Practice today at 4:00 PM',
         'Move client API platform task to tomorrow',
         'Skip workout today and free up my morning'
-      ]
+      ],
+      engineSource: 'heuristic_fallback',
+      modelUsed: 'Offline Rule-Based Heuristic',
+      latencyMs: 1,
+      warning: 'AI Model is offline. Response generated with built-in heuristic rules.',
     };
   }
 
@@ -288,7 +486,11 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
         'Add a 30m code review task today',
         'Schedule Team Sync at 3:00 PM',
         'Create 30 min reading habit every weekday'
-      ]
+      ],
+      engineSource: 'heuristic_fallback',
+      modelUsed: 'Offline Rule-Based Heuristic',
+      latencyMs: 1,
+      warning: 'AI Model is offline. Response generated with built-in heuristic rules.',
     };
   }
 
@@ -296,11 +498,21 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
     return {
       message: "You're welcome! Let me know whenever you need to adjust your focus blocks.",
       operations: [],
+      engineSource: 'heuristic_fallback',
+      modelUsed: 'Offline Rule-Based Heuristic',
+      latencyMs: 1,
+      warning: 'AI Model is offline. Response generated with built-in heuristic rules.',
     };
   }
 
-  // 2. Deleting Tasks
-  if (msg.includes('delete') || msg.includes('remove') || msg.includes('clear')) {
+  // 2. Deleting Tasks (with pronoun and context resolution)
+  if (
+    msg.includes('delete') ||
+    msg.includes('remove') ||
+    msg.includes('clear') ||
+    msg.includes('drop') ||
+    msg.includes('cancel task')
+  ) {
     if (msg.includes('all') || msg.includes('everything')) {
       operations.push({
         op_type: 'DELETE_TASK',
@@ -318,16 +530,42 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
         }
         message = `Deleted ${taskMatches.length} tasks (${taskMatches.join(', ')}) from your schedule.`;
       } else {
-        const cleanTitle = userMessage
-          .replace(/^(delete|remove|clear)\s+(the\s+)?(task\s+)?/i, '')
-          .replace(/\s+(today|tomorrow|from schedule).*$/i, '')
-          .trim() || userMessage;
+        // Strip conversational fluff from beginning and end
+        let cleaned = userMessage
+          .replace(/^(can you|could you|please|kindly|would you|i want to|want to|just|go ahead and)?\s*(delete|remove|clear|drop|cancel)\s*(the\s+)?(task\s+)?/i, '')
+          .replace(/\s+(today|tomorrow|from schedule|from my schedule|from list|from the list|please).*$/i, '')
+          .replace(/\?+$/, '')
+          .trim();
+
+        // Check if cleaned query is a pronoun or referential word
+        const isPronoun = /^(it|that|this|the task|this task|that task|the last task|the previous task|last one|previous one|it\?|that\?)$/i.test(cleaned);
+
+        let targetTitle = cleaned;
+        if (isPronoun || !targetTitle) {
+          const resolved = extractRecentTaskTitle(context);
+          targetTitle = resolved || 'the previous task';
+        } else {
+          // If cleaned is quoted or specifies a name, strip quotes
+          targetTitle = targetTitle.replace(/^['"]|['"]$/g, '').trim();
+
+          // Match against active tasks in context if fuzzy match
+          if (context.remaining_tasks && context.remaining_tasks.length > 0) {
+            const lowerTarget = targetTitle.toLowerCase();
+            const matchedTask = context.remaining_tasks.find((t) =>
+              t.toLowerCase().includes(`"${lowerTarget}"`) || t.toLowerCase().includes(lowerTarget)
+            );
+            if (matchedTask) {
+              const q = matchedTask.match(/"([^"]+)"/);
+              if (q) targetTitle = q[1];
+            }
+          }
+        }
 
         operations.push({
           op_type: 'DELETE_TASK',
-          title: cleanTitle,
+          title: targetTitle,
         });
-        message = `Deleted "${cleanTitle}" from your schedule.`;
+        message = `Deleted "${targetTitle}" from your schedule.`;
       }
     }
   }
@@ -542,10 +780,13 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
     message = `I understand: "${userMessage}". If you would like me to schedule this as a task, you can say "Add ${userMessage} for 45m" or ask me to organize your day.`;
   }
 
+  // Safety Intent Guard: If user query has no explicit action intent, never return operations!
+  const finalOps = hasExplicitActionIntent(userMessage) ? operations : [];
+
   return {
     message,
-    operations,
-    suggestions: operations.length > 0 ? [
+    operations: finalOps,
+    suggestions: finalOps.length > 0 ? [
       'Move flexible work to tomorrow if your afternoon feels tight',
       'Take a 10-minute break after deep focus blocks',
     ] : [],
