@@ -56,7 +56,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-[38px] flex items-center justify-between px-3.5 rounded-2xl bg-card-subtle hover:bg-card-muted border border-borderToken text-[13px] text-foreground font-medium transition-all duration-150 cursor-pointer text-left ${
+        className={`w-full h-[38px] flex items-center justify-between px-4 rounded-full bg-card-subtle hover:bg-card-muted border border-borderToken text-[13px] text-foreground font-medium transition-all duration-150 cursor-pointer text-left ${
           isOpen ? 'border-primary bg-card shadow-xs' : ''
         } ${buttonClassName}`}
       >

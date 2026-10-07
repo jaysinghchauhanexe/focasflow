@@ -179,6 +179,7 @@ export const TodayTasksCard: React.FC = () => {
                       type="button"
                       data-completion-trigger="true"
                       data-no-click-sound="true"
+                      data-no-rounded-full="true"
                       onClick={() => toggleTaskStatus(task.id)}
                       className={`w-[22px] h-[22px] rounded-[8px] flex items-center justify-center transition-spring cursor-pointer active:scale-75 hover:scale-115 ${isCompleted
                           ? 'bg-tag-health text-white shadow-xs'

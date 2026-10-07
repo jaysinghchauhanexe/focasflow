@@ -45,7 +45,8 @@ import {
   Rocket,
   Cpu,
   SlidersHorizontal,
-  Palette
+  Palette,
+  Settings
 } from 'lucide-react';
 import { formatTime12h } from '../engine/scheduler';
 import { CustomSelect } from '../components/CustomSelect';
@@ -500,6 +501,7 @@ export const TasksView: React.FC = () => {
             type="button"
             data-completion-trigger="true"
             data-no-click-sound="true"
+            data-no-rounded-full="true"
             onClick={() => toggleTaskStatus(task.id)}
             className={`w-[20px] h-[20px] rounded-[7px] flex items-center justify-center transition-all cursor-pointer active:scale-75 hover:scale-110 flex-shrink-0 ${
               isCompleted
@@ -744,315 +746,216 @@ export const TasksView: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. TOP METRIC CARDS ROW */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        {/* Card 1: 7-Day Week Calendar Strip (6 Cols) */}
-        <div className="lg:col-span-6 bg-card rounded-[26px] p-4 shadow-soft flex flex-col justify-between transition-all duration-300">
-          <div className="flex items-center justify-between pb-2 mb-1 border-b border-borderToken">
-            <div className="flex items-center gap-2">
-              <span className="text-[15px] font-serif font-semibold text-foreground">
-                {new Date(activeDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </span>
-              <div className="flex items-center gap-1 ml-1">
+      {/* 2. MAIN 2-COLUMN WORKSPACE */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_340px] gap-4 items-start">
+        
+        {/* =========================================================================
+            LEFT COLUMN: Calendar Strip, Filters Bar (Same Width), & Tasks List
+            ========================================================================= */}
+        <div className="space-y-3.5 min-w-0">
+          {/* Card 1: 7-Day Week Calendar Strip Card */}
+          <div className="bg-card rounded-[22px] p-3.5 sm:p-4 shadow-soft border border-borderToken transition-all duration-300">
+            <div className="flex items-center justify-between pb-2 mb-1">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handlePrevWeek}
-                  className="p-1 rounded-lg text-mutedText hover:text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
+                  className="p-1 rounded-full text-mutedText hover:text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
                   title="Previous Week"
                 >
-                  <ChevronLeft size={14} />
+                  <ChevronLeft size={15} />
                 </button>
+                <span className="text-[14.5px] font-serif font-semibold text-foreground px-0.5">
+                  {new Date(activeDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </span>
                 <button
                   type="button"
                   onClick={handleNextWeek}
-                  className="p-1 rounded-lg text-mutedText hover:text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
+                  className="p-1 rounded-full text-mutedText hover:text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
                   title="Next Week"
                 >
-                  <ChevronRight size={14} />
+                  <ChevronRight size={15} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleJumpToday}
+                  className={`ml-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
+                    activeDate === todayStr
+                      ? 'bg-primary-soft text-primary'
+                      : 'bg-card-subtle border border-borderToken text-mutedText hover:text-foreground'
+                  }`}
+                >
+                  Today
                 </button>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleJumpToday}
-              className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
-                activeDate === todayStr
-                  ? 'bg-primary-soft text-primary'
-                  : 'bg-primary text-white shadow-xs hover:bg-primary-hover'
-              }`}
-            >
-              Today
-            </button>
-          </div>
-
-          {/* 7-Day Interactive Row (Audible Click Feedback) */}
-          <div className="grid grid-cols-7 gap-1 text-center mt-1">
-            {weekDays.map((day) => {
-              const dayTasks = tasks.filter(t => t.scheduledDate === day.iso || (day.iso === todayStr && !t.scheduledDate));
-              const hasPending = dayTasks.some(t => t.status !== 'completed' && t.status !== 'skipped');
-              const hasCompleted = dayTasks.some(t => t.status === 'completed');
-
-              return (
-                <button
-                  key={day.iso}
-                  type="button"
-                  onClick={() => {
-                    playClickSound();
-                    setSelectedDate(day.iso);
-                  }}
-                  className={`flex flex-col items-center py-1.5 rounded-2xl cursor-pointer transition-all border border-transparent ${
-                    day.isSelected ? 'bg-primary-soft/60 border-primary/20' : 'hover:bg-card-subtle'
-                  }`}
-                >
-                  <span className={`text-[11px] font-sans ${day.isSelected ? 'font-bold text-primary' : 'text-mutedText'}`}>
-                    {day.dayLabel}
-                  </span>
-                  <div
-                    className={`w-8 h-8 mt-1 rounded-full flex items-center justify-center text-[13px] font-semibold transition-all ${
-                      day.isSelected
-                        ? 'bg-primary text-white shadow-xs scale-105'
-                        : day.isToday
-                          ? 'border border-primary text-primary font-bold'
-                          : 'text-foreground'
-                    }`}
-                  >
-                    {day.dayNum}
-                  </div>
-                  <div className="h-1.5 flex items-center gap-0.5 mt-1">
-                    {hasPending && <span className="w-1 h-1 rounded-full bg-[#F97316]" />}
-                    {hasCompleted && <span className="w-1 h-1 rounded-full bg-tag-health" />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Card 2: Tasks Done Metric (2 Cols) */}
-        <div className="lg:col-span-2 bg-card rounded-[26px] p-4 shadow-soft flex items-center justify-between gap-3 transition-all duration-300">
-          <div className="relative w-12 h-12 flex-shrink-0 flex items-center justify-center">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="14" fill="none" stroke="var(--color-border, #E5E7EB)" strokeWidth="3.5" />
-              <circle
-                cx="18"
-                cy="18"
-                r="14"
-                fill="none"
-                stroke="var(--color-primary, #24584C)"
-                strokeWidth="3.5"
-                strokeDasharray={`${completionPercentage} 100`}
-                strokeLinecap="round"
-                className="transition-all duration-700 ease-out"
-              />
-            </svg>
-            <span className="absolute text-[10px] font-bold text-foreground font-mono">{completionPercentage}%</span>
-          </div>
-          <div>
-            <div className="text-[17px] font-serif font-semibold text-foreground leading-none">
-              {activeDateCompletedCount} / {activeDateTotalCount}
-            </div>
-            <p className="text-[11px] text-mutedText mt-1">Tasks done</p>
-          </div>
-        </div>
-
-        {/* Card 3: Focus Time Metric with Interactive Hover Graph Tooltip (2 Cols) */}
-        <div className="lg:col-span-2 bg-card rounded-[26px] p-4 shadow-soft flex flex-col justify-between transition-all duration-300 relative group">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-primary-soft text-primary flex items-center justify-center">
-              <Clock size={13} />
-            </div>
-            <span className="text-[11px] font-medium text-mutedText">Focus time</span>
-          </div>
-          <div>
-            <div className="text-[17px] font-serif font-semibold text-foreground leading-none mt-2">
-              {formattedFocus.displayString}
-            </div>
-
-            {/* Interactive 7-Day Mini Bar Sparkline with Hover Tooltip */}
-            <div className="relative flex items-end gap-1.5 h-4.5 mt-2.5 pt-1">
-              {weekDays.map((d, idx) => {
-                const isHovered = hoveredBarIndex === idx;
+            {/* 7-Day Interactive Row (Compact Borderless Square Cards) */}
+            <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center mt-1.5">
+              {weekDays.map((day) => {
+                const dayTasks = tasks.filter(t => t.scheduledDate === day.iso || (day.iso === todayStr && !t.scheduledDate));
+                const hasPending = dayTasks.some(t => t.status !== 'completed' && t.status !== 'skipped');
+                const hasCompleted = dayTasks.some(t => t.status === 'completed');
 
                 return (
-                  <div
-                    key={idx}
-                    onMouseEnter={() => setHoveredBarIndex(idx)}
-                    onMouseLeave={() => setHoveredBarIndex(null)}
-                    className="relative flex-1 flex flex-col items-center justify-end h-full cursor-pointer"
+                  <button
+                    key={day.iso}
+                    type="button"
+                    data-no-rounded-full="true"
+                    onClick={() => {
+                      playClickSound();
+                      setSelectedDate(day.iso);
+                    }}
+                    className={`flex flex-col items-center justify-between py-2 px-1 rounded-[14px] cursor-pointer transition-all duration-150 w-full max-w-[54px] h-[52px] mx-auto border-0 ${
+                      day.isSelected
+                        ? 'bg-primary text-white shadow-none'
+                        : 'bg-card-subtle hover:bg-card-muted/80 text-foreground'
+                    }`}
                   >
-                    {/* Floating Detailed Metric Tooltip on Hover */}
-                    {isHovered && (
-                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-card border border-borderToken shadow-float px-2.5 py-1.5 rounded-xl text-[11px] z-50 whitespace-nowrap animate-fade-in pointer-events-none">
-                        <div className="font-semibold text-foreground">{d.fullDateLabel}</div>
-                        <div className="text-primary font-mono font-medium">
-                          {d.focusMinutes >= 60
-                            ? `${Math.floor(d.focusMinutes / 60)}h ${d.focusMinutes % 60}m focus`
-                            : `${d.focusMinutes}m focus`}
-                        </div>
-                        <div className="text-[10px] text-mutedText">
-                          {d.tasksCompleted}/{d.tasksTotal} outcomes done
-                        </div>
-                      </div>
-                    )}
+                    <span className={`text-[10.5px] font-sans leading-none ${day.isSelected ? 'text-white/80 font-medium' : 'text-mutedText'}`}>
+                      {day.dayLabel}
+                    </span>
+                    
+                    <span className={`text-[13.5px] font-sans font-bold leading-none ${
+                      day.isSelected
+                        ? 'text-white'
+                        : day.isToday
+                          ? 'text-primary'
+                          : 'text-foreground'
+                    }`}>
+                      {day.dayNum}
+                    </span>
 
-                    <div
-                      className={`w-full rounded-t transition-all duration-200 ${
-                        isHovered
-                          ? 'bg-primary scale-y-110 shadow-xs'
-                          : d.isSelected
-                            ? 'bg-primary'
-                            : 'bg-primary-soft hover:bg-primary/70'
-                      }`}
-                      style={{ height: `${d.heightPercent}%` }}
-                    />
-                  </div>
+                    <div className="h-1 flex items-center justify-center gap-0.5">
+                      {hasPending && (
+                        <span className={`w-1 h-1 rounded-full ${day.isSelected ? 'bg-white/80' : 'bg-[#F97316]'}`} />
+                      )}
+                      {hasCompleted && (
+                        <span className={`w-1 h-1 rounded-full ${day.isSelected ? 'bg-white' : 'bg-tag-health'}`} />
+                      )}
+                    </div>
+                  </button>
                 );
               })}
             </div>
           </div>
-        </div>
 
-        {/* Card 4: Current Real Streak Metric (2 Cols) */}
-        <div className="lg:col-span-2 bg-card rounded-[26px] p-4 shadow-soft flex flex-col justify-between transition-all duration-300">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-[#F97316]/15 text-[#F97316] flex items-center justify-center">
-              <Flame size={14} fill="currentColor" />
+          {/* Card 2: Filters Bar Card (SAME WIDTH AS TASKS) */}
+          <div className="bg-card rounded-[24px] p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-soft border border-borderToken transition-all duration-300">
+            {/* Left: View Tabs Segment */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  setActiveTab('all');
+                  setSelectedDate(todayStr);
+                }}
+                className={`px-4 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer ${
+                  activeTab === 'all' && !isSpecificDateSelected
+                    ? 'bg-primary text-white shadow-xs'
+                    : 'text-mutedText hover:text-foreground hover:bg-card-subtle'
+                }`}
+              >
+                All Tasks
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  setActiveTab('today');
+                  setSelectedDate(todayStr);
+                }}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer ${
+                  activeTab === 'today' && !isSpecificDateSelected
+                    ? 'bg-primary text-white shadow-xs'
+                    : 'text-mutedText hover:text-foreground hover:bg-card-subtle'
+                }`}
+              >
+                <span>Today</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10.5px] font-bold ${
+                  activeTab === 'today' && !isSpecificDateSelected ? 'bg-white/25 text-white' : 'bg-card-subtle border border-borderToken text-mutedText'
+                }`}>
+                  {sectionTodayTasks.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  setActiveTab('upcoming');
+                }}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer ${
+                  activeTab === 'upcoming'
+                    ? 'bg-primary text-white shadow-xs'
+                    : 'text-mutedText hover:text-foreground hover:bg-card-subtle'
+                }`}
+              >
+                <span>Upcoming</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10.5px] font-bold ${
+                  activeTab === 'upcoming' ? 'bg-white/25 text-white' : 'bg-card-subtle border border-borderToken text-mutedText'
+                }`}>
+                  {sectionUpcomingTasks.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound();
+                  setActiveTab('backlog');
+                }}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer ${
+                  activeTab === 'backlog'
+                    ? 'bg-primary text-white shadow-xs'
+                    : 'text-mutedText hover:text-foreground hover:bg-card-subtle'
+                }`}
+              >
+                <span>Backlog</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10.5px] font-bold ${
+                  activeTab === 'backlog' ? 'bg-white/25 text-white' : 'bg-card-subtle border border-borderToken text-mutedText'
+                }`}>
+                  {sectionLaterTasks.length}
+                </span>
+              </button>
             </div>
-            <span className="text-[11px] font-medium text-mutedText">Current streak</span>
-          </div>
-          <div>
-            <div className="text-[17px] font-serif font-semibold text-foreground leading-none mt-2">
-              {currentStreak} {currentStreak === 1 ? 'day' : 'days'}
-            </div>
-            {/* Dynamic streak activity curve */}
-            <svg className="w-full h-3.5 mt-2 overflow-visible" viewBox="0 0 100 20" fill="none">
-              <polyline
-                points={sparklinePoints}
-                stroke="var(--color-primary, #24584C)"
-                strokeWidth="2.5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+
+            {/* Right: Dropdowns */}
+            <div className="flex items-center gap-2 flex-wrap ml-auto">
+              <CustomSelect
+                value={taskCategoryFilter}
+                onChange={(val) => setTaskCategoryFilter(val)}
+                className="w-34"
+                options={[
+                  { value: 'All', label: 'All Categories' },
+                  ...Object.keys(categoryData).map(k => ({ value: k, label: k }))
+                ]}
               />
-            </svg>
+
+              <CustomSelect
+                value={taskPriorityFilter}
+                onChange={(val) => setTaskPriorityFilter(val)}
+                className="w-32"
+                options={[
+                  { value: 'All', label: 'All Priorities' },
+                  ...Object.entries(priorityData).map(([k, v]) => ({ value: k, label: v.label }))
+                ]}
+              />
+
+              <CustomSelect
+                value={taskStatusFilter}
+                onChange={(val) => setTaskStatusFilter(val)}
+                className="w-30"
+                options={[
+                  { value: 'All', label: 'All Statuses' },
+                  { value: 'pending', label: 'Pending' },
+                  { value: 'completed', label: 'Completed' },
+                ]}
+              />
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* 3. TAB FILTER & DROPDOWNS BAR */}
-      <div className="bg-card rounded-[24px] p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-soft transition-all duration-300">
-        {/* Left: View Tabs Segment */}
-        <div className="flex items-center bg-card-subtle p-1 rounded-2xl border border-borderToken">
-          <button
-            type="button"
-            onClick={() => {
-              playClickSound();
-              setActiveTab('all');
-              setSelectedDate(todayStr);
-            }}
-            className={`px-3.5 py-1.5 rounded-xl text-[12.5px] font-semibold transition-all cursor-pointer ${
-              activeTab === 'all' && !isSpecificDateSelected
-                ? 'bg-card text-foreground shadow-xs'
-                : 'text-mutedText hover:text-foreground'
-            }`}
-          >
-            All Tasks
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              playClickSound();
-              setActiveTab('today');
-              setSelectedDate(todayStr);
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12.5px] font-semibold transition-all cursor-pointer ${
-              activeTab === 'today' && !isSpecificDateSelected
-                ? 'bg-card text-foreground shadow-xs'
-                : 'text-mutedText hover:text-foreground'
-            }`}
-          >
-            <span>Today</span>
-            <span className="w-4 h-4 rounded-full bg-primary-soft text-primary text-[10px] flex items-center justify-center font-bold">
-              {sectionTodayTasks.length}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              playClickSound();
-              setActiveTab('upcoming');
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12.5px] font-semibold transition-all cursor-pointer ${
-              activeTab === 'upcoming'
-                ? 'bg-card text-foreground shadow-xs'
-                : 'text-mutedText hover:text-foreground'
-            }`}
-          >
-            <span>Upcoming</span>
-            <span className="w-4 h-4 rounded-full bg-primary-soft text-primary text-[10px] flex items-center justify-center font-bold">
-              {sectionUpcomingTasks.length}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              playClickSound();
-              setActiveTab('backlog');
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12.5px] font-semibold transition-all cursor-pointer ${
-              activeTab === 'backlog'
-                ? 'bg-card text-foreground shadow-xs'
-                : 'text-mutedText hover:text-foreground'
-            }`}
-          >
-            <span>Backlog</span>
-            <span className="w-4 h-4 rounded-full bg-primary-soft text-primary text-[10px] flex items-center justify-center font-bold">
-              {sectionLaterTasks.length}
-            </span>
-          </button>
-        </div>
-
-        {/* Right: Dropdowns */}
-        <div className="flex items-center gap-2 flex-wrap ml-auto">
-          <CustomSelect
-            value={taskCategoryFilter}
-            onChange={(val) => setTaskCategoryFilter(val)}
-            className="w-34"
-            options={[
-              { value: 'All', label: 'All Categories' },
-              ...Object.keys(categoryData).map(k => ({ value: k, label: k }))
-            ]}
-          />
-
-          <CustomSelect
-            value={taskPriorityFilter}
-            onChange={(val) => setTaskPriorityFilter(val)}
-            className="w-32"
-            options={[
-              { value: 'All', label: 'All Priorities' },
-              ...Object.entries(priorityData).map(([k, v]) => ({ value: k, label: v.label }))
-            ]}
-          />
-
-          <CustomSelect
-            value={taskStatusFilter}
-            onChange={(val) => setTaskStatusFilter(val)}
-            className="w-30"
-            options={[
-              { value: 'All', label: 'All Statuses' },
-              { value: 'pending', label: 'Pending' },
-              { value: 'completed', label: 'Completed' },
-            ]}
-          />
-        </div>
-      </div>
-
-      {/* 4. MAIN 2-COLUMN WORKSPACE */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Left Column: Grouped Collapsible Sections (8 Cols) */}
-        <div className="lg:col-span-8 space-y-4">
-          {/* Enhanced Rollover Card */}
+          {/* Card 3: Enhanced Rollover Card (if any) */}
           {pastUnfinishedTasks.length > 0 && !isSpecificDateSelected && (
             <div className="bg-card rounded-[26px] p-4 sm:p-5 shadow-soft border border-borderToken flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300">
               <div className="flex items-center gap-3.5">
@@ -1080,9 +983,9 @@ export const TasksView: React.FC = () => {
             </div>
           )}
 
-          {/* Specific Date Selected View */}
+          {/* Card 4: Tasks List Container */}
           {isSpecificDateSelected ? (
-            <div className="bg-card rounded-[28px] p-5 shadow-soft transition-all duration-300">
+            <div className="bg-card rounded-[28px] p-5 shadow-soft border border-borderToken transition-all duration-300">
               <div className="flex items-center justify-between pb-3 mb-2 border-b border-borderToken">
                 <div className="flex items-center gap-2">
                   <h3 className="text-[17px] font-serif font-semibold text-foreground">
@@ -1115,7 +1018,7 @@ export const TasksView: React.FC = () => {
             <>
               {/* SECTION 1: TODAY */}
               {(activeTab === 'all' || activeTab === 'today') && (
-                <div className="bg-card rounded-[28px] p-4 sm:p-5 shadow-soft transition-all duration-300">
+                <div className="bg-card rounded-[28px] p-4 sm:p-5 shadow-soft border border-borderToken transition-all duration-300">
                   <div
                     onClick={() => toggleSectionCollapse('today')}
                     className="flex items-center justify-between pb-3 mb-1 border-b border-borderToken cursor-pointer group"
@@ -1158,7 +1061,7 @@ export const TasksView: React.FC = () => {
 
               {/* SECTION 2: UPCOMING */}
               {(activeTab === 'all' || activeTab === 'upcoming') && (
-                <div className="bg-card rounded-[28px] p-4 sm:p-5 shadow-soft transition-all duration-300">
+                <div className="bg-card rounded-[28px] p-4 sm:p-5 shadow-soft border border-borderToken transition-all duration-300">
                   <div
                     onClick={() => toggleSectionCollapse('upcoming')}
                     className="flex items-center justify-between pb-3 mb-1 border-b border-borderToken cursor-pointer group"
@@ -1201,7 +1104,7 @@ export const TasksView: React.FC = () => {
 
               {/* SECTION 3: LATER / BACKLOG */}
               {(activeTab === 'all' || activeTab === 'backlog') && (
-                <div className="bg-card rounded-[28px] p-4 sm:p-5 shadow-soft transition-all duration-300">
+                <div className="bg-card rounded-[28px] p-4 sm:p-5 shadow-soft border border-borderToken transition-all duration-300">
                   <div
                     onClick={() => toggleSectionCollapse('later')}
                     className="flex items-center justify-between pb-3 mb-1 border-b border-borderToken cursor-pointer group"
@@ -1245,10 +1148,162 @@ export const TasksView: React.FC = () => {
           )}
         </div>
 
-        {/* Right Column: Categories & Priorities Widgets */}
-        <div className="lg:col-span-4 space-y-4">
+        {/* =========================================================================
+            RIGHT COLUMN: Today's Progress (Full), Focus Time (Half) + Streak (Half), Categories & Priorities
+            ========================================================================= */}
+        <div className="space-y-3.5 min-w-0">
+          {/* Card 1: Today's Progress (Full Width of Right Column) */}
+          <div className="bg-card rounded-[22px] p-4 shadow-soft border border-borderToken transition-all duration-300">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-1">
+              <h3 className="text-[14px] font-serif font-semibold text-foreground">Today's Progress</h3>
+              <button
+                type="button"
+                onClick={() => openTaskModal()}
+                className="p-1 rounded-full text-mutedText hover:text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
+                title="Task settings / quick add"
+              >
+                <Settings size={13} />
+              </button>
+            </div>
+
+            {/* Donut and Progress Stats Row */}
+            <div className="flex items-center justify-between py-1.5">
+              <div className="flex items-center gap-3">
+                {/* Radial Donut Ring (Fixed 52px diameter) */}
+                <div className="relative w-[52px] h-[52px] flex-shrink-0 flex items-center justify-center">
+                  <svg className="w-[52px] h-[52px] -rotate-90" viewBox="0 0 44 44">
+                    <circle cx="22" cy="22" r="14" fill="#E2EDE7" />
+                    <circle cx="22" cy="22" r="17" fill="none" stroke="#EBF2ED" strokeWidth="4" />
+                    <circle
+                      cx="22"
+                      cy="22"
+                      r="17"
+                      fill="none"
+                      stroke="var(--color-primary, #24584C)"
+                      strokeWidth="4"
+                      strokeDasharray={2 * Math.PI * 17}
+                      strokeDashoffset={2 * Math.PI * 17 * (1 - Math.min(1, Math.max(0, completionPercentage / 100)))}
+                      strokeLinecap="round"
+                      className="transition-all duration-700 ease-out"
+                    />
+                  </svg>
+                </div>
+
+                {/* Fractions and Subtitle */}
+                <div>
+                  <div className="text-[18px] font-heading font-bold text-foreground leading-tight tracking-tight">
+                    {activeDateCompletedCount} of {activeDateTotalCount}
+                  </div>
+                  <p className="text-[11.5px] text-mutedText font-medium mt-0.5">tasks done</p>
+                </div>
+              </div>
+
+              {/* Bold Green Percentage */}
+              <div className="text-[18px] font-heading font-bold text-primary tracking-tight">
+                {completionPercentage}%
+              </div>
+            </div>
+
+            {/* Horizontal Progress Bar */}
+            <div className="w-full bg-card-subtle rounded-full h-1.5 overflow-hidden border border-borderToken/30 mt-2">
+              <div
+                className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${completionPercentage}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Card 2: Split Row (Focus Time Half + Current Streak Half) */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Left Half: Focus Time Card */}
+            <div className="bg-card rounded-[20px] p-3 sm:p-3.5 border border-borderToken flex flex-col justify-between transition-all duration-300 min-h-[108px] relative group shadow-soft">
+              <div className="w-6 h-6 rounded-full bg-[#EBF4F0] text-primary flex items-center justify-center border border-primary/15 flex-shrink-0">
+                <Clock size={13} strokeWidth={2.2} />
+              </div>
+
+              <div className="flex items-end justify-between mt-1.5">
+                <div>
+                  <div className="text-[16.5px] font-heading font-bold text-foreground tracking-tight leading-none">
+                    {formattedFocus.displayString}
+                  </div>
+                  <p className="text-[10.5px] text-mutedText font-medium mt-1">Focus time</p>
+                </div>
+
+                <div className="flex items-end gap-0.5 h-5 flex-shrink-0 mb-0.5">
+                  {[20, 32, 45, 60, 75, 88, 100].map((hPct, idx) => {
+                    const d = weekDays[idx];
+                    const isHovered = hoveredBarIndex === idx;
+
+                    return (
+                      <div
+                        key={idx}
+                        onMouseEnter={() => setHoveredBarIndex(idx)}
+                        onMouseLeave={() => setHoveredBarIndex(null)}
+                        className="relative flex flex-col items-center justify-end h-full cursor-pointer"
+                      >
+                        {isHovered && d && (
+                          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-card border border-borderToken px-2 py-0.5 rounded-lg text-[9.5px] z-50 whitespace-nowrap animate-fade-in pointer-events-none shadow-xs">
+                            <span className="font-semibold text-foreground">{d.focusMinutes}m</span>
+                          </div>
+                        )}
+                        <div
+                          className={`w-1 rounded-t-[1.5px] transition-all duration-200 ${
+                            idx === 6 || isHovered
+                              ? 'bg-primary'
+                              : 'bg-primary/35 hover:bg-primary/60'
+                          }`}
+                          style={{ height: `${hPct}%` }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Half: Current Streak Card */}
+            <div className="bg-card rounded-[20px] p-3 sm:p-3.5 border border-borderToken flex flex-col justify-between transition-all duration-300 min-h-[108px] shadow-soft">
+              <div className="w-6 h-6 rounded-full bg-[#FEF3E8] text-[#EA580C] flex items-center justify-center border border-[#EA580C]/20 flex-shrink-0">
+                <Flame size={13} strokeWidth={2.2} />
+              </div>
+
+              <div className="flex items-end justify-between mt-1.5">
+                <div>
+                  <div className="text-[16.5px] font-heading font-bold text-foreground tracking-tight leading-none">
+                    {currentStreak} {currentStreak === 1 ? 'day' : 'days'}
+                  </div>
+                  <p className="text-[10.5px] text-mutedText font-medium mt-1">Current streak</p>
+                </div>
+
+                <div className="w-14 h-5 flex-shrink-0 mb-0.5">
+                  <svg className="w-full h-full overflow-visible" viewBox="0 0 100 35" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="streakAreaGradSidebar" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--color-primary, #24584C)" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="var(--color-primary, #24584C)" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M 0 30 C 20 28, 35 25, 48 20 C 62 14, 75 7, 85 4 C 92 1.5, 96 4, 100 3 L 100 35 L 0 35 Z"
+                      fill="url(#streakAreaGradSidebar)"
+                    />
+                    <path
+                      d="M 0 30 C 20 28, 35 25, 48 20 C 62 14, 75 7, 85 4 C 92 1.5, 96 4, 100 3"
+                      fill="none"
+                      stroke="var(--color-primary, #24584C)"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Widget 1: Task Categories (With Color Picker & Icons) */}
-          <div className="bg-card rounded-[28px] p-5 shadow-soft transition-all duration-300">
+          <div className="bg-card rounded-[22px] p-3.5 sm:p-4 shadow-soft transition-all duration-300">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-[13px] font-semibold text-foreground font-serif">Task Categories</h4>
               <div className="flex items-center gap-1.5">
@@ -1415,7 +1470,7 @@ export const TasksView: React.FC = () => {
           </div>
 
           {/* Widget 2: Task Priorities (With + Add button & Color Picker) */}
-          <div className="bg-card rounded-[28px] p-5 shadow-soft transition-all duration-300">
+          <div className="bg-card rounded-[22px] p-3.5 sm:p-4 shadow-soft transition-all duration-300">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-[13px] font-semibold text-foreground font-serif">Task Priorities</h4>
               <div className="flex items-center gap-1.5">

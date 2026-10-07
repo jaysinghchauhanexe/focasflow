@@ -8,7 +8,6 @@ import {
   Target,
   Compass,
   Repeat,
-  BookOpen,
   Sparkles,
   Settings,
   SlidersHorizontal,
@@ -53,7 +52,6 @@ export const Sidebar: React.FC = () => {
     { id: 'habits', label: 'Habits', icon: Target },
     { id: 'routines', label: 'Routines', icon: Repeat },
     { id: 'goals', label: 'Vision & Goals', icon: Compass },
-    { id: 'history', label: 'Reflections', icon: BookOpen },
     { id: 'breathing', label: 'Breathing', icon: Wind, isBreathing: true },
   ];
 

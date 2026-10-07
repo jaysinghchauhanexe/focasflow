@@ -23,7 +23,7 @@ import { calculateDayCapacity, buildDaySchedule } from '../engine/scheduler';
 import { playCompletionSound } from '../utils/soundEffects';
 
 interface AppState {
-  currentTab: 'today' | 'tasks' | 'analytics' | 'habits' | 'routines' | 'goals' | 'schedule' | 'history' | 'settings' | 'preferences' | 'ai-planner' | 'profile';
+  currentTab: 'today' | 'tasks' | 'analytics' | 'habits' | 'routines' | 'goals' | 'schedule' | 'settings' | 'preferences' | 'ai-planner' | 'profile';
   selectedDate: string; // YYYY-MM-DD
   tasks: Task[];
   habits: Habit[];

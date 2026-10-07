@@ -497,3 +497,8 @@ input[type="reset"]:active {
   box-shadow: none !important;
 }
 
+/* Global Rounded-Full Button Styling */
+button:not([data-tauri-control]):not([data-no-rounded-full]) {
+  border-radius: 9999px !important;
+}
+

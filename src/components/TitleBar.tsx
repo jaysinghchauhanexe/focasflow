@@ -84,6 +84,7 @@ export const TitleBar: React.FC = () => {
         {/* Minimize Button */}
         <button
           type="button"
+          data-tauri-control="true"
           onClick={handleMinimize}
           className="w-8 h-6 flex items-center justify-center rounded-md text-textSecondary hover:text-foreground hover:bg-card-muted transition-colors cursor-pointer"
           title="Minimize"
@@ -94,6 +95,7 @@ export const TitleBar: React.FC = () => {
         {/* Maximize / Restore Button */}
         <button
           type="button"
+          data-tauri-control="true"
           onClick={handleToggleMaximize}
           className="w-8 h-6 flex items-center justify-center rounded-md text-textSecondary hover:text-foreground hover:bg-card-muted transition-colors cursor-pointer"
           title={isMaximized ? 'Restore' : 'Maximize'}
@@ -108,6 +110,7 @@ export const TitleBar: React.FC = () => {
         {/* Close Button */}
         <button
           type="button"
+          data-tauri-control="true"
           onClick={handleClose}
           className="w-8 h-6 flex items-center justify-center rounded-md text-textSecondary hover:text-white hover:bg-[#E81123] transition-colors cursor-pointer"
           title="Close"

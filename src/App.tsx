@@ -8,7 +8,6 @@ import { HabitsView } from './views/HabitsView';
 import { RoutinesView } from './views/RoutinesView';
 import { GoalsView } from './views/GoalsView';
 import { ScheduleView } from './views/ScheduleView';
-import { HistoryView } from './views/HistoryView';
 import { SettingsView } from './views/SettingsView';
 import { PreferencesView } from './views/PreferencesView';
 import { AiAssistantView } from './views/AiAssistantView';
@@ -89,8 +88,6 @@ export const App: React.FC = () => {
         return <GoalsView />;
       case 'schedule':
         return <ScheduleView />;
-      case 'history':
-        return <HistoryView />;
       case 'settings':
         return <SettingsView />;
       case 'preferences':
