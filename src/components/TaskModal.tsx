@@ -132,8 +132,10 @@ export const TaskModal: React.FC = () => {
   };
 
   const defaultCategories: Category[] = ['Health', 'Work', 'Personal', 'Learning', 'Neutral'];
+  const deletedCatSet = new Set((settings?.deletedCategories || []).map(c => c.toLowerCase()));
   const customCatLabels = (settings?.customCategories || []).map(c => c.label);
-  const categories: Category[] = Array.from(new Set([...defaultCategories, ...customCatLabels])) as Category[];
+  const categories: Category[] = Array.from(new Set([...defaultCategories, ...customCatLabels]))
+    .filter(c => !deletedCatSet.has(c.toLowerCase())) as Category[];
 
   const defaultPriorities: {
     id: Priority;
@@ -154,9 +156,9 @@ export const TaskModal: React.FC = () => {
       textClass: 'text-[#EA580C] dark:text-[#FB923C]',
     },
     {
-      id: 'flexible',
-      label: 'Flexible',
-      desc: 'Can move if schedule shifts',
+      id: 'regular',
+      label: 'Regular',
+      desc: 'Standard daily priority',
       activeClass: 'bg-[#D97706]/15 border-[#D97706]/30',
       inactiveClass: 'bg-[#D97706]/[0.03] border-[#D97706]/10 hover:border-[#D97706]/20 hover:bg-[#D97706]/[0.07]',
       dotClass: 'bg-[#D97706]',
@@ -174,7 +176,7 @@ export const TaskModal: React.FC = () => {
   ];
 
   const customPrioritiesList = (settings?.customPriorities || []).filter(
-    (cp) => !['important', 'flexible', 'optional'].includes(cp.id)
+    (cp) => !['important', 'regular', 'flexible', 'optional'].includes(cp.id.toLowerCase())
   );
 
   return (

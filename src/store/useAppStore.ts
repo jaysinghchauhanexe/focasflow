@@ -146,8 +146,10 @@ interface AppState {
   // Custom Categories & Priorities Actions
   addCustomCategory: (category: { id: string; label: string; iconName: string; colorClass?: string }) => void;
   deleteCustomCategory: (id: string) => void;
+  deleteCategory: (labelOrId: string) => void;
   addCustomPriority: (priority: { id: string; label: string; dotColor: string }) => void;
   deleteCustomPriority: (id: string) => void;
+  resetTaskTimer: (taskId: string) => void;
   updateUserProfile: (profile: Partial<AppSettings>) => void;
 
   // Settings & Preferences Actions
@@ -609,7 +611,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeFocusTaskId: null,
   isFocusTimerRunning: false,
   focusElapsedSeconds: 0,
-  taskElapsedSeconds: loadPersisted<Record<string, number>>('task_elapsed_seconds', {}),
+  taskElapsedSeconds: (() => {
+    const raw = loadPersisted<Record<string, number>>('task_elapsed_seconds', {});
+    const tasks = loadPersisted<Task[]>('tasks', initialTasks);
+    const cleaned = { ...raw };
+    tasks.forEach((t) => {
+      if (t.status === 'pending' && (cleaned[t.id] === (t.duration || 30) * 60 || cleaned[t.id] === 3600)) {
+        delete cleaned[t.id];
+      }
+    });
+    return cleaned;
+  })(),
   startFocusTask: (taskId) => set((state) => {
     const elapsed = state.taskElapsedSeconds[taskId] || 0;
     const shouldAutoPlayMusic = state.settings.preferences?.autoPlayMusicOnFocus;
@@ -765,6 +777,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (isCurrentActive && state.focusElapsedSeconds > 0) {
         nextElapsedMap[id] = state.focusElapsedSeconds;
         savePersisted('task_elapsed_seconds', nextElapsedMap);
+      } else if (!isNowCompleted) {
+        // If task is marked undone and was previously logged with exact duration, reset to 0
+        if (targetTask && (nextElapsedMap[id] === (targetTask.duration || 30) * 60 || nextElapsedMap[id] === 3600)) {
+          delete nextElapsedMap[id];
+          savePersisted('task_elapsed_seconds', nextElapsedMap);
+        }
       }
 
       return { 
@@ -996,12 +1014,25 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   deleteCustomCategory: (id) => {
+    get().deleteCategory(id);
+  },
+
+  deleteCategory: (labelOrId) => {
     set((state) => {
       const existing = state.settings.customCategories || [];
-      const updated = existing.filter(c => c.id !== id);
-      const updatedSettings: AppSettings = { ...state.settings, customCategories: updated };
+      const updatedCustom = existing.filter(c => c.id !== labelOrId && c.label.toLowerCase() !== labelOrId.toLowerCase());
+      const deletedCats = Array.from(new Set([...(state.settings.deletedCategories || []), labelOrId.toLowerCase()]));
+      const updatedSettings: AppSettings = {
+        ...state.settings,
+        customCategories: updatedCustom,
+        deletedCategories: deletedCats,
+      };
       savePersisted('settings', updatedSettings);
-      return { settings: updatedSettings };
+      const isFiltered = state.taskCategoryFilter.toLowerCase() === labelOrId.toLowerCase();
+      return {
+        settings: updatedSettings,
+        ...(isFiltered ? { taskCategoryFilter: 'All' } : {})
+      };
     });
   },
 
@@ -1016,12 +1047,32 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   deleteCustomPriority: (id) => {
+    if (['important', 'regular', 'flexible', 'optional', 'critical'].includes(id.toLowerCase())) {
+      return; // 3 default priorities cannot be deleted
+    }
     set((state) => {
       const existing = state.settings.customPriorities || [];
-      const updated = existing.filter(p => p.id !== id);
+      const updated = existing.filter(p => p.id !== id && p.label.toLowerCase() !== id.toLowerCase());
       const updatedSettings: AppSettings = { ...state.settings, customPriorities: updated };
       savePersisted('settings', updatedSettings);
-      return { settings: updatedSettings };
+      const isFiltered = state.taskPriorityFilter.toLowerCase() === id.toLowerCase();
+      return {
+        settings: updatedSettings,
+        ...(isFiltered ? { taskPriorityFilter: 'all' } : {})
+      };
+    });
+  },
+
+  resetTaskTimer: (taskId) => {
+    set((state) => {
+      const nextMap = { ...state.taskElapsedSeconds };
+      delete nextMap[taskId];
+      savePersisted('task_elapsed_seconds', nextMap);
+      const isCurrentActive = state.activeFocusTaskId === taskId;
+      return {
+        taskElapsedSeconds: nextMap,
+        ...(isCurrentActive ? { activeFocusTaskId: null, isFocusTimerRunning: false, focusElapsedSeconds: 0 } : {})
+      };
     });
   },
 

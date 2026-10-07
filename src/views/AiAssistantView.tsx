@@ -800,7 +800,7 @@ export const AiAssistantView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-5 h-[calc(100vh-48px)] max-w-[1600px] mx-auto select-none animate-fade-in pb-4">
+    <div className="flex flex-col lg:flex-row gap-5 h-full max-w-[1600px] mx-auto select-none animate-fade-in overflow-hidden">
       {/* ========================================================================= */}
       {/* 1. LEFT / MAIN AI CHAT & HERO PANEL (Clean, seamless without heavy lines) */}
       {/* ========================================================================= */}

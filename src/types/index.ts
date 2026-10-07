@@ -1,5 +1,5 @@
-export type DefaultPriority = 'important' | 'flexible' | 'optional';
-export type Priority = 'important' | 'flexible' | 'optional' | 'critical' | (string & {});
+export type DefaultPriority = 'important' | 'regular' | 'flexible' | 'optional';
+export type Priority = 'important' | 'regular' | 'flexible' | 'optional' | 'critical' | (string & {});
 export type TaskStatus = 'pending' | 'active' | 'completed' | 'skipped' | 'moved';
 export type Category = 'Health' | 'Work' | 'Personal' | 'Learning' | 'Neutral';
 export type EnergyLevel = 'high' | 'medium' | 'low';
@@ -146,6 +146,7 @@ export interface AppSettings {
   aiUserContext?: string;
   customCategories?: CustomCategoryItem[];
   customPriorities?: CustomPriorityItem[];
+  deletedCategories?: string[];
   wakeTime: string; // e.g. "07:00"
   sleepTime: string; // e.g. "23:00"
   workStart: string; // e.g. "09:00"

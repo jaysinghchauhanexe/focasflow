@@ -124,8 +124,9 @@ export const AnalyticsView: React.FC = () => {
       if (categoryFilter !== 'All' && t.category !== categoryFilter) return false;
       if (priorityFilter !== 'All') {
         if (priorityFilter === 'important' && t.priority !== 'critical' && t.priority !== 'important') return false;
-        if (priorityFilter === 'flexible' && t.priority !== 'flexible' && t.priority !== 'optional') return false;
-        if (priorityFilter !== 'important' && priorityFilter !== 'flexible' && t.priority !== priorityFilter) return false;
+        if ((priorityFilter === 'regular' || priorityFilter === 'flexible') && t.priority !== 'regular' && t.priority !== 'flexible') return false;
+        if (priorityFilter === 'optional' && t.priority !== 'optional') return false;
+        if (priorityFilter !== 'important' && priorityFilter !== 'regular' && priorityFilter !== 'flexible' && priorityFilter !== 'optional' && t.priority !== priorityFilter) return false;
       }
       if (statusFilter !== 'All') {
         if (statusFilter === 'completed' && t.status !== 'completed') return false;
@@ -149,30 +150,32 @@ export const AnalyticsView: React.FC = () => {
     setSearchQuery('');
   };
 
-  // Helper to get real tracked minutes for a task
-  const getTaskTrackedMinutes = (task: Task) => {
+  // Helper to get real tracked seconds for a task
+  const getTaskTrackedSeconds = (task: Task) => {
     const isLive = activeFocusTaskId === task.id && isFocusTimerRunning;
-    const elapsedSec = isLive ? focusElapsedSeconds : (taskElapsedSeconds[task.id] || 0);
-    if (task.status === 'completed') {
-      return Math.max(task.duration || 0, Math.ceil(elapsedSec / 60));
-    }
+    const elapsedSec = isLive ? Math.max(focusElapsedSeconds, taskElapsedSeconds[task.id] || 0) : (taskElapsedSeconds[task.id] || 0);
     if (elapsedSec > 0) {
-      return Math.ceil(elapsedSec / 60);
+      return elapsedSec;
+    }
+    if (task.status === 'completed') {
+      return (task.duration || 30) * 60;
     }
     return 0;
   };
 
-  // 1. FOCUS TIME METRIC (100% Real User Data)
-  const todayFocusMinutes = useMemo(() => {
-    let sum = 0;
-    filteredTasks.forEach((t) => {
-      const isToday = !t.scheduledDate || t.scheduledDate === todayStr;
-      if (isToday) {
-        sum += getTaskTrackedMinutes(t);
-      }
-    });
-    return sum;
+  // 1. FOCUS TIME METRIC (100% Real User Data & Unified Centralized Engine)
+  const todayFocusSeconds = useMemo(() => {
+    return getDailyFocusSeconds(
+      todayStr,
+      filteredTasks,
+      taskElapsedSeconds,
+      activeFocusTaskId,
+      focusElapsedSeconds,
+      isFocusTimerRunning
+    );
   }, [filteredTasks, activeFocusTaskId, isFocusTimerRunning, focusElapsedSeconds, taskElapsedSeconds, todayStr]);
+
+  const todayFocusMinutes = Math.floor(todayFocusSeconds / 60);
 
   const yesterdayLog = useMemo(() => {
     return history.find((h) => h.date === yesterdayStr);
@@ -211,25 +214,26 @@ export const AnalyticsView: React.FC = () => {
 
   // 3. TOP CATEGORY METRIC (100% Real User Data)
   const categoryStats = useMemo(() => {
-    const counts: Record<Category, { minutes: number; tasks: number }> = {
-      Work: { minutes: 0, tasks: 0 },
-      Learning: { minutes: 0, tasks: 0 },
-      Personal: { minutes: 0, tasks: 0 },
-      Health: { minutes: 0, tasks: 0 },
-      Neutral: { minutes: 0, tasks: 0 },
+    const counts: Record<string, { seconds: number; tasks: number }> = {
+      Work: { seconds: 0, tasks: 0 },
+      Learning: { seconds: 0, tasks: 0 },
+      Personal: { seconds: 0, tasks: 0 },
+      Health: { seconds: 0, tasks: 0 },
+      Neutral: { seconds: 0, tasks: 0 },
     };
 
     filteredTasks.forEach((t) => {
-      const cat = (t.category as Category) || 'Work';
-      if (counts[cat]) {
-        counts[cat].minutes += getTaskTrackedMinutes(t);
-        counts[cat].tasks += 1;
+      const cat = t.category || 'Work';
+      if (!counts[cat]) {
+        counts[cat] = { seconds: 0, tasks: 0 };
       }
+      counts[cat].seconds += getTaskTrackedSeconds(t);
+      counts[cat].tasks += 1;
     });
 
-    const totalMin = Object.values(counts).reduce((a, b) => a + b.minutes, 0);
+    const totalSec = Object.values(counts).reduce((a, b) => a + b.seconds, 0);
 
-    const catColors: Record<Category, string> = {
+    const catColors: Record<string, string> = {
       Work: 'var(--color-primary)',
       Learning: '#8B5CF6',
       Personal: '#06B6D4',
@@ -237,15 +241,18 @@ export const AnalyticsView: React.FC = () => {
       Neutral: '#94A3B8',
     };
 
-    return Object.entries(counts).map(([cat, val]) => ({
-      name: cat === 'Learning' ? 'Study' : cat === 'Neutral' ? 'Other' : cat,
-      rawCategory: cat,
-      minutes: val.minutes,
-      tasks: val.tasks,
-      percentage: totalMin > 0 ? Math.round((val.minutes / totalMin) * 100) : 0,
-      duration: `${Math.floor(val.minutes / 60)}h ${val.minutes % 60}m`,
-      color: catColors[cat as Category],
-    }));
+    return Object.entries(counts).map(([cat, val]) => {
+      const catMinutes = Math.floor(val.seconds / 60);
+      return {
+        name: cat === 'Learning' ? 'Study' : cat === 'Neutral' ? 'Other' : cat,
+        rawCategory: cat,
+        minutes: catMinutes,
+        tasks: val.tasks,
+        percentage: totalSec > 0 ? Math.round((val.seconds / totalSec) * 100) : 0,
+        duration: `${Math.floor(catMinutes / 60)}h ${catMinutes % 60}m`,
+        color: catColors[cat] || 'var(--color-primary)',
+      };
+    });
   }, [filteredTasks, activeFocusTaskId, isFocusTimerRunning, focusElapsedSeconds, taskElapsedSeconds]);
 
   const topCategory = useMemo(() => {
@@ -496,7 +503,7 @@ export const AnalyticsView: React.FC = () => {
             { value: 'All', label: 'All Priorities' },
             { value: 'critical', label: 'Critical' },
             { value: 'important', label: 'Important' },
-            { value: 'flexible', label: 'Flexible' },
+            { value: 'regular', label: 'Regular' },
             { value: 'optional', label: 'Optional' },
           ]}
         />

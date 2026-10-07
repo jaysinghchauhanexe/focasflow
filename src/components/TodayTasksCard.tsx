@@ -70,7 +70,7 @@ export const TodayTasksCard: React.FC = () => {
 
   const filteredTasks = dayTasks.filter((t) => {
     if (activeFilter === 'important') return t.priority === 'critical' || t.priority === 'important';
-    if (activeFilter === 'regular') return t.priority === 'flexible' || t.priority === 'optional';
+    if (activeFilter === 'regular') return t.priority === 'regular' || t.priority === 'flexible' || t.priority === 'optional';
     return true;
   });
 
@@ -90,7 +90,7 @@ export const TodayTasksCard: React.FC = () => {
     if (t.status === 'completed') return 'bg-tag-health';
     if (t.priority === 'critical') return 'bg-[#E5484D]';
     if (t.priority === 'important') return 'bg-[#F97316]';
-    if (t.priority === 'flexible') return 'bg-[#D97706]';
+    if (t.priority === 'regular' || t.priority === 'flexible') return 'bg-[#D97706]';
     return 'bg-[#64748B]';
   };
 
@@ -120,7 +120,7 @@ export const TodayTasksCard: React.FC = () => {
                       : 'text-mutedText hover:text-foreground'
                     }`}
                 >
-                  {filter === 'all' ? 'All' : filter === 'important' ? 'Important' : 'Flexible'}
+                  {filter === 'all' ? 'All' : filter === 'important' ? 'Important' : 'Regular'}
                 </button>
               ))}
             </div>
@@ -413,7 +413,7 @@ export const TodayTasksCard: React.FC = () => {
         <button
           onClick={() =>
             navigateToTasks({
-              priority: activeFilter === 'important' ? 'important' : activeFilter === 'regular' ? 'flexible' : 'All',
+              priority: activeFilter === 'important' ? 'important' : activeFilter === 'regular' ? 'regular' : 'All',
             })
           }
           className="text-[13px] font-medium text-primary hover:underline underline-offset-4 tracking-wide cursor-pointer"

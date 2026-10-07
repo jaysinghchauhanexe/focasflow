@@ -51,6 +51,7 @@ import { formatTime12h } from '../engine/scheduler';
 import { CustomSelect } from '../components/CustomSelect';
 import { playClickSound } from '../utils/soundEffects';
 import { getDailyFocusSeconds, getWeeklyFocusData, calculateRealStreak, formatFocusTime } from '../utils/metrics';
+import { DoodleTasks } from '../components/DoodleIllustrations';
 
 const AVAILABLE_ICONS: { name: string; icon: React.FC<{ size?: number; className?: string }> }[] = [
   { name: 'Briefcase', icon: Briefcase },
@@ -132,7 +133,10 @@ export const TasksView: React.FC = () => {
     setTaskStatusFilter,
     setTaskSearchQuery,
     addCustomCategory,
+    deleteCategory,
     addCustomPriority,
+    deleteCustomPriority,
+    resetTaskTimer,
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'all' | 'today' | 'upcoming' | 'backlog'>('all');
@@ -219,30 +223,30 @@ export const TasksView: React.FC = () => {
   };
 
   // Metric 1: Tasks Done / Completion Rate for Active Date
-  const todayTasksList = useMemo(() => {
-    return tasks.filter((t) => t.scheduledDate === todayStr || (!t.scheduledDate && t.status !== 'completed'));
-  }, [tasks, todayStr]);
+  const activeDateTasksList = useMemo(() => {
+    return tasks.filter((t) => t.scheduledDate === activeDate || (activeDate === todayStr && !t.scheduledDate));
+  }, [tasks, activeDate, todayStr]);
 
-  const todayCompletedCount = useMemo(() => {
-    return tasks.filter((t) => t.status === 'completed' && (t.scheduledDate === todayStr || !t.scheduledDate)).length;
-  }, [tasks, todayStr]);
+  const activeDateCompletedCount = useMemo(() => {
+    return tasks.filter((t) => t.status === 'completed' && (t.scheduledDate === activeDate || (activeDate === todayStr && !t.scheduledDate))).length;
+  }, [tasks, activeDate, todayStr]);
 
-  const todayTotalCount = todayTasksList.length || 1;
-  const completionPercentage = Math.round((todayCompletedCount / todayTotalCount) * 100);
+  const activeDateTotalCount = activeDateTasksList.length;
+  const completionPercentage = activeDateTotalCount > 0 ? Math.round((activeDateCompletedCount / activeDateTotalCount) * 100) : 0;
 
-  // Metric 2: Accurate Focus Time Logged for Today
-  const todayFocusSec = useMemo(() => {
+  // Metric 2: Accurate Focus Time Logged for Active Date
+  const activeDateFocusSec = useMemo(() => {
     return getDailyFocusSeconds(
-      todayStr,
+      activeDate,
       tasks,
       taskElapsedSeconds,
       activeFocusTaskId,
       focusElapsedSeconds,
       isFocusTimerRunning
     );
-  }, [todayStr, tasks, taskElapsedSeconds, activeFocusTaskId, focusElapsedSeconds, isFocusTimerRunning]);
+  }, [activeDate, tasks, taskElapsedSeconds, activeFocusTaskId, focusElapsedSeconds, isFocusTimerRunning]);
 
-  const formattedFocus = formatFocusTime(todayFocusSec);
+  const formattedFocus = formatFocusTime(activeDateFocusSec);
 
   // Metric 3: Real Streak Calculation (Unified Centralized Engine)
   const { currentStreak, sparklinePoints } = useMemo(() => {
@@ -257,8 +261,8 @@ export const TasksView: React.FC = () => {
       if (taskPriorityFilter !== 'All' && taskPriorityFilter !== 'all') {
         if (taskPriorityFilter === 'important') {
           if (t.priority !== 'critical' && t.priority !== 'important') return false;
-        } else if (taskPriorityFilter === 'flexible') {
-          if (t.priority !== 'flexible') return false;
+        } else if (taskPriorityFilter === 'regular' || taskPriorityFilter === 'flexible') {
+          if (t.priority !== 'regular' && t.priority !== 'flexible') return false;
         } else if (taskPriorityFilter === 'optional') {
           if (t.priority !== 'optional') return false;
         } else if (t.priority !== taskPriorityFilter) {
@@ -351,57 +355,43 @@ export const TasksView: React.FC = () => {
   const getPriorityDot = (t: Task) => {
     if (t.status === 'completed') return 'bg-tag-health';
     if (t.priority === 'critical' || t.priority === 'important') return 'bg-[#E5484D]';
-    if (t.priority === 'flexible') return 'bg-[#D97706]';
+    if (t.priority === 'regular' || t.priority === 'flexible') return 'bg-[#D97706]';
     if (t.priority === 'optional') return 'bg-[#64748B]';
     return 'bg-[#6366F1]';
   };
 
   // Category counts & Icons breakdown (Icons instead of dots)
   const categoryData = useMemo(() => {
-    const map: Record<string, { label: string; count: number; icon: React.ReactNode; colorClass: string; customHex?: string }> = {
-      Work: {
-        label: 'Work',
-        count: 0,
-        icon: <Briefcase size={13} className="text-tag-work" />,
-        colorClass: 'badge-work',
-      },
-      Personal: {
-        label: 'Personal',
-        count: 0,
-        icon: <User size={13} className="text-tag-personal" />,
-        colorClass: 'badge-personal',
-      },
-      Health: {
-        label: 'Health',
-        count: 0,
-        icon: <Heart size={13} className="text-tag-health" />,
-        colorClass: 'badge-health',
-      },
-      Learning: {
-        label: 'Learning',
-        count: 0,
-        icon: <BookOpen size={13} className="text-tag-learning" />,
-        colorClass: 'badge-learning',
-      },
-      Neutral: {
-        label: 'Neutral',
-        count: 0,
-        icon: <Layers size={13} className="text-tag-neutral" />,
-        colorClass: 'badge-neutral',
-      },
+    const deletedCatSet = new Set((settings.deletedCategories || []).map(c => c.toLowerCase()));
+    const map: Record<string, { label: string; count: number; icon: React.ReactNode; colorClass: string; customHex?: string }> = {};
+
+    const defaultEntries: Record<string, { label: string; icon: React.ReactNode; colorClass: string }> = {
+      Work: { label: 'Work', icon: <Briefcase size={13} className="text-tag-work" />, colorClass: 'badge-work' },
+      Personal: { label: 'Personal', icon: <User size={13} className="text-tag-personal" />, colorClass: 'badge-personal' },
+      Health: { label: 'Health', icon: <Heart size={13} className="text-tag-health" />, colorClass: 'badge-health' },
+      Learning: { label: 'Learning', icon: <BookOpen size={13} className="text-tag-learning" />, colorClass: 'badge-learning' },
+      Neutral: { label: 'Neutral', icon: <Layers size={13} className="text-tag-neutral" />, colorClass: 'badge-neutral' },
     };
+
+    Object.entries(defaultEntries).forEach(([k, v]) => {
+      if (!deletedCatSet.has(k.toLowerCase())) {
+        map[k] = { ...v, count: 0 };
+      }
+    });
 
     if (settings.customCategories) {
       settings.customCategories.forEach((cc) => {
-        const IconComponent = AVAILABLE_ICONS.find(i => i.name === cc.iconName)?.icon || Sparkles;
-        const hex = cc.colorClass?.startsWith('#') ? cc.colorClass : undefined;
-        map[cc.label] = {
-          label: cc.label,
-          count: 0,
-          icon: <IconComponent size={13} style={hex ? { color: hex } : undefined} className={!hex ? "text-primary" : undefined} />,
-          colorClass: cc.colorClass || 'badge-work',
-          customHex: hex,
-        };
+        if (!deletedCatSet.has(cc.label.toLowerCase())) {
+          const IconComponent = AVAILABLE_ICONS.find(i => i.name === cc.iconName)?.icon || Sparkles;
+          const hex = cc.colorClass?.startsWith('#') ? cc.colorClass : undefined;
+          map[cc.label] = {
+            label: cc.label,
+            count: 0,
+            icon: <IconComponent size={13} style={hex ? { color: hex } : undefined} className={!hex ? "text-primary" : undefined} />,
+            colorClass: cc.colorClass || 'badge-work',
+            customHex: hex,
+          };
+        }
       });
     }
 
@@ -409,37 +399,37 @@ export const TasksView: React.FC = () => {
       const cat = t.category || 'Work';
       if (map[cat]) {
         map[cat].count++;
-      } else {
-        map.Work.count++;
       }
     });
 
     return map;
-  }, [tasks, settings.customCategories]);
+  }, [tasks, settings.customCategories, settings.deletedCategories]);
 
   // Priorities counts & Colored Dots breakdown (Dots only for priority level)
   const priorityData = useMemo(() => {
     const map: Record<string, { label: string; count: number; dotColor: string }> = {
       important: { label: 'Important', count: 0, dotColor: 'bg-[#E5484D]' },
-      flexible: { label: 'Flexible', count: 0, dotColor: 'bg-[#D97706]' },
+      regular: { label: 'Regular', count: 0, dotColor: 'bg-[#D97706]' },
       optional: { label: 'Optional', count: 0, dotColor: 'bg-[#64748B]' },
     };
 
     if (settings.customPriorities) {
       settings.customPriorities.forEach((cp) => {
-        map[cp.id] = {
-          label: cp.label,
-          count: 0,
-          dotColor: cp.dotColor,
-        };
+        if (!['important', 'regular', 'flexible', 'optional'].includes(cp.id.toLowerCase())) {
+          map[cp.id] = {
+            label: cp.label,
+            count: 0,
+            dotColor: cp.dotColor || 'bg-[#6366F1]',
+          };
+        }
       });
     }
 
     tasks.forEach((t) => {
       if (t.priority === 'critical' || t.priority === 'important') {
         map.important.count++;
-      } else if (t.priority === 'flexible') {
-        map.flexible.count++;
+      } else if (t.priority === 'regular' || t.priority === 'flexible') {
+        map.regular.count++;
       } else if (t.priority === 'optional') {
         map.optional.count++;
       } else if (map[t.priority]) {
@@ -671,6 +661,19 @@ export const TasksView: React.FC = () => {
                   <ArrowRight size={13} />
                   <span>Skip task</span>
                 </button>
+                {elapsedSeconds > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetTaskTimer(task.id);
+                      setActiveMenuId(null);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-mutedText hover:text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
+                  >
+                    <RotateCcw size={13} />
+                    <span>Reset timer</span>
+                  </button>
+                )}
                 <div className="my-1 border-t border-borderToken" />
                 <button
                   type="button"
@@ -694,14 +697,17 @@ export const TasksView: React.FC = () => {
   return (
     <div className="space-y-5 animate-fade-in pb-12 sm:pb-16 select-none max-w-[1600px] mx-auto">
       {/* 1. TOP PAGE TITLE CARD */}
-      <div className="bg-card rounded-[28px] p-5 sm:p-6 shadow-soft flex flex-wrap items-center justify-between gap-4 transition-all duration-300">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-semibold text-foreground tracking-tight">
-            My Tasks
-          </h1>
-          <p className="text-[13px] sm:text-[14px] text-mutedText mt-0.5">
-            Turn your intentions into progress. One step at a time.
-          </p>
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 flex flex-wrap items-center justify-between gap-4 transition-colors">
+        <div className="flex items-center gap-4">
+          <DoodleTasks size={58} className="flex-shrink-0" />
+          <div>
+            <h2 className="text-[24px] sm:text-[26px] font-serif font-medium text-foreground tracking-tight">
+              My Tasks
+            </h2>
+            <p className="text-[13px] text-mutedText mt-0.5">
+              Turn your intentions into progress. One step at a time.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap ml-auto">
@@ -726,34 +732,13 @@ export const TasksView: React.FC = () => {
             )}
           </div>
 
-          {/* Filter Reset / Toggle Icon */}
-          <button
-            type="button"
-            onClick={() => {
-              playClickSound();
-              if (taskCategoryFilter !== 'All' || taskPriorityFilter !== 'All' || taskStatusFilter !== 'All') {
-                setTaskCategoryFilter('All');
-                setTaskPriorityFilter('All');
-                setTaskStatusFilter('All');
-              }
-            }}
-            title={taskCategoryFilter !== 'All' || taskPriorityFilter !== 'All' || taskStatusFilter !== 'All' ? "Reset filters" : "Filters"}
-            className={`h-[38px] px-3 rounded-2xl border border-borderToken flex items-center justify-center transition-colors cursor-pointer ${
-              taskCategoryFilter !== 'All' || taskPriorityFilter !== 'All' || taskStatusFilter !== 'All'
-                ? 'bg-primary-soft text-primary border-primary'
-                : 'bg-card-subtle text-mutedText hover:text-foreground hover:bg-card-muted'
-            }`}
-          >
-            <SlidersHorizontal size={14} />
-          </button>
-
-          {/* Master + New Task Button */}
+          {/* Primary New Task Button */}
           <button
             type="button"
             onClick={() => openTaskModal()}
-            className="flex items-center gap-1.5 px-4 h-[38px] rounded-2xl bg-primary hover:bg-primary-hover active:bg-primary-active text-white text-[13px] font-semibold transition-all shadow-xs cursor-pointer flex-shrink-0"
+            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all shadow-xs cursor-pointer active:scale-95"
           >
-            <Plus size={15} strokeWidth={2.5} />
+            <Plus size={15} />
             <span>New Task</span>
           </button>
         </div>
@@ -865,7 +850,7 @@ export const TasksView: React.FC = () => {
           </div>
           <div>
             <div className="text-[17px] font-serif font-semibold text-foreground leading-none">
-              {todayCompletedCount} / {todayTotalCount}
+              {activeDateCompletedCount} / {activeDateTotalCount}
             </div>
             <p className="text-[11px] text-mutedText mt-1">Tasks done</p>
           </div>
@@ -1394,22 +1379,35 @@ export const TasksView: React.FC = () => {
                       playClickSound();
                       setTaskCategoryFilter(isFiltered ? 'All' : catKey);
                     }}
-                    className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors ${
+                    className={`group/cat flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors ${
                       isFiltered
                         ? 'bg-primary-soft text-primary font-semibold'
                         : 'hover:bg-card-subtle text-foreground'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <div
                         className={`w-6 h-6 rounded-lg flex items-center justify-center ${data.colorClass}`}
                         style={hasCustomColor ? { backgroundColor: `${data.customHex}1f`, color: data.customHex } : undefined}
                       >
                         {data.icon}
                       </div>
-                      <span className="text-[12.5px] font-medium">{data.label}</span>
+                      <span className="text-[12.5px] font-medium truncate">{data.label}</span>
                     </div>
-                    <span className="text-[11.5px] font-mono text-mutedText font-semibold">{data.count}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11.5px] font-mono text-mutedText font-semibold">{data.count}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteCategory(catKey);
+                        }}
+                        title={`Delete ${data.label} category`}
+                        className="opacity-0 group-hover/cat:opacity-100 p-1 text-mutedText hover:text-tag-important transition-opacity cursor-pointer rounded-lg hover:bg-tag-importantBg"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -1498,6 +1496,7 @@ export const TasksView: React.FC = () => {
             <div className="space-y-1.5">
               {Object.entries(priorityData).map(([prioKey, data]) => {
                 const isFiltered = taskPriorityFilter === prioKey;
+                const isCustom = !['important', 'regular', 'flexible', 'optional'].includes(prioKey.toLowerCase());
                 return (
                   <div
                     key={prioKey}
@@ -1505,17 +1504,32 @@ export const TasksView: React.FC = () => {
                       playClickSound();
                       setTaskPriorityFilter(isFiltered ? 'All' : (prioKey as any));
                     }}
-                    className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors ${
+                    className={`group/prio flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors ${
                       isFiltered
                         ? 'bg-primary-soft text-primary font-semibold'
                         : 'hover:bg-card-subtle text-foreground'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <span className={`w-2.5 h-2.5 rounded-full ${data.dotColor} flex-shrink-0`} />
-                      <span className="text-[12.5px] font-medium">{data.label}</span>
+                      <span className="text-[12.5px] font-medium truncate">{data.label}</span>
                     </div>
-                    <span className="text-[11.5px] font-mono text-mutedText font-semibold">{data.count}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11.5px] font-mono text-mutedText font-semibold">{data.count}</span>
+                      {isCustom && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteCustomPriority(prioKey);
+                          }}
+                          title={`Delete ${data.label} priority`}
+                          className="opacity-0 group-hover/prio:opacity-100 p-1 text-mutedText hover:text-tag-important transition-opacity cursor-pointer rounded-lg hover:bg-tag-importantBg"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
