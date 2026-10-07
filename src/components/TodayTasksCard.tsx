@@ -127,8 +127,9 @@ export const TodayTasksCard: React.FC = () => {
 
             {/* + Add Task Button */}
             <button
+              type="button"
               onClick={() => openTaskModal()}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-[12.5px] font-medium transition-all"
+              className="flex items-center gap-1.5 px-3.5 h-[34px] rounded-2xl bg-primary hover:bg-primary-hover active:bg-primary-active text-white text-[12.5px] font-semibold transition-all cursor-pointer shadow-xs"
             >
               <Plus size={14} />
               <span>Add Task</span>

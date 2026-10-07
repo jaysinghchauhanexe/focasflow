@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { CustomSelect } from './CustomSelect';
 
 export const TaskModal: React.FC = () => {
-  const { isTaskModalOpen, closeTaskModal, editingTask, addTask, updateTask, selectedDate } = useAppStore();
+  const { isTaskModalOpen, closeTaskModal, editingTask, addTask, updateTask, selectedDate, settings, addCustomPriority } = useAppStore();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -21,14 +21,6 @@ export const TaskModal: React.FC = () => {
 
   const [customPriorityInput, setCustomPriorityInput] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
-  const [customPriorities, setCustomPriorities] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('focusflow_custom_priorities');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
 
   useEffect(() => {
     if (editingTask) {
@@ -128,19 +120,20 @@ export const TaskModal: React.FC = () => {
   const saveCustomPriority = (newTag: string) => {
     const trimmed = newTag.trim();
     if (!trimmed) return;
-    if (!customPriorities.includes(trimmed)) {
-      const next = [...customPriorities, trimmed];
-      setCustomPriorities(next);
-      try {
-        localStorage.setItem('focusflow_custom_priorities', JSON.stringify(next));
-      } catch {}
-    }
-    setPriority(trimmed);
+    const prioKey = trimmed.toLowerCase().replace(/\s+/g, '-');
+    addCustomPriority({
+      id: prioKey,
+      label: trimmed,
+      dotColor: '#0EA5E9',
+    });
+    setPriority(prioKey);
     setCustomPriorityInput('');
     setShowCustomInput(false);
   };
 
-  const categories: Category[] = ['Health', 'Work', 'Personal', 'Learning', 'Neutral'];
+  const defaultCategories: Category[] = ['Health', 'Work', 'Personal', 'Learning', 'Neutral'];
+  const customCatLabels = (settings?.customCategories || []).map(c => c.label);
+  const categories: Category[] = Array.from(new Set([...defaultCategories, ...customCatLabels])) as Category[];
 
   const defaultPriorities: {
     id: Priority;
@@ -179,6 +172,10 @@ export const TaskModal: React.FC = () => {
       textClass: 'text-[#475569] dark:text-[#94A3B8]',
     },
   ];
+
+  const customPrioritiesList = (settings?.customPriorities || []).filter(
+    (cp) => !['important', 'flexible', 'optional'].includes(cp.id)
+  );
 
   return (
     <div 
@@ -417,23 +414,24 @@ export const TaskModal: React.FC = () => {
             </div>
 
             {/* Custom Created Priority Badges if any exist */}
-            {customPriorities.length > 0 && (
+            {customPrioritiesList.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap mt-2.5 pt-2 border-t border-borderToken/50">
                 <span className="text-[11px] text-mutedText font-medium">Custom tags:</span>
-                {customPriorities.map((tag) => {
-                  const isSel = priority === tag;
+                {customPrioritiesList.map((cp) => {
+                  const isSel = priority === cp.id || priority === cp.label;
                   return (
                     <button
-                      key={tag}
+                      key={cp.id}
                       type="button"
-                      onClick={() => setPriority(tag)}
-                      className={`px-2.5 py-1 rounded-xl text-[11.5px] font-medium transition-all cursor-pointer border ${
+                      onClick={() => setPriority(cp.id)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11.5px] font-medium transition-all cursor-pointer border ${
                         isSel
                           ? 'bg-primary-soft text-primary border-primary font-semibold'
                           : 'bg-card-subtle text-textSecondary border-borderToken hover:text-foreground'
                       }`}
                     >
-                      {tag}
+                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: cp.dotColor || '#0EA5E9' }} />
+                      <span>{cp.label}</span>
                     </button>
                   );
                 })}

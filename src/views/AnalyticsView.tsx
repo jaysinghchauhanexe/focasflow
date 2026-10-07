@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { DoodleAnalytics } from '../components/DoodleIllustrations';
 import { CustomSelect } from '../components/CustomSelect';
+import { calculateRealStreak, getDailyFocusSeconds } from '../utils/metrics';
 
 interface PillDropdownProps {
   value: string;
@@ -255,20 +256,10 @@ export const AnalyticsView: React.FC = () => {
     return { name: 'Work', percentage: 0 };
   }, [categoryStats]);
 
-  // 4. CURRENT STREAK (100% Real User Data)
+  // 4. CURRENT STREAK (Unified Centralized Metrics Engine)
   const currentStreakDays = useMemo(() => {
-    let streak = 0;
-    const sortedHist = [...history].sort((a, b) => b.date.localeCompare(a.date));
-    for (const h of sortedHist) {
-      if (h.completedTasksCount > 0 || h.completedMinutes > 0) {
-        streak++;
-      } else {
-        break;
-      }
-    }
-    if (todayCompletedCount > 0) streak++;
-    return streak;
-  }, [history, todayCompletedCount]);
+    return calculateRealStreak(tasks, habits, history).currentStreak;
+  }, [tasks, habits, history]);
 
   // 5. FOCUS TIME TREND (100% Real 7-Day Calculation)
   const last7DaysData = useMemo(() => {

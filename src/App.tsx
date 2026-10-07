@@ -12,6 +12,7 @@ import { HistoryView } from './views/HistoryView';
 import { SettingsView } from './views/SettingsView';
 import { PreferencesView } from './views/PreferencesView';
 import { AiAssistantView } from './views/AiAssistantView';
+import { ProfileView } from './views/ProfileView';
 import { TaskModal } from './components/TaskModal';
 import { HabitModal } from './components/HabitModal';
 import { CommitmentModal } from './components/CommitmentModal';
@@ -94,6 +95,8 @@ export const App: React.FC = () => {
         return <SettingsView />;
       case 'preferences':
         return <PreferencesView />;
+      case 'profile':
+        return <ProfileView />;
       default:
         return <TodayView />;
     }

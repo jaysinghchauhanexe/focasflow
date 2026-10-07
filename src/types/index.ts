@@ -125,8 +125,27 @@ export interface UserPreferences {
   showAiOperationsByDefault: boolean;
 }
 
+export interface CustomCategoryItem {
+  id: string;
+  label: string;
+  iconName: string;
+  colorClass?: string;
+}
+
+export interface CustomPriorityItem {
+  id: string;
+  label: string;
+  dotColor: string;
+}
+
 export interface AppSettings {
   userName: string;
+  userAvatar?: string;
+  userRole?: string;
+  userBio?: string;
+  aiUserContext?: string;
+  customCategories?: CustomCategoryItem[];
+  customPriorities?: CustomPriorityItem[];
   wakeTime: string; // e.g. "07:00"
   sleepTime: string; // e.g. "23:00"
   workStart: string; // e.g. "09:00"

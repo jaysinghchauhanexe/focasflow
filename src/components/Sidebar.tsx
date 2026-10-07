@@ -26,7 +26,8 @@ export const Sidebar: React.FC = () => {
     tasks,
     isSidebarCollapsed,
     toggleSidebar,
-    navigateToTasks
+    navigateToTasks,
+    settings
   } = useAppStore();
 
   const pendingTasksCount = tasks.filter(t => t.status !== 'completed' && t.status !== 'skipped').length;
@@ -266,17 +267,35 @@ export const Sidebar: React.FC = () => {
           })}
         </div>
 
-        {/* User Profile Card */}
-        <div
-          className="h-12 w-full px-2 rounded-2xl bg-card-subtle flex items-center transition-all duration-300 relative overflow-hidden"
-          title={isSidebarCollapsed ? 'Jay (Active)' : undefined}
+        {/* User Profile Card Button */}
+        <button
+          type="button"
+          onClick={() => setCurrentTab('profile')}
+          className={`h-12 w-full px-2 rounded-2xl flex items-center transition-all duration-300 relative overflow-hidden group cursor-pointer text-left ${
+            currentTab === 'profile'
+              ? 'bg-primary-soft border border-primary/20'
+              : 'bg-card-subtle hover:bg-card-muted border border-borderToken'
+          }`}
+          title={isSidebarCollapsed ? `${settings.userName || 'Jay'} (Profile & AI Persona)` : undefined}
         >
-          <div className="relative flex-shrink-0 w-8 h-8 rounded-full overflow-hidden border border-card shadow-xs">
-            <img
-              src="/avatar_jay.jpg"
-              alt="Jay"
-              className="w-full h-full object-cover"
-            />
+          <div className="relative flex-shrink-0 w-8 h-8 rounded-full overflow-hidden border border-card shadow-xs bg-primary-soft flex items-center justify-center">
+            {settings.userAvatar ? (
+              <img
+                src={settings.userAvatar}
+                alt={settings.userName || 'Jay'}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <img
+                src="/avatar_jay.jpg"
+                alt={settings.userName || 'Jay'}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback to initial if image fails
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
+            )}
           </div>
 
           {/* Sliding & Fading user details */}
@@ -290,8 +309,14 @@ export const Sidebar: React.FC = () => {
             }}
           >
             <div className="text-left min-w-0">
-              <h4 className="text-[13px] font-semibold text-foreground leading-tight truncate">Jay</h4>
-              <p className="text-[10.5px] text-mutedText font-medium leading-tight mt-0.5 truncate">Stay calm & focused</p>
+              <h4 className={`text-[13px] font-semibold leading-tight truncate ${
+                currentTab === 'profile' ? 'text-primary' : 'text-foreground'
+              }`}>
+                {settings.userName || 'Jay'}
+              </h4>
+              <p className="text-[10.5px] text-mutedText font-medium leading-tight mt-0.5 truncate">
+                {settings.userRole || 'Stay calm & focused'}
+              </p>
             </div>
             <span className="w-2 h-2 rounded-full bg-tag-health flex-shrink-0 ml-2" title="Active" />
           </div>
@@ -305,7 +330,7 @@ export const Sidebar: React.FC = () => {
               pointerEvents: 'none',
             }}
           />
-        </div>
+        </button>
       </div>
     </aside>
   );

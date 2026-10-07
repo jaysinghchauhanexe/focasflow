@@ -1,15 +1,17 @@
-import { AiRequestContext, AiResponsePayload, Task, Habit, AppSettings } from '../types';
+import { AiRequestContext, AiResponsePayload, Task, Habit, AppSettings, AiOperation } from '../types';
 import { runInAppInference, extractJsonFromText } from './webLlmService';
 
 export function hasExplicitActionIntent(userMessage: string): boolean {
   const msg = userMessage.toLowerCase().trim();
 
   // Pure conversational / praise / casual remarks (no action intent)
-  const isCasualPraise = /\b(you are|you're|good job|great job|well done|thank you|thanks|hello|hi|hey|cool|nice|awesome|amazing|who are you|how are you|love this|tell me|what is|how do)\b/i.test(msg);
+  const isCasualPraise = /\b(you are|you're|good job|great job|well done|thank you|thanks|hello|hi|hey|cool|nice|awesome|amazing|who are you|how are you|love this)\b/i.test(msg);
 
   const hasAddAction = /\b(add|schedule|create|plan|todo|remind me|set up)\b/i.test(msg) ||
     /\b(\d+m|\d+\s*min|\d+\s*hour)\s+(task|block|session)\b/i.test(msg) ||
     /\b(meeting|sync|call|appointment)\s+at\s+\d+/i.test(msg);
+
+  const hasTaskInquiryAction = /\b(what tasks|what should i do|what to do|suggest tasks|generate tasks|recommend tasks|plan my|tasks for (today|tomorrow)|give me tasks|create tasks for|what do i do|what work)\b/i.test(msg);
 
   const hasDeleteAction = /\b(delete|remove|clear|drop|cancel task|trash)\b/i.test(msg);
 
@@ -17,11 +19,11 @@ export function hasExplicitActionIntent(userMessage: string): boolean {
 
   const hasOrganizeAction = /\b(reorganize|replan|organize my (day|tasks|schedule)|optimize schedule)\b/i.test(msg);
 
-  if (isCasualPraise && !hasAddAction && !hasDeleteAction && !hasModifyAction && !hasOrganizeAction) {
+  if (isCasualPraise && !hasAddAction && !hasTaskInquiryAction && !hasDeleteAction && !hasModifyAction && !hasOrganizeAction) {
     return false;
   }
 
-  return hasAddAction || hasDeleteAction || hasModifyAction || hasOrganizeAction;
+  return hasAddAction || hasTaskInquiryAction || hasDeleteAction || hasModifyAction || hasOrganizeAction;
 }
 
 export function sanitizeAssistantMessage(
@@ -118,8 +120,15 @@ export async function sendAiCommand(
     model: settings.openRouterModel || 'anthropic/claude-3.5-haiku',
   };
 
+  const userPersonaInfo = settings.aiUserContext
+    ? `- User Name: ${settings.userName || 'Jay'} (${settings.userRole || 'User'})\n- User Bio: ${settings.userBio || ''}\n- USER PERSONA & INSTRUCTIONS:\n"""\n${settings.aiUserContext}\n"""\n(CRITICAL: Tailor all your recommendations, task generation, technical language, and plans directly to this user's tech stack, background, and stated working preferences!)`
+    : `- User Name: ${settings.userName || 'Jay'} (${settings.userRole || 'User'})\n- User Bio: ${settings.userBio || ''}`;
+
   const systemPrompt = `You are FocasFlow AI, the automated schedule and task engine built into FocasFlow.
 You have FULL programmatic control over the task list and schedule. You can and MUST perform operations when asked.
+
+User Information & Context:
+${userPersonaInfo}
 
 Current Context:
 - Date: ${currentDate}, Time: ${currentTime}
@@ -142,12 +151,17 @@ MANDATORY ACTION EXECUTION RULES:
    - Output { "op_type": "DELETE_TASK", "title": "Resolved Task Title" }
    - NEVER output conversational text or questions like "can you delete it?" as the task title!
 3. GREETINGS, PRAISE, COMPLIMENTS & CASUAL CHAT:
-   - When the user sends compliments, praise (e.g. "you are the great", "you're the best", "good job", "thanks"), greetings ("hello", "hi"), questions, or casual conversation WITHOUT an explicit command to add/delete/change tasks:
+   - When the user sends compliments, praise (e.g. "you are the great", "you're the best", "good job", "thanks"), greetings ("hello", "hi"), or casual chatter WITHOUT asking for tasks/schedule actions:
    - MANDATORY: YOU MUST SET "operations": [] (EMPTY ARRAY)!
    - NEVER create, delete, or modify any task on casual chatter!
-   - Reply warmly and politely with genuine appreciation (e.g. "Thank you so much! I'm here to help you stay focused and organized. What would you like to work on today?").
-   - CRITICAL: NEVER parrot or echo the user's praise or words back at them (do NOT reply "You are the great." or "You are the best!")!
-4. ADDING TASKS: When the user asks to add or schedule tasks, generate "ADD_TASK" with title, duration_minutes, priority, and category.
+   - Reply warmly and politely with genuine appreciation.
+   - CRITICAL: NEVER parrot or echo the user's praise or words back at them!
+4. ADDING TASKS & INTELLIGENT TASK SUGGESTIONS:
+   - When the user asks to add or schedule tasks, generate "ADD_TASK" with title, duration_minutes, priority, and category.
+   - When the user asks "what tasks should I do tomorrow?", "what tasks should I do today?", "what should I do?", "suggest tasks", or "plan my day":
+     * ALWAYS generate 2 to 4 concrete, actionable "ADD_TASK" operations tailored directly to the user's persona/tech stack/profile context!
+     * Set target_date appropriately ("tomorrow" if asking for tomorrow, or "today" if asking for today).
+     * Provide a helpful, motivating message presenting the proposed focus plan so the user can click "Apply Changes" directly!
 5. MOVING / SKIPPING / COMPLETING / UPDATING: Generate "MOVE_TASK", "SKIP_TASK", "COMPLETE_TASK", or "UPDATE_TASK".
 
 Supported op_types: "ADD_TASK", "DELETE_TASK", "UPDATE_TASK", "MOVE_TASK", "SKIP_TASK", "COMPLETE_TASK", "CREATE_HABIT", "ADD_COMMITMENT", "REPLAN_DAY"
@@ -475,6 +489,54 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
       modelUsed: 'Offline Rule-Based Heuristic',
       latencyMs: 1,
       warning: 'AI Model is offline. Response generated with built-in heuristic rules.',
+    };
+  }
+
+  // 1b. Task Suggestions & Planning Inquiries ("what tasks should i do tomorrow?", "suggest tasks", "what should i do today?")
+  const isTaskInquiry = /\b(what tasks|what should i do|what to do|suggest tasks|generate tasks|recommend tasks|plan my|tasks for (today|tomorrow)|give me tasks|create tasks for|what do i do|what work)\b/i.test(msg);
+  if (isTaskInquiry) {
+    const isTomorrow = msg.includes('tomorrow');
+    const targetDate = isTomorrow ? 'tomorrow' : 'today';
+    const dayLabel = isTomorrow ? 'tomorrow' : 'today';
+
+    const ops: AiOperation[] = [
+      {
+        op_type: 'ADD_TASK',
+        title: 'Deep Focus: Core Architecture & Implementation',
+        duration_minutes: 45,
+        priority: 'important',
+        category: 'Work',
+        target_date: targetDate,
+      },
+      {
+        op_type: 'ADD_TASK',
+        title: 'Code Review & Technical Refinement',
+        duration_minutes: 30,
+        priority: 'flexible',
+        category: 'Work',
+        target_date: targetDate,
+      },
+      {
+        op_type: 'ADD_TASK',
+        title: 'Skill Expansion & Research',
+        duration_minutes: 30,
+        priority: 'optional',
+        category: 'Learning',
+        target_date: targetDate,
+      }
+    ];
+
+    return {
+      message: `Here is a curated focus plan for ${dayLabel} based on your profile context. You can click "Apply Changes" below to add these focus blocks directly to your schedule:`,
+      operations: ops,
+      suggestions: [
+        `Change deep focus block to 60 min`,
+        `Move skill expansion to evening`,
+        `Add a quick 15m review session`
+      ],
+      engineSource: 'heuristic_fallback',
+      modelUsed: 'Offline Rule-Based Heuristic',
+      latencyMs: 1,
     };
   }
 

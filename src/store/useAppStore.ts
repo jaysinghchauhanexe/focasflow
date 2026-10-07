@@ -23,7 +23,7 @@ import { calculateDayCapacity, buildDaySchedule } from '../engine/scheduler';
 import { playCompletionSound } from '../utils/soundEffects';
 
 interface AppState {
-  currentTab: 'today' | 'tasks' | 'analytics' | 'habits' | 'routines' | 'goals' | 'schedule' | 'history' | 'settings' | 'preferences' | 'ai-planner';
+  currentTab: 'today' | 'tasks' | 'analytics' | 'habits' | 'routines' | 'goals' | 'schedule' | 'history' | 'settings' | 'preferences' | 'ai-planner' | 'profile';
   selectedDate: string; // YYYY-MM-DD
   tasks: Task[];
   habits: Habit[];
@@ -142,6 +142,13 @@ interface AppState {
   addGoal: (goal: Omit<Goal, 'id'>) => void;
   updateGoal: (goal: Goal) => void;
   deleteGoal: (id: string) => void;
+
+  // Custom Categories & Priorities Actions
+  addCustomCategory: (category: { id: string; label: string; iconName: string; colorClass?: string }) => void;
+  deleteCustomCategory: (id: string) => void;
+  addCustomPriority: (priority: { id: string; label: string; dotColor: string }) => void;
+  deleteCustomPriority: (id: string) => void;
+  updateUserProfile: (profile: Partial<AppSettings>) => void;
 
   // Settings & Preferences Actions
   updateSettings: (newSettings: Partial<AppSettings>) => void;
@@ -735,6 +742,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   toggleTaskStatus: (id) => {
     set((state) => {
       let isNowCompleted = false;
+      const targetTask = state.tasks.find(t => t.id === id);
       const updated: Task[] = state.tasks.map((t) => {
         if (t.id === id) {
           const nextStatus: TaskStatus = t.status === 'completed' ? 'pending' : 'completed';
@@ -743,14 +751,26 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
         return t;
       });
+
       if (isNowCompleted) {
         playCompletionSound();
       }
+
       savePersisted('tasks', updated);
-      const isCurrentActive = state.activeFocusTaskId === id && isNowCompleted;
+
+      const isCurrentActive = state.activeFocusTaskId === id;
+      let nextElapsedMap = { ...state.taskElapsedSeconds };
+
+      // If active focus timer was running on this task, save real tracked seconds
+      if (isCurrentActive && state.focusElapsedSeconds > 0) {
+        nextElapsedMap[id] = state.focusElapsedSeconds;
+        savePersisted('task_elapsed_seconds', nextElapsedMap);
+      }
+
       return { 
         tasks: updated,
-        ...(isCurrentActive ? { isFocusTimerRunning: false, focusElapsedSeconds: 0, activeFocusTaskId: null } : {})
+        taskElapsedSeconds: nextElapsedMap,
+        ...(isCurrentActive && isNowCompleted ? { isFocusTimerRunning: false, focusElapsedSeconds: 0, activeFocusTaskId: null } : {})
       };
     });
     get().replanDay();
@@ -962,6 +982,54 @@ export const useAppStore = create<AppState>((set, get) => ({
       const updated = state.goals.filter((g) => g.id !== id);
       savePersisted('goals', updated);
       return { goals: updated };
+    });
+  },
+
+  addCustomCategory: (cat) => {
+    set((state) => {
+      const existing = state.settings.customCategories || [];
+      const updated = [...existing.filter(c => c.id !== cat.id), cat];
+      const updatedSettings: AppSettings = { ...state.settings, customCategories: updated };
+      savePersisted('settings', updatedSettings);
+      return { settings: updatedSettings };
+    });
+  },
+
+  deleteCustomCategory: (id) => {
+    set((state) => {
+      const existing = state.settings.customCategories || [];
+      const updated = existing.filter(c => c.id !== id);
+      const updatedSettings: AppSettings = { ...state.settings, customCategories: updated };
+      savePersisted('settings', updatedSettings);
+      return { settings: updatedSettings };
+    });
+  },
+
+  addCustomPriority: (prio) => {
+    set((state) => {
+      const existing = state.settings.customPriorities || [];
+      const updated = [...existing.filter(p => p.id !== prio.id), prio];
+      const updatedSettings: AppSettings = { ...state.settings, customPriorities: updated };
+      savePersisted('settings', updatedSettings);
+      return { settings: updatedSettings };
+    });
+  },
+
+  deleteCustomPriority: (id) => {
+    set((state) => {
+      const existing = state.settings.customPriorities || [];
+      const updated = existing.filter(p => p.id !== id);
+      const updatedSettings: AppSettings = { ...state.settings, customPriorities: updated };
+      savePersisted('settings', updatedSettings);
+      return { settings: updatedSettings };
+    });
+  },
+
+  updateUserProfile: (profile) => {
+    set((state) => {
+      const updated: AppSettings = { ...state.settings, ...profile };
+      savePersisted('settings', updated);
+      return { settings: updated };
     });
   },
 

@@ -986,7 +986,7 @@ export const AiAssistantView: React.FC = () => {
                           {/* User Profile Avatar */}
                           <div className="w-8 h-8 rounded-full overflow-hidden bg-primary-soft text-primary flex items-center justify-center flex-shrink-0 mt-1 border border-borderToken shadow-xs">
                             <img
-                              src="/avatar_jay.jpg"
+                              src={settings.userAvatar || '/avatar_jay.jpg'}
                               alt={userName}
                               className="w-full h-full object-cover"
                               onError={(e) => {
