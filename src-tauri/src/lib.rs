@@ -442,6 +442,13 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            use tauri::Manager;
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_decorations(false);
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_all_data,
             save_task,

@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "identifier": "com.focusflow.desktop",
   "build": {
-    "beforeDevCommand": "npm run build",
+    "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
     "devUrl": "http://localhost:1420",
     "frontendDist": "../dist"
@@ -20,7 +20,7 @@
         "minHeight": 700,
         "resizable": true,
         "fullscreen": false,
-        "decorations": true,
+        "decorations": false,
         "transparent": false,
         "center": true
       }
@@ -38,6 +38,11 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
   }
 }

@@ -23,6 +23,8 @@ import { MoodInsightModal } from './components/MoodInsightModal';
 import { LofiBackgroundPlayer } from './components/LofiBackgroundPlayer';
 import { setupGlobalClickSoundListener } from './utils/soundEffects';
 
+import { TitleBar } from './components/TitleBar';
+
 export const App: React.FC = () => {
   const { currentTab, replanDay, settings, isFocusTimerRunning, setFocusElapsedSeconds } = useAppStore();
 
@@ -84,15 +86,21 @@ export const App: React.FC = () => {
   return (
     <div
       data-theme={settings.theme || 'green'}
-      className="flex h-screen w-screen bg-background p-5 lg:p-6 overflow-hidden gap-6 font-sans antialiased text-foreground transition-colors duration-200"
+      className="flex flex-col h-screen w-screen bg-background overflow-hidden font-sans antialiased text-foreground transition-colors duration-200"
     >
-      {/* Sidebar Navigation */}
-      <Sidebar />
+      {/* Top Custom Frameless Title Bar */}
+      <TitleBar />
 
-      {/* Main Content Area */}
-      <main className="flex-1 h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pr-1">
-        {renderActiveView()}
-      </main>
+      {/* Main Workspace Layout */}
+      <div className="flex flex-1 overflow-hidden p-5 lg:p-6 gap-6 pt-3">
+        {/* Sidebar Navigation */}
+        <Sidebar />
+
+        {/* Main Content Area */}
+        <main className="flex-1 h-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pr-1">
+          {renderActiveView()}
+        </main>
+      </div>
 
       {/* Modals & Dialogs */}
       <TaskModal />
