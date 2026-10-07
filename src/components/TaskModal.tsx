@@ -1,26 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { Category, Priority } from '../types';
-import { X } from 'lucide-react';
+import { Category, Priority, Subtask } from '../types';
+import { X, Sprout, Calendar, Clock, Briefcase, Flag, GripVertical, Trash2, Plus, RefreshCw, Archive, Link as LinkIcon, FileText, Info, Circle } from 'lucide-react';
+import { CustomTimePicker } from './CustomTimePicker';
 import { CustomSelect } from './CustomSelect';
 
 export const TaskModal: React.FC = () => {
-  const { isTaskModalOpen, closeTaskModal, editingTask, addTask, updateTask, selectedDate, settings, addCustomPriority } = useAppStore();
+  const { isTaskModalOpen, closeTaskModal, editingTask, addTask, updateTask, selectedDate, settings } = useAppStore();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState(45);
   const [category, setCategory] = useState<Category>('Work');
   const [priority, setPriority] = useState<Priority>('important');
-  const [deadline, setDeadline] = useState('');
   const [scheduledStart, setScheduledStart] = useState('');
-  const [scheduledEnd, setScheduledEnd] = useState('');
-  const [flexibility, setFlexibility] = useState<'flexible' | 'fixed'>('flexible');
-  const [timeMode, setTimeMode] = useState<'duration' | 'scheduled'>('duration');
   const [taskDate, setTaskDate] = useState<string>(selectedDate || new Date().toISOString().split('T')[0]);
 
-  const [customPriorityInput, setCustomPriorityInput] = useState('');
-  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [isCustomDuration, setIsCustomDuration] = useState(false);
+  const [customDurationValue, setCustomDurationValue] = useState('45');
+
+  const [renderOpen, setRenderOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const [showChecklist, setShowChecklist] = useState(false);
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (editingTask) {
@@ -29,40 +34,92 @@ export const TaskModal: React.FC = () => {
       setDuration(editingTask.duration || 45);
       setCategory(editingTask.category || 'Work');
       setPriority(editingTask.priority || 'important');
-      setDeadline(editingTask.deadline || '');
       setScheduledStart(editingTask.scheduledStart || '');
-      setScheduledEnd(editingTask.scheduledEnd || '');
-      setFlexibility(editingTask.flexibility || 'flexible');
-      setTimeMode(editingTask.scheduledStart ? 'scheduled' : (editingTask.timeMode || 'duration'));
       setTaskDate(editingTask.scheduledDate || selectedDate || new Date().toISOString().split('T')[0]);
-    } else {
+      if (editingTask.subtasks && editingTask.subtasks.length > 0) {
+        setShowChecklist(true);
+        setSubtasks(editingTask.subtasks);
+      } else {
+        setShowChecklist(false);
+        setSubtasks([]);
+      }
+    } else if (isTaskModalOpen) {
+      const saved = localStorage.getItem('taskModalDraft');
+      if (saved) {
+        try {
+          const draft = JSON.parse(saved);
+          setTitle(draft.title !== undefined ? draft.title : '');
+          setDescription(draft.description !== undefined ? draft.description : '');
+          setDuration(draft.duration !== undefined ? draft.duration : 45);
+          setCategory(draft.category !== undefined ? draft.category : 'Work');
+          setPriority(draft.priority !== undefined ? draft.priority : 'important');
+          setScheduledStart(draft.scheduledStart !== undefined ? draft.scheduledStart : '00:00');
+          setTaskDate(draft.taskDate !== undefined ? draft.taskDate : (selectedDate || new Date().toISOString().split('T')[0]));
+          setShowChecklist(draft.showChecklist !== undefined ? draft.showChecklist : false);
+          setSubtasks(draft.subtasks !== undefined ? draft.subtasks : []);
+          setIsCustomDuration(draft.isCustomDuration !== undefined ? draft.isCustomDuration : false);
+          return;
+        } catch(e) {}
+      }
       setTitle('');
       setDescription('');
       setDuration(45);
       setCategory('Work');
       setPriority('important');
-      setDeadline('');
-      setScheduledStart('');
-      setScheduledEnd('');
-      setFlexibility('flexible');
-      setTimeMode('duration');
+      setScheduledStart('00:00');
       setTaskDate(selectedDate || new Date().toISOString().split('T')[0]);
+      setShowChecklist(false);
+      setSubtasks([]);
+      setIsCustomDuration(false);
     }
-    setShowCustomInput(false);
-    setCustomPriorityInput('');
   }, [editingTask, isTaskModalOpen, selectedDate]);
 
-  if (!isTaskModalOpen) return null;
+  useEffect(() => {
+    if (!editingTask && isTaskModalOpen) {
+      const draft = { title, description, duration, category, priority, scheduledStart, taskDate, showChecklist, subtasks, isCustomDuration };
+      localStorage.setItem('taskModalDraft', JSON.stringify(draft));
+    }
+  }, [title, description, duration, category, priority, scheduledStart, taskDate, showChecklist, subtasks, isCustomDuration, editingTask, isTaskModalOpen]);
 
-  // Calculate live estimated completion time from now
-  const getEstimatedCompletionTime = (mins: number) => {
+  useEffect(() => {
+    if (isTaskModalOpen) {
+      setRenderOpen(true);
+      setIsClosing(false);
+    } else if (renderOpen) {
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setRenderOpen(false);
+        setIsClosing(false);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isTaskModalOpen, renderOpen]);
+
+  if (!renderOpen) return null;
+
+  const calculateEndTime = () => {
+    if (!scheduledStart) return null;
+    const [sh, sm] = scheduledStart.split(':').map(Number);
+    const totalMins = sh * 60 + sm + Number(duration);
+    const eh = Math.floor(totalMins / 60) % 24;
+    const em = totalMins % 60;
+
     const d = new Date();
-    d.setMinutes(d.getMinutes() + mins);
-    const h = d.getHours();
-    const m = d.getMinutes();
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const formattedH = h % 12 || 12;
-    const formattedM = m < 10 ? `0${m}` : m;
+    d.setHours(eh);
+    d.setMinutes(em);
+
+    const formattedH = eh % 12 || 12;
+    const formattedM = em < 10 ? `0${em}` : em;
+    const ampm = eh >= 12 ? 'PM' : 'AM';
+    return `${formattedH}:${formattedM} ${ampm}`;
+  };
+
+  const getStartTimeFormatted = () => {
+    if (!scheduledStart) return null;
+    const [sh, sm] = scheduledStart.split(':').map(Number);
+    const formattedH = sh % 12 || 12;
+    const formattedM = sm < 10 ? `0${sm}` : sm;
+    const ampm = sh >= 12 ? 'PM' : 'AM';
     return `${formattedH}:${formattedM} ${ampm}`;
   };
 
@@ -71,18 +128,18 @@ export const TaskModal: React.FC = () => {
     if (!title.trim()) return;
 
     let finalStart = scheduledStart || undefined;
-    let finalEnd = scheduledEnd || undefined;
-    if (timeMode === 'duration') {
-      finalStart = undefined;
-      finalEnd = undefined;
-    } else if (finalStart && !finalEnd) {
-      // Calculate end time from start + duration
+    let finalEnd = undefined;
+
+    if (finalStart) {
       const [sh, sm] = finalStart.split(':').map(Number);
       const totalMins = sh * 60 + sm + Number(duration);
       const eh = Math.floor(totalMins / 60) % 24;
       const em = totalMins % 60;
       finalEnd = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
     }
+
+    const calculatedTimeMode = finalStart ? 'scheduled' : 'duration';
+    const finalSubtasks = showChecklist ? subtasks.filter(s => s.title.trim()) : [];
 
     if (editingTask) {
       updateTask({
@@ -93,11 +150,11 @@ export const TaskModal: React.FC = () => {
         category,
         priority,
         scheduledDate: taskDate,
-        deadline: deadline || undefined,
         scheduledStart: finalStart,
         scheduledEnd: finalEnd,
-        timeMode,
-        flexibility: timeMode === 'scheduled' ? flexibility : 'flexible',
+        timeMode: calculatedTimeMode,
+        flexibility: calculatedTimeMode === 'scheduled' ? 'fixed' : 'flexible',
+        subtasks: finalSubtasks
       });
     } else {
       addTask({
@@ -108,370 +165,391 @@ export const TaskModal: React.FC = () => {
         priority,
         status: 'pending',
         scheduledDate: taskDate,
-        deadline: deadline || undefined,
         scheduledStart: finalStart,
         scheduledEnd: finalEnd,
-        timeMode,
-        flexibility: timeMode === 'scheduled' ? flexibility : 'flexible',
+        timeMode: calculatedTimeMode,
+        flexibility: calculatedTimeMode === 'scheduled' ? 'fixed' : 'flexible',
+        subtasks: finalSubtasks
       });
+      localStorage.removeItem('taskModalDraft');
     }
   };
 
-  const saveCustomPriority = (newTag: string) => {
-    const trimmed = newTag.trim();
-    if (!trimmed) return;
-    const prioKey = trimmed.toLowerCase().replace(/\s+/g, '-');
-    addCustomPriority({
-      id: prioKey,
-      label: trimmed,
-      dotColor: '#0EA5E9',
-    });
-    setPriority(prioKey);
-    setCustomPriorityInput('');
-    setShowCustomInput(false);
+  const handleAddSubtask = () => {
+    setSubtasks([...subtasks, { id: Date.now().toString(), title: '', completed: false }]);
   };
 
+  const handleSubtaskChange = (id: string, value: string) => {
+    setSubtasks(subtasks.map(s => s.id === id ? { ...s, title: value } : s));
+  };
+
+  const handleDeleteSubtask = (id: string) => {
+    setSubtasks(subtasks.filter(s => s.id !== id));
+  };
+
+  const handleDragStart = (index: number, e: React.DragEvent) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragEnter = (index: number) => {
+    if (draggedIndex === null || draggedIndex === index) return;
+    const newSubtasks = [...subtasks];
+    const item = newSubtasks.splice(draggedIndex, 1)[0];
+    newSubtasks.splice(index, 0, item);
+    setDraggedIndex(index);
+    setSubtasks(newSubtasks);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  // Build categories and priorities
   const defaultCategories: Category[] = ['Health', 'Work', 'Personal', 'Learning', 'Neutral'];
   const deletedCatSet = new Set((settings?.deletedCategories || []).map(c => c.toLowerCase()));
   const customCatLabels = (settings?.customCategories || []).map(c => c.label);
   const categories: Category[] = Array.from(new Set([...defaultCategories, ...customCatLabels]))
     .filter(c => !deletedCatSet.has(c.toLowerCase())) as Category[];
 
-  const defaultPriorities: {
-    id: Priority;
-    label: string;
-    desc: string;
-    activeClass: string;
-    inactiveClass: string;
-    dotClass: string;
-    textClass: string;
-  }[] = [
-    {
-      id: 'important',
-      label: 'Important',
-      desc: 'Must / should happen today',
-      activeClass: 'bg-[#F97316]/15 border-[#F97316]/30',
-      inactiveClass: 'bg-[#F97316]/[0.03] border-[#F97316]/10 hover:border-[#F97316]/20 hover:bg-[#F97316]/[0.07]',
-      dotClass: 'bg-[#F97316]',
-      textClass: 'text-[#EA580C] dark:text-[#FB923C]',
-    },
-    {
-      id: 'regular',
-      label: 'Regular',
-      desc: 'Standard daily priority',
-      activeClass: 'bg-[#D97706]/15 border-[#D97706]/30',
-      inactiveClass: 'bg-[#D97706]/[0.03] border-[#D97706]/10 hover:border-[#D97706]/20 hover:bg-[#D97706]/[0.07]',
-      dotClass: 'bg-[#D97706]',
-      textClass: 'text-[#D97706]',
-    },
-    {
-      id: 'optional',
-      label: 'Optional',
-      desc: 'Only if extra time permits',
-      activeClass: 'bg-[#64748B]/15 border-[#64748B]/30',
-      inactiveClass: 'bg-[#64748B]/[0.03] border-[#64748B]/10 hover:border-[#64748B]/20 hover:bg-[#64748B]/[0.07]',
-      dotClass: 'bg-[#64748B]',
-      textClass: 'text-[#475569] dark:text-[#94A3B8]',
-    },
-  ];
-
-  const customPrioritiesList = (settings?.customPriorities || []).filter(
-    (cp) => !['important', 'regular', 'flexible', 'optional'].includes(cp.id.toLowerCase())
-  );
-
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 animate-fade-in select-none"
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 select-none ${isClosing ? 'animate-fade-out' : 'animate-fade-in'
+        }`}
       onClick={closeTaskModal}
     >
-      <div 
-        className="bg-card w-full max-w-lg rounded-[28px] shadow-2xl p-6 sm:p-7 transition-colors cursor-default border border-borderToken"
+      <div
+        className={`bg-card w-full max-w-[850px] rounded-3xl shadow-2xl transition-colors cursor-default flex flex-col max-h-[95vh] overflow-hidden border border-borderToken ${isClosing ? 'animate-popup-exit' : 'animate-popup-enter'
+          }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-borderToken">
-          <h3 className="text-[20px] font-serif font-medium text-foreground">
-            {editingTask ? 'Edit Outcome' : 'Add New Outcome'}
-          </h3>
+        {/* Header - Fixed */}
+        <div className="flex items-start justify-between p-6 sm:p-8 pb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-tag-healthBg text-tag-health flex items-center justify-center flex-shrink-0">
+              <Sprout size={24} />
+            </div>
+            <div>
+              <h2 className="text-[22px] font-bold text-foreground leading-tight">
+                {editingTask ? 'Edit Task' : 'Add New Task'}
+              </h2>
+              <p className="text-[13px] text-mutedText mt-0.5 font-medium">
+                Capture your next step and put it on the right day.
+              </p>
+            </div>
+          </div>
           <button
             type="button"
             onClick={closeTaskModal}
             className="w-8 h-8 rounded-full bg-card-subtle hover:bg-card-muted text-mutedText hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
           >
-            <X size={17} />
+            <X size={18} />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-          {/* Title */}
-          <div>
-            <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
-              Outcome Title
-            </label>
-            <input
-              type="text"
-              required
-              autoFocus
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Finish client authentication module"
-              className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle border border-borderToken text-[14px] text-foreground focus:outline-none focus:border-primary"
-            />
-          </div>
+        {/* Content Body - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-6 sm:px-8 pb-6 sm:pb-8 [scrollbar-width:thin]">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-8">
 
-          {/* Date & Category Grid */}
-          <div className="grid grid-cols-2 gap-3.5">
-            <div>
-              <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
-                Target Date
-              </label>
-              <input
-                type="date"
-                value={taskDate}
-                onChange={(e) => setTaskDate(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
-              />
-            </div>
+            {/* LEFT COLUMN - FORM */}
+            <form id="task-form" onSubmit={handleSubmit} className="space-y-6">
 
-            <div>
-              <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
-                Category
-              </label>
-              <CustomSelect
-                value={category}
-                onChange={(val) => setCategory(val as Category)}
-                options={categories}
-              />
-            </div>
-          </div>
-
-          {/* Time Preference: Estimated Duration vs Scheduled Time Window */}
-          <div className="p-3.5 rounded-2xl bg-card-subtle border border-borderToken space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider">
-                Timing & Schedule Mode
-              </label>
-              <div className="flex items-center bg-card p-0.5 rounded-xl border border-borderToken">
-                <button
-                  type="button"
-                  onClick={() => setTimeMode('duration')}
-                  className={`px-3 py-1 rounded-lg text-[12px] font-medium transition-all cursor-pointer ${
-                    timeMode === 'duration'
-                      ? 'bg-primary text-white font-semibold shadow-xs'
-                      : 'text-mutedText hover:text-foreground'
-                  }`}
-                >
-                  ⏱️ Estimated Duration
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTimeMode('scheduled')}
-                  className={`px-3 py-1 rounded-lg text-[12px] font-medium transition-all cursor-pointer ${
-                    timeMode === 'scheduled'
-                      ? 'bg-primary text-white font-semibold shadow-xs'
-                      : 'text-mutedText hover:text-foreground'
-                  }`}
-                >
-                  🗓️ Scheduled Time
-                </button>
+              {/* Title */}
+              <div>
+                <label className="block text-[13px] font-bold text-foreground mb-1.5">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Finish client authentication module"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-borderToken text-[14px] text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 placeholder:text-mutedText/60 shadow-sm"
+                />
               </div>
-            </div>
 
-            {timeMode === 'duration' ? (
-              <div className="space-y-2 animate-fade-in">
-                <div className="flex items-center gap-1.5">
+              {/* Description */}
+              <div>
+                <label className="block text-[13px] font-bold text-foreground mb-1.5">
+                  Description <span className="text-mutedText font-normal font-medium">(optional)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Add more details, notes or checklist..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-borderToken text-[14px] text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none placeholder:text-mutedText/60 shadow-sm"
+                />
+              </div>
+
+              {/* Category & Priority */}
+              <div className="grid grid-cols-[1fr_auto] gap-6 items-start">
+                <div>
+                  <label className="block text-[13px] font-bold text-foreground mb-1.5">
+                    Category
+                  </label>
+                  <CustomSelect
+                    value={category}
+                    onChange={(val) => setCategory(val as Category)}
+                    options={categories}
+                    buttonClassName="h-[42px] bg-white text-[13px]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-bold text-foreground mb-1.5">
+                    Priority
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPriority('important')}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer border shadow-sm ${priority === 'important'
+                          ? 'bg-tag-importantBg text-tag-important border-tag-important/30'
+                          : 'bg-white text-foreground border-borderToken hover:bg-card-subtle'
+                        }`}
+                    >
+                      <Circle size={8} fill="currentColor" className={priority === 'important' ? 'text-tag-important' : 'text-[#DC2626]'} />
+                      Important
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPriority('flexible')}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer border shadow-sm ${priority === 'flexible'
+                          ? 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]'
+                          : 'bg-white text-foreground border-borderToken hover:bg-card-subtle'
+                        }`}
+                    >
+                      <Circle size={8} fill="currentColor" className="text-[#D97706]" />
+                      Flexible
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPriority('optional')}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer border shadow-sm ${priority === 'optional'
+                          ? 'bg-[#F1F5F9] text-[#475569] border-[#E2E8F0]'
+                          : 'bg-white text-foreground border-borderToken hover:bg-card-subtle'
+                        }`}
+                    >
+                      <Circle size={8} fill="currentColor" className="text-[#475569]" />
+                      Optional
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Date & Start Time */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[13px] font-bold text-foreground mb-1.5">
+                    Date <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Calendar size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-mutedText" />
+                    <input
+                      type="date"
+                      required
+                      value={taskDate}
+                      onChange={(e) => setTaskDate(e.target.value)}
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-white border border-borderToken text-[13px] font-medium text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 shadow-sm"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[13px] font-bold text-foreground mb-1.5">
+                    Start time <span className="text-red-500">*</span>
+                  </label>
+                  <CustomTimePicker
+                    value={scheduledStart}
+                    onChange={(val) => setScheduledStart(val)}
+                    placeholder="12:00 AM"
+                  />
+                </div>
+              </div>
+
+              {/* Duration */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <label className="block text-[13px] font-bold text-foreground">
+                    Duration <span className="text-red-500">*</span>
+                  </label>
+                  <Info size={14} className="text-mutedText" />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
                   {[15, 30, 45, 60, 90, 120].map((mins) => (
                     <button
                       key={mins}
                       type="button"
-                      onClick={() => setDuration(mins)}
-                      className={`flex-1 py-1.5 rounded-xl text-[12px] font-medium transition-all cursor-pointer ${
-                        duration === mins
-                          ? 'bg-primary text-white shadow-xs'
-                          : 'bg-card text-textSecondary hover:bg-card-muted border border-borderToken'
+                      onClick={() => {
+                        setDuration(mins);
+                        setIsCustomDuration(false);
+                      }}
+                      className={`px-4 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer border shadow-sm ${
+                        !isCustomDuration && duration === mins
+                          ? 'bg-primary text-white border-primary'
+                          : 'bg-white text-foreground border-borderToken hover:bg-card-subtle'
                       }`}
                     >
-                      {mins}m
+                      {mins === 60 ? '1h' : mins === 90 ? '1.5h' : mins === 120 ? '2h' : `${mins}m`}
                     </button>
                   ))}
+                  
+                  {isCustomDuration ? (
+                    <div className="flex items-center gap-1.5 bg-white border border-primary rounded-xl px-2 py-1.5 shadow-sm">
+                      <input
+                        type="number"
+                        min="1"
+                        autoFocus
+                        value={customDurationValue}
+                        onChange={(e) => {
+                          setCustomDurationValue(e.target.value);
+                          setDuration(Number(e.target.value) || 0);
+                        }}
+                        className="w-12 text-[13px] font-medium text-center focus:outline-none"
+                      />
+                      <span className="text-[13px] font-medium text-foreground pr-2">m</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomDuration(true);
+                        setCustomDurationValue(duration.toString());
+                      }}
+                      className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer border bg-white text-foreground border-borderToken hover:bg-card-subtle shadow-sm"
+                    >
+                      Custom
+                    </button>
+                  )}
                 </div>
-                {/* Live Estimated Completion Hint */}
-                <div className="flex items-center justify-between text-[11.5px] text-mutedText px-1 pt-1">
-                  <span>Flexible focus block ({duration}m)</span>
-                  <span className="text-primary font-medium">
-                    ✨ Finishes by ~{getEstimatedCompletionTime(duration)} if started now
-                  </span>
-                </div>
+
+                {scheduledStart && (
+                  <div className="mt-3 flex items-center gap-2 bg-primary-soft text-primary px-4 py-2.5 rounded-xl text-[13px] font-medium border border-borderToken">
+                    <Clock size={15} />
+                    <span>Ends at <strong className="font-bold">{calculateEndTime()}</strong> ({duration} minutes)</span>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3 pt-1 animate-fade-in">
-                <div>
-                  <label className="block text-[11px] font-medium text-mutedText mb-1">
-                    Start Time
-                  </label>
+
+              {/* Checklist */}
+              <div className="bg-white border border-borderToken rounded-2xl p-4 shadow-sm">
+                <label className="flex items-center gap-2.5 cursor-pointer mb-2">
                   <input
-                    type="time"
-                    required={timeMode === 'scheduled'}
-                    value={scheduledStart}
-                    onChange={(e) => setScheduledStart(e.target.value)}
-                    className="w-full px-3 py-1.5 rounded-xl bg-card border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
+                    type="checkbox"
+                    checked={showChecklist}
+                    onChange={(e) => setShowChecklist(e.target.checked)}
+                    className="w-4 h-4 rounded border-borderToken text-primary focus:ring-primary"
                   />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-mutedText mb-1">
-                    End Time (Optional)
-                  </label>
-                  <input
-                    type="time"
-                    value={scheduledEnd}
-                    onChange={(e) => setScheduledEnd(e.target.value)}
-                    placeholder="Auto from duration"
-                    className="w-full px-3 py-1.5 rounded-xl bg-card border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
+                  <span className="text-[13px] font-bold text-foreground">Add subtasks <span className="font-medium text-mutedText">(optional)</span></span>
+                </label>
+
+                {showChecklist && (
+                  <div className="mt-4 space-y-2.5">
+                    {subtasks.map((st, index) => (
+                      <div 
+                        key={st.id} 
+                        className={`flex items-center gap-2 ${draggedIndex === index ? 'opacity-50' : 'opacity-100'}`}
+                        draggable
+                        onDragStart={(e) => handleDragStart(index, e)}
+                        onDragEnter={() => handleDragEnter(index)}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={(e) => e.preventDefault()}
+                      >
+                        <GripVertical size={14} className="text-mutedText/50 cursor-grab active:cursor-grabbing" />
+                        <div className="w-4 h-4 rounded border border-borderToken flex-shrink-0" />
+                        <input
+                          type="text"
+                          value={st.title}
+                          onChange={(e) => handleSubtaskChange(st.id, e.target.value)}
+                          placeholder="e.g. Write initial draft"
+                          className="flex-1 bg-white border border-borderToken rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 shadow-sm"
+                          autoFocus={index === subtasks.length - 1}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSubtask(st.id)}
+                          className="p-1.5 text-mutedText hover:text-red-500 rounded-md hover:bg-card-subtle transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={handleAddSubtask}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-foreground border border-borderToken bg-white rounded-lg hover:bg-card-subtle transition-colors mt-2 shadow-sm ml-6"
+                    >
+                      <Plus size={14} /> Add item
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </form>
 
-          {/* Priority Level */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider">
-                Priority Level
-              </label>
-              {!showCustomInput ? (
-                <button
-                  type="button"
-                  onClick={() => setShowCustomInput(true)}
-                  className="text-[11.5px] font-medium text-primary hover:underline cursor-pointer"
-                >
-                  + Add Custom Tag
-                </button>
-              ) : null}
-            </div>
+            {/* RIGHT COLUMN - PREVIEW & OPTIONS */}
+            <div className="space-y-6">
 
-            {/* Custom Priority Input */}
-            {showCustomInput && (
-              <div className="flex items-center gap-2 mb-2.5 animate-fade-in">
-                <input
-                  type="text"
-                  value={customPriorityInput}
-                  onChange={(e) => setCustomPriorityInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      saveCustomPriority(customPriorityInput);
-                    }
-                  }}
-                  placeholder="Enter custom priority tag..."
-                  className="flex-1 px-3 py-1.5 rounded-xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={() => saveCustomPriority(customPriorityInput)}
-                  className="px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary-hover transition-colors cursor-pointer"
-                >
-                  Add
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCustomInput(false);
-                    setCustomPriorityInput('');
-                  }}
-                  className="px-2.5 py-1.5 rounded-xl bg-card-subtle text-mutedText hover:text-foreground text-xs transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
+              {/* Task Preview */}
+              <div>
+                <h4 className="text-[14px] font-bold text-foreground mb-1">Task Preview</h4>
+                <p className="text-[12px] text-mutedText mb-3">Here's how it will look in your schedule.</p>
 
-            {/* 3 Default Priority Cards */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
-              {defaultPriorities.map((p) => {
-                const isSelected = priority === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setPriority(p.id)}
-                    className={`p-2.5 sm:p-3 rounded-2xl text-left border transition-all cursor-pointer relative overflow-hidden shadow-none outline-none ${
-                      isSelected ? p.activeClass : p.inactiveClass
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${p.dotClass}`} />
-                      <span className={`text-[12.5px] sm:text-[13px] font-semibold ${isSelected ? p.textClass : 'text-foreground'}`}>
-                        {p.label}
+                <div className="bg-white border border-borderToken rounded-2xl p-5 shadow-sm">
+                  <div className="flex items-start mb-3">
+                    <div className="w-2 h-2 rounded-full bg-[#F97316] mt-[5px] ml-[3.5px] mr-[11.5px] flex-shrink-0" />
+                    <h5 className="text-[14px] font-bold text-foreground leading-snug">
+                      {title || 'Task title'}
+                    </h5>
+                  </div>
+                  
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-2 text-[12px] font-medium text-foreground">
+                      <Calendar size={15} className="text-mutedText" />
+                      <span>
+                        {new Date(taskDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                     </div>
-                    <span className={`block text-[10.5px] sm:text-[11px] pl-3.5 leading-tight ${isSelected ? p.textClass + ' opacity-90' : 'text-mutedText'}`}>
-                      {p.desc}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Custom Created Priority Badges if any exist */}
-            {customPrioritiesList.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap mt-2.5 pt-2 border-t border-borderToken/50">
-                <span className="text-[11px] text-mutedText font-medium">Custom tags:</span>
-                {customPrioritiesList.map((cp) => {
-                  const isSel = priority === cp.id || priority === cp.label;
-                  return (
-                    <button
-                      key={cp.id}
-                      type="button"
-                      onClick={() => setPriority(cp.id)}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11.5px] font-medium transition-all cursor-pointer border ${
-                        isSel
-                          ? 'bg-primary-soft text-primary border-primary font-semibold'
-                          : 'bg-card-subtle text-textSecondary border-borderToken hover:text-foreground'
-                      }`}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: cp.dotColor || '#0EA5E9' }} />
-                      <span>{cp.label}</span>
-                    </button>
-                  );
-                })}
+                    <div className="flex items-center gap-2 text-[12px] font-medium text-foreground">
+                      <Clock size={15} className="text-mutedText" />
+                      <span>
+                        {scheduledStart ? `${getStartTimeFormatted()} - ${calculateEndTime()}` : 'No time set'} ({duration}m)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[12px] font-medium text-foreground">
+                      <Briefcase size={15} className="text-mutedText" />
+                      <span>{category}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[12px] font-medium text-foreground">
+                      <Circle size={8} fill="currentColor" className={priority === 'important' ? 'text-tag-important' : priority === 'flexible' ? 'text-[#D97706]' : 'text-[#475569]'} />
+                      <span className="capitalize">{priority}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
           </div>
+        </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-[12px] font-semibold text-mutedText uppercase tracking-wider mb-1.5">
-              Notes / Sub-steps (Optional)
-            </label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Additional context or outcome checklist..."
-              className="w-full px-4 py-2 rounded-2xl bg-card-subtle border border-borderToken text-[13px] text-foreground focus:outline-none focus:border-primary"
-            />
-          </div>
+        {/* Footer */}
+        <div className="px-6 sm:px-8 py-4 border-t border-borderToken flex items-center justify-end gap-3 bg-white mt-auto rounded-b-3xl">
+          <button
+            type="button"
+            onClick={closeTaskModal}
+            className="px-5 py-2.5 rounded-full text-[14px] font-semibold text-mutedText hover:text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="task-form"
+            className="px-6 py-2.5 rounded-full bg-primary hover:bg-primary-hover text-white text-[14px] font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+          >
+            <Plus size={16} strokeWidth={3} /> {editingTask ? 'Save Changes' : 'Add to Schedule'}
+          </button>
+        </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-borderToken">
-            <button
-              type="button"
-              onClick={closeTaskModal}
-              className="px-4 py-2 rounded-2xl text-[13px] font-medium text-mutedText hover:text-foreground hover:bg-card-subtle"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2.5 rounded-2xl bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold transition-all shadow-xs"
-            >
-              {editingTask ? 'Save Changes' : 'Add to Schedule'}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );

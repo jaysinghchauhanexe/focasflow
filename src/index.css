@@ -385,6 +385,43 @@ input[type="reset"]:active {
   animation: enterUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Popup and Dropdown Entrance */
+@keyframes popupEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.animate-popup-enter {
+  animation: popupEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes popupExit {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+}
+.animate-popup-exit {
+  animation: popupExit 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.animate-fade-out {
+  animation: fadeOut 0.15s ease forwards;
+}
+
 /* Spring Checkmark pop */
 @keyframes checkPop {
   0% {

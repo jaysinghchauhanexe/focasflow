@@ -24,6 +24,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   buttonClassName = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [renderOpen, setRenderOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,6 +45,20 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       document.removeEventListener('touchstart', handlePointerDown);
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setRenderOpen(true);
+      setIsClosing(false);
+    } else if (renderOpen) {
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setRenderOpen(false);
+        setIsClosing(false);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, renderOpen]);
 
   const normalizedOptions: SelectOption[] = options.map((opt) =>
     typeof opt === 'string' ? { value: opt, label: opt } : opt
@@ -72,8 +88,10 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       </button>
 
       {/* Dropdown Menu */}
-      {isOpen && (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] bg-card rounded-2xl shadow-float p-1 z-50 border border-borderToken animate-fade-in max-h-56 overflow-y-auto [scrollbar-width:thin]">
+      {renderOpen && (
+        <div className={`absolute left-0 right-0 top-[calc(100%+6px)] bg-card rounded-2xl shadow-float p-1 z-50 border border-borderToken max-h-56 overflow-y-auto [scrollbar-width:thin] ${
+          isClosing ? 'animate-popup-exit' : 'animate-popup-enter'
+        }`}>
             {normalizedOptions.map((opt) => {
               const isSelected = opt.value === value;
               return (

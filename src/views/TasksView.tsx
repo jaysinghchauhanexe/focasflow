@@ -156,6 +156,9 @@ export const TasksView: React.FC = () => {
   const [newPrioName, setNewPrioName] = useState('');
   const [newPrioDotColor, setNewPrioDotColor] = useState('bg-[#E5484D]');
 
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingPriorityId, setEditingPriorityId] = useState<string | null>(null);
+
   // Hover state for Focus Graph Tooltip
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
 
@@ -364,14 +367,14 @@ export const TasksView: React.FC = () => {
   // Category counts & Icons breakdown (Icons instead of dots)
   const categoryData = useMemo(() => {
     const deletedCatSet = new Set((settings.deletedCategories || []).map(c => c.toLowerCase()));
-    const map: Record<string, { label: string; count: number; icon: React.ReactNode; colorClass: string; customHex?: string }> = {};
+    const map: Record<string, { label: string; count: number; iconName: string; icon: React.ReactNode; colorClass: string; customHex?: string }> = {};
 
-    const defaultEntries: Record<string, { label: string; icon: React.ReactNode; colorClass: string }> = {
-      Work: { label: 'Work', icon: <Briefcase size={13} className="text-tag-work" />, colorClass: 'badge-work' },
-      Personal: { label: 'Personal', icon: <User size={13} className="text-tag-personal" />, colorClass: 'badge-personal' },
-      Health: { label: 'Health', icon: <Heart size={13} className="text-tag-health" />, colorClass: 'badge-health' },
-      Learning: { label: 'Learning', icon: <BookOpen size={13} className="text-tag-learning" />, colorClass: 'badge-learning' },
-      Neutral: { label: 'Neutral', icon: <Layers size={13} className="text-tag-neutral" />, colorClass: 'badge-neutral' },
+    const defaultEntries: Record<string, { label: string; iconName: string; icon: React.ReactNode; colorClass: string }> = {
+      Work: { label: 'Work', iconName: 'Briefcase', icon: <Briefcase size={13} className="text-tag-work" />, colorClass: 'badge-work' },
+      Personal: { label: 'Personal', iconName: 'User', icon: <User size={13} className="text-tag-personal" />, colorClass: 'badge-personal' },
+      Health: { label: 'Health', iconName: 'Heart', icon: <Heart size={13} className="text-tag-health" />, colorClass: 'badge-health' },
+      Learning: { label: 'Learning', iconName: 'BookOpen', icon: <BookOpen size={13} className="text-tag-learning" />, colorClass: 'badge-learning' },
+      Neutral: { label: 'Neutral', iconName: 'Layers', icon: <Layers size={13} className="text-tag-neutral" />, colorClass: 'badge-neutral' },
     };
 
     Object.entries(defaultEntries).forEach(([k, v]) => {
@@ -388,6 +391,7 @@ export const TasksView: React.FC = () => {
           map[cc.label] = {
             label: cc.label,
             count: 0,
+            iconName: cc.iconName,
             icon: <IconComponent size={13} style={hex ? { color: hex } : undefined} className={!hex ? "text-primary" : undefined} />,
             colorClass: cc.colorClass || 'badge-work',
             customHex: hex,
@@ -446,6 +450,18 @@ export const TasksView: React.FC = () => {
   const handleCreateCategory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCatName.trim()) return;
+    
+    if (editingCategoryId) {
+      if (editingCategoryId !== newCatName.trim()) {
+        tasks.forEach(t => {
+          if (t.category === editingCategoryId) {
+            updateTask({ ...t, category: newCatName.trim() });
+          }
+        });
+      }
+      deleteCategory(editingCategoryId);
+    }
+    
     addCustomCategory({
       id: `cat-${Date.now()}`,
       label: newCatName.trim(),
@@ -454,12 +470,25 @@ export const TasksView: React.FC = () => {
     });
     setNewCatName('');
     setIsAddingCategory(false);
+    setEditingCategoryId(null);
   };
 
   const handleCreatePriority = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPrioName.trim()) return;
     const prioKey = newPrioName.trim().toLowerCase().replace(/\s+/g, '-');
+    
+    if (editingPriorityId) {
+      if (editingPriorityId !== newPrioName.trim()) {
+        tasks.forEach(t => {
+          if (t.priority === editingPriorityId || (t.priority as string) === editingPriorityId.toLowerCase()) {
+            updateTask({ ...t, priority: prioKey as any });
+          }
+        });
+      }
+      deleteCustomPriority(editingPriorityId);
+    }
+    
     addCustomPriority({
       id: prioKey,
       label: newPrioName.trim(),
@@ -467,6 +496,7 @@ export const TasksView: React.FC = () => {
     });
     setNewPrioName('');
     setIsAddingPriority(false);
+    setEditingPriorityId(null);
   };
 
   const renderTaskRow = (task: Task, idx: number) => {
@@ -617,7 +647,7 @@ export const TasksView: React.FC = () => {
             {activeMenuId === task.id && (
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="absolute right-0 top-7 w-44 bg-card rounded-2xl shadow-float py-1.5 z-50 border border-borderToken animate-fade-in"
+                className="absolute right-0 top-7 w-44 bg-card rounded-2xl shadow-float py-1.5 z-50 border border-borderToken animate-popup-enter"
               >
                 <button
                   type="button"
@@ -1188,6 +1218,13 @@ export const TasksView: React.FC = () => {
                       className="transition-all duration-700 ease-out"
                     />
                   </svg>
+                  {completionPercentage === 100 && activeDateTotalCount > 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center animate-popup-enter">
+                      <div className="w-[34px] h-[34px] bg-tag-health rounded-full flex items-center justify-center shadow-md animate-check-pop">
+                         <Check size={20} strokeWidth={3} className="text-white" />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Fractions and Subtitle */}
@@ -1318,7 +1355,13 @@ export const TasksView: React.FC = () => {
                 )}
                 <button
                   type="button"
-                  onClick={() => setIsAddingCategory(!isAddingCategory)}
+                  onClick={() => {
+                    setEditingCategoryId(null);
+                    setNewCatName('');
+                    setNewCatColorHex('#24584C');
+                    setNewCatIcon('Sparkles');
+                    setIsAddingCategory(!isAddingCategory);
+                  }}
                   className="w-6 h-6 rounded-lg bg-card-subtle hover:bg-card-muted text-mutedText hover:text-foreground flex items-center justify-center transition-colors cursor-pointer border border-borderToken"
                   title="Add new category"
                 >
@@ -1449,19 +1492,38 @@ export const TasksView: React.FC = () => {
                       </div>
                       <span className="text-[12.5px] font-medium truncate">{data.label}</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11.5px] font-mono text-mutedText font-semibold">{data.count}</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteCategory(catKey);
-                        }}
-                        title={`Delete ${data.label} category`}
-                        className="opacity-0 group-hover/cat:opacity-100 p-1 text-mutedText hover:text-tag-important transition-opacity cursor-pointer rounded-lg hover:bg-tag-importantBg"
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                    <div className="flex items-center justify-end min-w-[24px]">
+                      <span className="text-[11.5px] font-mono text-mutedText font-semibold transition-all duration-300">
+                        {data.count}
+                      </span>
+                      <div className="flex items-center overflow-hidden max-w-0 opacity-0 group-hover/cat:max-w-[60px] group-hover/cat:opacity-100 transition-all duration-300 ease-out pl-0 group-hover/cat:pl-1.5">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingCategoryId(catKey);
+                            setNewCatName(data.label);
+                            setNewCatColorHex(data.customHex || PRESET_CATEGORY_COLORS.find(c => c.badgeClass === data.colorClass)?.hex || '#24584C');
+                            setNewCatIcon(data.iconName || 'Sparkles');
+                            setIsAddingCategory(true);
+                          }}
+                          title={`Edit ${data.label}`}
+                          className="p-1 text-mutedText hover:text-primary transition-opacity cursor-pointer rounded-lg hover:bg-card-subtle"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteCategory(catKey);
+                          }}
+                          title={`Delete ${data.label} category`}
+                          className="p-1 text-mutedText hover:text-tag-important transition-opacity cursor-pointer rounded-lg hover:bg-tag-importantBg"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -1485,7 +1547,12 @@ export const TasksView: React.FC = () => {
                 )}
                 <button
                   type="button"
-                  onClick={() => setIsAddingPriority(!isAddingPriority)}
+                  onClick={() => {
+                    setEditingPriorityId(null);
+                    setNewPrioName('');
+                    setNewPrioDotColor('bg-[#E5484D]');
+                    setIsAddingPriority(!isAddingPriority);
+                  }}
                   className="w-6 h-6 rounded-lg bg-card-subtle hover:bg-card-muted text-mutedText hover:text-foreground flex items-center justify-center transition-colors cursor-pointer border border-borderToken"
                   title="Add new priority tag"
                 >
@@ -1569,21 +1636,39 @@ export const TasksView: React.FC = () => {
                       <span className={`w-2.5 h-2.5 rounded-full ${data.dotColor} flex-shrink-0`} />
                       <span className="text-[12.5px] font-medium truncate">{data.label}</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11.5px] font-mono text-mutedText font-semibold">{data.count}</span>
-                      {isCustom && (
+                    <div className="flex items-center justify-end min-w-[24px]">
+                      <span className="text-[11.5px] font-mono text-mutedText font-semibold transition-all duration-300">
+                        {data.count}
+                      </span>
+                      <div className="flex items-center overflow-hidden max-w-0 opacity-0 group-hover/prio:max-w-[60px] group-hover/prio:opacity-100 transition-all duration-300 ease-out pl-0 group-hover/prio:pl-1.5">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteCustomPriority(prioKey);
+                            setEditingPriorityId(prioKey);
+                            setNewPrioName(data.label);
+                            setNewPrioDotColor(data.dotColor);
+                            setIsAddingPriority(true);
                           }}
-                          title={`Delete ${data.label} priority`}
-                          className="opacity-0 group-hover/prio:opacity-100 p-1 text-mutedText hover:text-tag-important transition-opacity cursor-pointer rounded-lg hover:bg-tag-importantBg"
+                          title={`Edit ${data.label} priority`}
+                          className="p-1 text-mutedText hover:text-primary transition-opacity cursor-pointer rounded-lg hover:bg-card-subtle"
                         >
-                          <Trash2 size={12} />
+                          <Edit2 size={12} />
                         </button>
-                      )}
+                        {isCustom && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteCustomPriority(prioKey);
+                            }}
+                            title={`Delete ${data.label} priority`}
+                            className="p-1 text-mutedText hover:text-tag-important transition-opacity cursor-pointer rounded-lg hover:bg-tag-importantBg"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

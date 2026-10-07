@@ -5,6 +5,12 @@ export type Category = 'Health' | 'Work' | 'Personal' | 'Learning' | 'Neutral';
 export type EnergyLevel = 'high' | 'medium' | 'low';
 export type Flexibility = 'fixed' | 'flexible';
 
+export interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -22,6 +28,7 @@ export interface Task {
   energyLevel?: EnergyLevel;
   flexibility?: Flexibility;
   movedCount?: number;
+  subtasks?: Subtask[];
   createdAt: string;
   updatedAt: string;
 }
