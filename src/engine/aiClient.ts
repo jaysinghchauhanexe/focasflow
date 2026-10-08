@@ -7,8 +7,9 @@ export function hasExplicitActionIntent(userMessage: string): boolean {
   // Pure conversational / praise / casual remarks (no action intent)
   const isCasualPraise = /\b(you are|you're|good job|great job|well done|thank you|thanks|hello|hi|hey|cool|nice|awesome|amazing|who are you|how are you|love this)\b/i.test(msg);
 
-  const hasAddAction = /\b(add|schedule|create|plan|todo|remind me|set up)\b/i.test(msg) ||
+  const hasAddAction = /\b(add|schedule|create|plan|todo|remind me|set up|include)\b/i.test(msg) ||
     /\b(\d+m|\d+\s*min|\d+\s*hour)\s+(task|block|session)\b/i.test(msg) ||
+    /\b(from\s+\d+(:\d+)?\s*(am|pm)?\s+to|at\s+\d+(:\d+)?\s*(am|pm)?)\b/i.test(msg) ||
     /\b(meeting|sync|call|appointment)\s+at\s+\d+/i.test(msg);
 
   const hasTaskInquiryAction = /\b(what tasks|what should i do|what to do|suggest tasks|generate tasks|recommend tasks|plan my|tasks for (today|tomorrow)|give me tasks|create tasks for|what do i do|what work)\b/i.test(msg);
@@ -85,6 +86,11 @@ export function sanitizeAssistantMessage(
     return "Got it! How can I help you with your schedule or tasks?";
   }
 
+  // Fallback if model hallucinated a schedule action but operations were stripped/empty
+  if ((!ops || ops.length === 0) && /\b(schedule that|scheduled|added to|created task|will do|adding that|got it.*schedule)\b/i.test(rawCleanLower)) {
+    return "I didn't quite catch a specific action there. If you'd like me to schedule something, please start with 'add', 'schedule', or 'move'.";
+  }
+
   return rawClean || (ops.length > 0 ? "Here is the updated schedule proposal:" : "How can I help you today?");
 }
 
@@ -95,6 +101,20 @@ export async function sendAiCommand(
   settings: AppSettings,
   history: { role: 'user' | 'assistant'; content: string }[] = []
 ): Promise<AiResponsePayload> {
+  const msgLower = userMessage.toLowerCase().trim();
+  const isUserPersonaQuery = /^(you know me|do you know me|who am i|what is my name|what's my name|my name|about me|do you know about me)(\s*.*)?$/i.test(msgLower);
+
+  if (isUserPersonaQuery) {
+    return {
+      message: `Yes! You are ${settings.userName || 'Jay'}${settings.userRole ? `, a ${settings.userRole}` : ''}. I use your profile context to tailor my suggestions to your working style and preferences. How can I help you today?`,
+      operations: [],
+      suggestions: ['Organize my tasks for today', 'Add a 30m deep work block'],
+      engineSource: 'heuristic_fallback',
+      modelUsed: 'Fast Path Heuristic',
+      latencyMs: 1
+    };
+  }
+
   const now = new Date();
   const currentDate = now.toISOString().split('T')[0];
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -114,6 +134,7 @@ export async function sendAiCommand(
     habits: habitNames,
     working_hours: `${settings.workStart} - ${settings.workEnd}`,
     sleep_hours: `${settings.sleepTime} - ${settings.wakeTime}`,
+      break_duration: settings.breakDuration,
     user_message: userMessage,
     conversation_history: history,
     api_key: settings.openRouterApiKey || undefined,
@@ -124,6 +145,11 @@ export async function sendAiCommand(
     ? `- User Name: ${settings.userName || 'Jay'} (${settings.userRole || 'User'})\n- User Bio: ${settings.userBio || ''}\n- USER PERSONA & INSTRUCTIONS:\n"""\n${settings.aiUserContext}\n"""\n(CRITICAL: Tailor all your recommendations, task generation, technical language, and plans directly to this user's tech stack, background, and stated working preferences!)`
     : `- User Name: ${settings.userName || 'Jay'} (${settings.userRole || 'User'})\n- User Bio: ${settings.userBio || ''}`;
 
+  const defaultCats = ['Work', 'Learning', 'Personal', 'Health'];
+  const userCats = (settings.customCategories || []).map((c: any) => c.label);
+  const allCats = Array.from(new Set([...defaultCats, ...userCats]));
+  const categoriesString = allCats.map((c: string) => `"${c}"`).join(' | ');
+
   const systemPrompt = `You are FocasFlow AI, the automated schedule and task engine built into FocasFlow.
 You have FULL programmatic control over the task list and schedule. You can and MUST perform operations when asked.
 
@@ -133,6 +159,7 @@ ${userPersonaInfo}
 Current Context:
 - Date: ${currentDate}, Time: ${currentTime}
 - Working Hours: ${settings.workStart} - ${settings.workEnd}
+  - Default Break Buffer: ${settings.breakDuration} minutes
 - Active User Tasks (${remainingTasks.length} total):
 ${remainingTasks.length > 0 ? remainingTasks.map(t => `  - ${t}`).join('\n') : '  (None)'}
 - Active Habits: ${habitNames.join(', ') || '(None)'}
@@ -150,19 +177,25 @@ MANDATORY ACTION EXECUTION RULES:
    - Resolve pronouns like "it", "that", "this task" to the most recently created or discussed task in the conversation history!
    - Output { "op_type": "DELETE_TASK", "title": "Resolved Task Title" }
    - NEVER output conversational text or questions like "can you delete it?" as the task title!
-3. GREETINGS, PRAISE, COMPLIMENTS & CASUAL CHAT:
-   - When the user sends compliments, praise (e.g. "you are the great", "you're the best", "good job", "thanks"), greetings ("hello", "hi"), or casual chatter WITHOUT asking for tasks/schedule actions:
+3. GREETINGS, PRAISE, COMPLIMENTS & CASUAL CHAT (INCLUDING USER PERSONA INQUIRIES):
+   - When the user sends compliments, praise, greetings, or casual chatter (e.g. "you know me, right?", "who am I?") WITHOUT asking for tasks/schedule actions:
    - MANDATORY: YOU MUST SET "operations": [] (EMPTY ARRAY)!
    - NEVER create, delete, or modify any task on casual chatter!
-   - Reply warmly and politely with genuine appreciation.
+   - If the user asks if you know them or about themselves, you MUST use their User Information & Context provided above to respond accurately and naturally!
+   - Reply warmly and politely.
    - CRITICAL: NEVER parrot or echo the user's praise or words back at them!
 4. ADDING TASKS & INTELLIGENT TASK SUGGESTIONS:
-   - When the user asks to add or schedule tasks, generate "ADD_TASK" with title, duration_minutes, priority, and category.
-   - When the user asks "what tasks should I do tomorrow?", "what tasks should I do today?", "what should I do?", "suggest tasks", or "plan my day":
-     * ALWAYS generate 2 to 4 concrete, actionable "ADD_TASK" operations tailored directly to the user's persona/tech stack/profile context!
-     * Set target_date appropriately ("tomorrow" if asking for tomorrow, or "today" if asking for today).
-     * Provide a helpful, motivating message presenting the proposed focus plan so the user can click "Apply Changes" directly!
-5. MOVING / SKIPPING / COMPLETING / UPDATING: Generate "MOVE_TASK", "SKIP_TASK", "COMPLETE_TASK", or "UPDATE_TASK".
+   - When the user specifically asks for tasks to be flexible or unstructured, use "ADD_TASK" (which has no start_time).
+   - CRITICAL TIME CONSTRAINT RULE: If the user provides an absolute time, OR asks to "schedule" or "assign times", you MUST use "ADD_COMMITMENT" and provide both "start_time" (e.g., "12:00") and "duration_minutes". Both are MANDATORY for commitments!
+   - DO NOT split tasks that are joined by '+' or 'and' if they belong to the same time block (e.g. "Lunch + Anime" must be ONE task titled "Lunch + Anime").
+   - When the user asks "what tasks should I do?", "suggest tasks", or says "add tasks judging who I am":
+     * CRITICAL: YOU MUST append 2 to 4 completely new tasks tailored directly to the user's persona/tech stack!
+     * You MUST use "ADD_COMMITMENT" for these invented tasks and GUESS a reasonable "start_time" and "duration_minutes" for when they should do them today!
+     * Provide a helpful, motivating message presenting the proposed focus plan.
+       * CRITICAL: You MUST leave a gap of at least the Default Break Buffer between any consecutive commitments you schedule!
+5. DELETING SPECIFIC TASKS VS OTHERS:
+   - If the user says "keep X and delete others", you MUST NOT delete X! You must output DELETE_TASK operations for the OTHER tasks in the schedule instead.
+6. MOVING / SKIPPING / COMPLETING / UPDATING: Generate "MOVE_TASK", "SKIP_TASK", "COMPLETE_TASK", or "UPDATE_TASK".
 
 Supported op_types: "ADD_TASK", "DELETE_TASK", "UPDATE_TASK", "MOVE_TASK", "SKIP_TASK", "COMPLETE_TASK", "CREATE_HABIT", "ADD_COMMITMENT", "REPLAN_DAY"
 
@@ -175,9 +208,9 @@ Return ONLY valid JSON matching this schema:
       "title": "Clean Task Title",
       "duration_minutes": 45,
       "priority": "critical" | "important" | "flexible" | "optional",
-      "category": "Work" | "Learning" | "Personal" | "Health",
+      "category": ${categoriesString},
       "target_date": "today" | "tomorrow",
-      "start_time": "14:00"
+      "start_time": "14:00" // CRITICAL: ALWAYS extract or guess the start time and INCLUDE this field!
     }
   ],
   "suggestions": []
@@ -186,9 +219,13 @@ Return ONLY valid JSON matching this schema:
 Examples:
 - User: "you are the best" -> { "message": "Thank you! Happy to help keep you focused and organized. What's on your agenda?", "operations": [] }
 - User: "hello" -> { "message": "Hi! How can I help you with your tasks or schedule today?", "operations": [] }
-- User: "delete it" -> { "message": "Removed task from your schedule.", "operations": [{ "op_type": "DELETE_TASK", "title": "temp" }] }`;
+- User: "delete it" -> { "message": "Removed task from your schedule.", "operations": [{ "op_type": "DELETE_TASK", "title": "temp" }] }
+- User: "workout + pod from 8am to 9am and meeting at 1pm" -> { "message": "I've added these commitments to your schedule.", "operations": [{ "op_type": "ADD_COMMITMENT", "title": "Workout + Pod", "start_time": "08:00", "duration_minutes": 60, "priority": "important", "category": "Health", "target_date": "today" }, { "op_type": "ADD_COMMITMENT", "title": "Meeting", "start_time": "13:00", "duration_minutes": 30, "priority": "important", "category": "Work", "target_date": "today" }] }
+- User: "add tasks judging who I am" -> { "message": "Based on your profile, here are a few tasks:", "operations": [{ "op_type": "ADD_COMMITMENT", "title": "Deep Work: Architecture", "start_time": "14:00" // CRITICAL: ALWAYS extract or guess the start time and INCLUDE this field!, "duration_minutes": 60, "priority": "critical", "category": "Work", "target_date": "today" }, { "op_type": "ADD_COMMITMENT", "title": "Code Review", "start_time": "15:00", "duration_minutes": 30, "priority": "important", "category": "Work", "target_date": "today" }] }
+- User: "keep coding and delete others" -> { "message": "Kept coding and removed the rest.", "operations": [{ "op_type": "DELETE_TASK", "title": "Reading" }, { "op_type": "DELETE_TASK", "title": "Meeting" }] }`;
 
   const provider = settings.aiProvider || 'in_app';
+  context.system_prompt = systemPrompt;
 
   // 1. IN-APP DIRECT MODEL EXECUTION (WebLLM / Hugging Face weights, No Ollama required!)
   if (provider === 'in_app') {
@@ -215,6 +252,7 @@ Examples:
         }
 
         ops = preserveRefinedTaskProperties(ops, userMessage, context);
+        ops = deduplicateOperations(ops);
         msg = sanitizeAssistantMessage(msg, userMessage, ops);
 
         return {
@@ -341,6 +379,7 @@ Examples:
             }
 
             ops = preserveRefinedTaskProperties(ops, userMessage, context);
+            ops = deduplicateOperations(ops);
             msg = sanitizeAssistantMessage(msg, userMessage, ops);
 
             return {
@@ -391,8 +430,13 @@ Examples:
 
   // 3. Try invoking Tauri backend command if present
   try {
+    const start = performance.now();
     const { invoke } = await import('@tauri-apps/api/core');
     const result = await invoke<AiResponsePayload>('process_ai_command', { context });
+    result.latencyMs = result.latencyMs || Math.round(performance.now() - start);
+    if (result && result.operations) {
+      result.operations = deduplicateOperations(result.operations);
+    }
     return result;
   } catch (err) {
     // 4. Fallback to client-side heuristic parser
@@ -446,6 +490,7 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
   const isQuestion = /^(who are you|what can you do|how are you|what is this|help|what can i do)(\s*\??)$/i.test(msg);
   const isGratitude = /^(thanks|thank you|awesome|great|cool|ok|okay|got it)(\s*.*)?$/i.test(msg);
   const isOnlineQuery = /^(is the model online|are you online|is ai online|is model online|model status|is ollama online|status)(\s*\??)$/i.test(msg);
+  const isUserPersonaQuery = /^(you know me|do you know me|who am i|what is my name|what's my name|my name|about me|do you know about me)(\s*.*)?$/i.test(msg);
 
   if (isPraise) {
     return {
@@ -473,6 +518,21 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
       modelUsed: 'Offline Rule-Based Heuristic',
       latencyMs: 1,
       warning: 'AI Model is offline. Running on offline heuristic mode.',
+    };
+  }
+
+  if (isUserPersonaQuery) {
+    return {
+      message: "Yes! I know you based on the profile context you've set up in your settings. I use that context to personalize your focus blocks and schedule.",
+      operations: [],
+      suggestions: [
+        'Organize my tasks for today',
+        'Add a 30m deep work block'
+      ],
+      engineSource: 'heuristic_fallback',
+      modelUsed: 'Offline Rule-Based Heuristic',
+      latencyMs: 1,
+      warning: 'AI Model is offline. Response generated with built-in heuristic rules.',
     };
   }
 
@@ -594,13 +654,13 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
       } else {
         // Strip conversational fluff from beginning and end
         let cleaned = userMessage
-          .replace(/^(can you|could you|please|kindly|would you|i want to|want to|just|go ahead and)?\s*(delete|remove|clear|drop|cancel)\s*(the\s+)?(task\s+)?/i, '')
+          .replace(/^(nah|no|actually|wait|instead|can you|could you|please|kindly|would you|i want to|want to|just|go ahead and|let's|lets)?\s*(delete|remove|clear|drop|cancel)\s*(the\s+)?(task\s+|tasks\s+)?/i, '')
           .replace(/\s+(today|tomorrow|from schedule|from my schedule|from list|from the list|please).*$/i, '')
           .replace(/\?+$/, '')
           .trim();
 
         // Check if cleaned query is a pronoun or referential word
-        const isPronoun = /^(it|that|this|the task|this task|that task|the last task|the previous task|last one|previous one|it\?|that\?)$/i.test(cleaned);
+        const isPronoun = /^(it|that|this|the task|this task|that task|the last task|the previous task|last one|previous one|them|these|those|the recently created tasks|recently created tasks|it\?|that\?)$/i.test(cleaned);
 
         let targetTitle = cleaned;
         if (isPronoun || !targetTitle) {
@@ -924,6 +984,11 @@ function preserveRefinedTaskProperties(
   }
 
   return ops.map((op) => {
+    // Safety check: local models often drop duration_minutes when generating ADD_COMMITMENT
+    if (op.op_type === 'ADD_COMMITMENT' && !op.duration_minutes) {
+      op.duration_minutes = 60; // Fallback to 1 hour so the UI can calculate the end time
+    }
+
     if (op.op_type === 'UPDATE_TASK' || op.op_type === 'ADD_TASK') {
       const updated = { ...op };
       // If user did not specify priority, restore prior priority if available and never default-downgrade
@@ -949,4 +1014,37 @@ function preserveRefinedTaskProperties(
     }
     return op;
   });
+}
+
+export function deduplicateOperations(ops: any[]): any[] {
+  const bestOps = new Map<string, any>();
+  for (const op of ops) {
+    if (op.title && (op.op_type === 'ADD_TASK' || op.op_type === 'ADD_COMMITMENT')) {
+      const key = op.title.toLowerCase().trim();
+      const existing = bestOps.get(key);
+      if (!existing) {
+        bestOps.set(key, op);
+      } else {
+        if (existing.op_type === 'ADD_TASK' && op.op_type === 'ADD_COMMITMENT') {
+          bestOps.set(key, op);
+        } else if (!existing.start_time && op.start_time) {
+          bestOps.set(key, op);
+        }
+      }
+    }
+  }
+
+  const result = [];
+  const emittedTitles = new Set<string>();
+  for (const op of ops) {
+    if (op.title && (op.op_type === 'ADD_TASK' || op.op_type === 'ADD_COMMITMENT')) {
+      const key = op.title.toLowerCase().trim();
+      if (emittedTitles.has(key)) continue;
+      emittedTitles.add(key);
+      result.push(bestOps.get(key));
+    } else {
+      result.push(op);
+    }
+  }
+  return result;
 }

@@ -335,15 +335,15 @@ export const ProductivitySummary: React.FC = () => {
             className="flex-shrink-0 cursor-pointer group/counter transition-transform hover:scale-105 active:scale-95"
             title="Click to view pending outcomes in My Tasks"
           >
-            <div className="flex items-baseline leading-none">
+            <div className="flex items-center leading-none">
               <span className="text-foreground tracking-tight text-[36px] sm:text-[42px] md:text-[48px] font-serif font-medium group-hover/counter:text-primary transition-colors">
                 {remainingCount}
               </span>
-              <span className="text-[14px] sm:text-[16px] font-normal text-textSecondary font-sans ml-1.5">
+              <span className="text-[14px] sm:text-[16px] font-medium text-textSecondary font-sans ml-1.5 mt-1.5">
                 left
               </span>
             </div>
-            <p className="text-[11.5px] sm:text-[12px] text-mutedText font-normal mt-0.5 sm:mt-1 tracking-tight whitespace-nowrap">
+            <p className="text-[11.5px] sm:text-[12px] text-mutedText font-normal mt-1 tracking-tight">
               Today's Outcomes
             </p>
           </div>
@@ -353,7 +353,7 @@ export const ProductivitySummary: React.FC = () => {
         </div>
 
         {/* Right: Daily Focus Capacity Card */}
-        <div className="bg-background rounded-[22px] p-2.5 sm:p-3 flex flex-col justify-center flex-1 min-w-0 sm:max-w-[320px] transition-colors">
+        <div className="bg-background rounded-[22px] p-2.5 sm:p-3 flex flex-col justify-center flex-1 min-w-0 sm:max-w-[320px] transition-colors mt-1 sm:mt-0">
           <div className="flex items-center justify-between mb-1.5 sm:mb-2 px-1">
             <span className="text-[12px] sm:text-[12.5px] font-medium text-foreground tracking-tight">
               Daily Focus
@@ -462,8 +462,8 @@ export const ProductivitySummary: React.FC = () => {
       </div>
 
       {/* 2. MIDDLE ROW: YouTube Lofi Focus Radio & Ambient Player Bar */}
-      <div className="bg-background rounded-[20px] p-2 sm:p-2.5 px-2.5 sm:px-3 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5 transition-colors">
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+      <div className="bg-background rounded-[20px] p-2 sm:p-2.5 px-2.5 sm:px-3 flex flex-wrap items-center justify-between gap-2.5 transition-colors">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-[120px] flex-1">
           {/* Photo Thumbnail with Centered Play Button & Equalizer */}
           <div
             onClick={() => toggleLofi()}
@@ -496,7 +496,7 @@ export const ProductivitySummary: React.FC = () => {
           </div>
 
           {/* Lofi Track / Mood Information */}
-          <div className="min-w-0 flex-1 pr-1">
+          <div className="hidden sm:block min-w-0 flex-1 pr-1">
             <div className="flex items-center gap-1.5">
               <span className="text-[12.5px] sm:text-[13px] font-semibold text-foreground block leading-tight truncate">
                 {currentStation.label}
@@ -515,7 +515,7 @@ export const ProductivitySummary: React.FC = () => {
 
         {/* Lofi Station Switcher Pills & Volume Control */}
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end ml-auto flex-shrink-0">
-          <div className="flex items-center gap-1 sm:gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
             {LOFI_STATION_LIST.map((s) => {
               const Icon = stationIcons[s.id] || Headphones;
               const isSel = activeLofiStation === s.id;
@@ -605,8 +605,8 @@ export const ProductivitySummary: React.FC = () => {
               </span>
               <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#E5484D] flex-shrink-0" />
             </div>
-            <span className="text-[10.5px] sm:text-[11.5px] leading-[1.2] text-textSecondary font-medium mt-1 block">
-              Important<br className="hidden xs:inline" /> Priority
+            <span className="text-[10.5px] sm:text-[11px] leading-tight text-textSecondary font-medium mt-1 block break-words whitespace-normal">
+              Important Priority
             </span>
           </div>
         </div>
@@ -632,8 +632,8 @@ export const ProductivitySummary: React.FC = () => {
               </span>
               <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#D97706] flex-shrink-0" />
             </div>
-            <span className="text-[10.5px] sm:text-[11.5px] leading-[1.2] text-textSecondary font-medium mt-1 block">
-              Flexible<br className="hidden xs:inline" /> Outcomes
+            <span className="text-[10.5px] sm:text-[11px] leading-tight text-textSecondary font-medium mt-1 block break-words whitespace-normal">
+              Flexible Outcomes
             </span>
           </div>
         </div>
@@ -659,8 +659,8 @@ export const ProductivitySummary: React.FC = () => {
               </span>
               <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#16A34A] flex-shrink-0" />
             </div>
-            <span className="text-[10.5px] sm:text-[11.5px] leading-[1.2] text-textSecondary font-medium mt-1 block">
-              Completed<br className="hidden xs:inline" /> Today
+            <span className="text-[10.5px] sm:text-[11px] leading-tight text-textSecondary font-medium mt-1 block break-words whitespace-normal">
+              Completed Today
             </span>
           </div>
         </div>

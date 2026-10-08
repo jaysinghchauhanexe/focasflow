@@ -208,7 +208,9 @@ export interface AiRequestContext {
   habits: string[];
   working_hours: string;
   sleep_hours: string;
+    break_duration: number;
   user_message: string;
+  system_prompt?: string;
   conversation_history?: { role: 'user' | 'assistant'; content: string }[];
   api_key?: string;
   model?: string;
@@ -261,3 +263,23 @@ export interface AppSiteFocusItem {
   color: string;
 }
 
+
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'ai';
+  text: string;
+  timestamp: string;
+  payload?: AiResponsePayload;
+  rawJson?: string;
+  isApplied?: boolean;
+  isDiscarded?: boolean;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  dateLabel: string;
+  createdAt: string;
+  updatedAt: string;
+  messages: ChatMessage[];
+}

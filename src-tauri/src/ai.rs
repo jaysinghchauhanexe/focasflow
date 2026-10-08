@@ -33,7 +33,9 @@ pub struct AiRequestContext {
     pub habits: Vec<String>,
     pub working_hours: String,
     pub sleep_hours: String,
+    pub break_duration: i32,
     pub user_message: String,
+    pub system_prompt: Option<String>,
     pub api_key: Option<String>,
     pub model: Option<String>,
 }
@@ -63,7 +65,7 @@ async fn call_openrouter(
 ) -> Result<AiResponsePayload, String> {
     let client = reqwest::Client::new();
 
-    let system_prompt = "You are FocusFlow AI, a calm, disciplined personal scheduling assistant for Daily Life OS.\n\
+    let default_prompt = "You are FocusFlow AI, a calm, disciplined personal scheduling assistant for Daily Life OS.\n\
     Your job is to interpret the user's natural language request and convert it into structured operations.\n\
     DO NOT generate the full schedule timetable yourself. Instead, generate discrete operations.\n\
     Available operation types:\n\
@@ -95,7 +97,7 @@ async fn call_openrouter(
       \"overload_minutes\": 0\n\
     }";
 
-    let prompt = format!(
+    let system_prompt = context.system_prompt.as_deref().unwrap_or(default_prompt); let prompt = format!(
         "Context:\nDate: {}\nTime: {}\nWorking Hours: {}\nSleep Hours: {}\nRemaining Tasks: {:?}\nHabits: {:?}\n\nUser Request: \"{}\"",
         context.current_date,
         context.current_time,

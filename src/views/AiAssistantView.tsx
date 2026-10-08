@@ -51,6 +51,36 @@ import {
 } from '../engine/whisperService';
 import { DiurnalSkyIllustration } from '../components/ProductivitySummary';
 
+const calculateEndTime = (startTimeStr: string | undefined, durationMinutes: number | undefined): string | null => {
+  if (!startTimeStr || !durationMinutes) return null;
+  const [hours, minutes] = startTimeStr.split(':').map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return null;
+  const totalMinutes = hours * 60 + minutes + durationMinutes;
+  const endHours = Math.floor(totalMinutes / 60) % 24;
+  const endMinutes = totalMinutes % 60;
+  return `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+};
+
+const formatTime12h = (time24: string): string => {
+  const [hoursStr, minutesStr] = time24.split(':');
+  if (!hoursStr) return time24;
+  let h = parseInt(hoursStr, 10);
+  const m = minutesStr || '00';
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${m} ${ampm}`;
+};
+
+const renderTimeBlock = (start: string | undefined, duration: number | undefined) => {
+  if (!start) return 'Scheduled for today';
+  const start12 = formatTime12h(start);
+  if (!duration) return `@${start12}`;
+  const end24 = calculateEndTime(start, duration);
+  if (!end24) return `@${start12}`;
+  return `@${start12} - ${formatTime12h(end24)}`;
+};
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'ai';
@@ -72,7 +102,7 @@ export interface ChatSession {
 }
 
 export const AiAssistantView: React.FC = () => {
-  const { tasks, habits, settings, applyAiOperations, setCurrentTab } = useAppStore();
+  const { tasks, habits, settings, applyAiOperations, setCurrentTab, aiChatSessions: sessions, aiActiveSessionId: activeSessionId, setAiChatSessions: setSessions, setAiActiveSessionId: setActiveSessionId, aiLoading: loading, setAiLoading: setLoading } = useAppStore();
 
   const [inputVal, setInputVal] = useState(() => {
     try {
@@ -81,7 +111,6 @@ export const AiAssistantView: React.FC = () => {
       return '';
     }
   });
-  const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [showRawJsonMap, setShowRawJsonMap] = useState<Record<string, boolean>>({});
   const [showModelDropdown, setShowModelDropdown] = useState(false);
@@ -133,26 +162,6 @@ export const AiAssistantView: React.FC = () => {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // Sessions Management
-  const [sessions, setSessions] = useState<ChatSession[]>(() => {
-    try {
-      const saved = localStorage.getItem('focusflow_ai_chat_sessions');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch { }
-    return [];
-  });
-
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(() => {
-    try {
-      const last = localStorage.getItem('focusflow_ai_active_session');
-      if (last) return last;
-    } catch { }
-    return null;
-  });
-
   // Current Active Session or empty state
   const currentSession = sessions.find((s) => s.id === activeSessionId) || null;
   const activeMessages: ChatMessage[] = currentSession ? currentSession.messages : [];
@@ -191,16 +200,6 @@ export const AiAssistantView: React.FC = () => {
   const userName = settings.userName || 'Jay';
 
   // Save Sessions & Active session to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('focusflow_ai_chat_sessions', JSON.stringify(sessions));
-      if (activeSessionId) {
-        localStorage.setItem('focusflow_ai_active_session', activeSessionId);
-      } else {
-        localStorage.removeItem('focusflow_ai_active_session');
-      }
-    } catch { }
-  }, [sessions, activeSessionId]);
 
   // Message windowing: Load couple of previous messages by default, load more on scroll up
   const INITIAL_VISIBLE_MESSAGES = 8;
@@ -779,7 +778,7 @@ export const AiAssistantView: React.FC = () => {
             </div>
 
             <p className="text-[11.5px] text-mutedText truncate">
-              {op.start_time ? `@${op.start_time}` : 'Scheduled for today'}
+              {renderTimeBlock(op.start_time, op.duration_minutes)}
               {op.target_date ? ` • ${op.target_date}` : ''}
             </p>
           </div>

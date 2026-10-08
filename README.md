@@ -1,3 +1,7 @@
+![Logo](/public/logo.png)
+
+---
+
 # FocusFlow 🌿
 
 > **A mindful, calm, and intelligent daily life operating system designed for deep focus, task mastery, and mental well-being.**

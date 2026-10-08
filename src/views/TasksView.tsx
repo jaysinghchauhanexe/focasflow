@@ -259,7 +259,7 @@ export const TasksView: React.FC = () => {
 
   // Filter tasks based on global criteria
   const applyFilter = (taskList: Task[]) => {
-    return taskList.filter((t) => {
+    const filtered = taskList.filter((t) => {
       if (taskSearchQuery && !t.title.toLowerCase().includes(taskSearchQuery.toLowerCase())) return false;
       if (taskCategoryFilter !== 'All' && t.category !== taskCategoryFilter) return false;
       if (taskPriorityFilter !== 'All' && taskPriorityFilter !== 'all') {
@@ -278,6 +278,15 @@ export const TasksView: React.FC = () => {
         if (taskStatusFilter === 'pending' && t.status === 'completed') return false;
       }
       return true;
+    });
+
+    return filtered.sort((a, b) => {
+      if (a.scheduledStart && !b.scheduledStart) return -1;
+      if (!a.scheduledStart && b.scheduledStart) return 1;
+      if (a.scheduledStart && b.scheduledStart) {
+        return a.scheduledStart.localeCompare(b.scheduledStart);
+      }
+      return 0;
     });
   };
 
@@ -1083,7 +1092,7 @@ export const TasksView: React.FC = () => {
                   </div>
 
                   <div
-                    className="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                    className={`transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${collapsedSections.today ? 'overflow-hidden' : 'overflow-visible'}`}
                     style={{
                       maxHeight: collapsedSections.today ? '0px' : '2000px',
                       opacity: collapsedSections.today ? 0 : 1,
@@ -1126,7 +1135,7 @@ export const TasksView: React.FC = () => {
                   </div>
 
                   <div
-                    className="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                    className={`transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${collapsedSections.upcoming ? 'overflow-hidden' : 'overflow-visible'}`}
                     style={{
                       maxHeight: collapsedSections.upcoming ? '0px' : '2000px',
                       opacity: collapsedSections.upcoming ? 0 : 1,
@@ -1169,7 +1178,7 @@ export const TasksView: React.FC = () => {
                   </div>
 
                   <div
-                    className="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                    className={`transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${collapsedSections.later ? 'overflow-hidden' : 'overflow-visible'}`}
                     style={{
                       maxHeight: collapsedSections.later ? '0px' : '2000px',
                       opacity: collapsedSections.later ? 0 : 1,

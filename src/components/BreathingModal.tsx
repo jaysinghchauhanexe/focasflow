@@ -113,7 +113,7 @@ export const BreathingModal: React.FC = () => {
         `}
       </style>
       <div 
-        className="relative w-full max-w-[420px] bg-card rounded-[36px] shadow-2xl p-7 md:p-8 flex flex-col items-center text-center transition-colors cursor-default border border-borderToken overflow-hidden"
+        className="relative w-full max-w-[460px] bg-card rounded-[36px] shadow-2xl p-7 md:p-8 flex flex-col items-center text-center transition-colors cursor-default border border-borderToken overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header */}
@@ -162,70 +162,81 @@ export const BreathingModal: React.FC = () => {
           </button>
         </div>
 
-        {/* Breathing Visualization */}
-        <div className="relative w-64 h-64 flex items-center justify-center mb-8">
-          {/* Waves Background */}
-          <div className="absolute inset-2 rounded-full bg-card-subtle overflow-hidden flex items-end">
-            <svg className="absolute bottom-0 w-[200%] text-primary/10 fill-current" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ animation: isActive ? 'slideWave 12s linear infinite reverse' : 'none', height: '65%' }}>
-              <path d="M0,192L48,176C96,160,192,128,288,122.7C384,117,480,139,576,149.3C672,160,768,160,864,138.7C960,117,1056,75,1152,85.3C1248,96,1344,160,1392,192L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-            </svg>
-            <svg className="absolute bottom-0 w-[200%] text-primary/20 fill-current" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ animation: isActive ? 'slideWave 8s linear infinite' : 'none', height: '50%' }}>
-              <path d="M0,160L48,170.7C96,181,192,203,288,192C384,181,480,139,576,144C672,149,768,203,864,213.3C960,224,1056,192,1152,176C1248,160,1344,160,1392,160L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-            </svg>
-          </div>
+        {/* Full width Waves Background */}
+        <div className="absolute inset-x-0 bottom-0 top-[30%] overflow-hidden pointer-events-none z-0 rounded-b-[36px]">
+          <svg className="absolute bottom-0 w-[200%] text-primary opacity-[0.04] fill-current" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ animation: isActive ? 'slideWave 12s linear infinite reverse' : 'none', height: '85%' }}>
+            <path d="M0,192L48,176C96,160,192,128,288,122.7C384,117,480,139,576,149.3C672,160,768,160,864,138.7C960,117,1056,75,1152,85.3C1248,96,1344,160,1392,192L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+          </svg>
+          <svg className="absolute bottom-0 w-[200%] text-primary opacity-[0.08] fill-current" viewBox="0 0 1440 320" preserveAspectRatio="none" style={{ animation: isActive ? 'slideWave 8s linear infinite' : 'none', height: '70%' }}>
+            <path d="M0,160L48,170.7C96,181,192,203,288,192C384,181,480,139,576,144C672,149,768,203,864,213.3C960,224,1056,192,1152,176C1248,160,1344,160,1392,160L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+          </svg>
+        </div>
 
-          {/* SVG Progress Ring */}
-          <svg className="absolute inset-0 w-full h-full rotate-[-90deg]">
+        {/* Breathing Visualization */}
+        <div className="relative w-[260px] h-[260px] flex items-center justify-center mb-8 z-10">
+          
+          {/* Layer 1: Outer Circle with Inner Shadow */}
+          <div className="absolute inset-0 rounded-full bg-transparent border border-borderToken/30 shadow-[inset_0_4px_16px_rgba(0,0,0,0.06)] z-0" />
+
+          {/* Layer 2: SVG Progress Ring */}
+          <svg className="absolute w-[240px] h-[240px] rotate-[-90deg] z-10 pointer-events-none">
             <circle
-              stroke="var(--tw-colors-borderToken)"
+              stroke="var(--tw-colors-primary)"
+              strokeOpacity="0.12"
               fill="transparent"
-              strokeWidth={stroke}
-              r={normalizedRadius}
-              cx={radius + 28}
-              cy={radius + 28}
+              strokeWidth={7}
+              r={116.5}
+              cx={120}
+              cy={120}
             />
             <circle
               stroke="var(--tw-colors-primary)"
               fill="transparent"
-              strokeWidth={stroke}
-              strokeDasharray={circumference + ' ' + circumference}
-              style={{ strokeDashoffset, transition: isActive ? 'stroke-dashoffset 1s linear' : 'none' }}
-              r={normalizedRadius}
-              cx={radius + 28}
-              cy={radius + 28}
+              strokeWidth={7}
+              strokeDasharray={2 * Math.PI * 116.5}
+              style={{ 
+                strokeDashoffset: (2 * Math.PI * 116.5) - (progressValue / 100) * (2 * Math.PI * 116.5), 
+                transition: isActive ? 'stroke-dashoffset 1s linear' : 'none' 
+              }}
+              r={116.5}
+              cx={120}
+              cy={120}
               strokeLinecap="round"
             />
           </svg>
           
-          {/* Progress Dot Marker */}
+          {/* Layer 2: Progress Dot Marker */}
           <div 
-            className="absolute z-20 w-4 h-4 rounded-full bg-primary border-[3px] border-card shadow-sm"
+            className="absolute z-20 w-[18px] h-[18px] rounded-full bg-card shadow-md flex items-center justify-center"
             style={{
               top: '50%',
               left: '50%',
-              transform: `translate(-50%, -50%) rotate(${(progressValue / 100) * 360 - 90}deg) translate(${normalizedRadius}px) rotate(${-(progressValue / 100) * 360 + 90}deg)`,
+              transform: `translate(-50%, -50%) rotate(${(progressValue / 100) * 360 - 90}deg) translate(116.5px) rotate(${-(progressValue / 100) * 360 + 90}deg)`,
               transition: isActive ? 'transform 1s linear' : 'none'
             }}
-          />
+          >
+            <div className="w-[10px] h-[10px] rounded-full bg-primary" />
+          </div>
 
-          {/* Timer Display inside circle */}
-          <div className="relative z-10 flex flex-col items-center justify-center">
-            <span className="text-[12px] font-semibold text-primary/80 uppercase tracking-widest mb-1">
+          {/* Layer 3: Inner Circle with Drop Shadow (Spacing from timer stroke) */}
+          <div className="absolute w-[180px] h-[180px] rounded-full bg-card shadow-[0_4px_24px_rgba(0,0,0,0.08)] z-10 flex flex-col items-center justify-center">
+            {/* Timer Display inside circle */}
+            <span className="text-[12px] font-bold text-primary/80 uppercase tracking-widest mb-0.5">
               {phase}
             </span>
             <div className="flex items-baseline gap-1 text-primary">
-              <span className="text-[48px] font-sans font-bold tracking-tighter leading-none">
+              <span className="text-[56px] font-sans font-bold tracking-tighter leading-none text-foreground">
                 {secondsLeft}s
               </span>
             </div>
-            <span className="text-[13px] text-primary/60 font-medium mt-1">
+            <span className="text-[12.5px] text-mutedText font-medium mt-1">
               of {maxSeconds}s
             </span>
           </div>
         </div>
 
         {/* Phase Guidance Text */}
-        <div className="mb-5 min-h-[58px]">
+        <div className="relative z-10 mb-5 min-h-[58px]">
           <h4 className="text-[22px] font-semibold text-foreground tracking-tight">
             {getPhaseText()}
           </h4>
@@ -235,24 +246,24 @@ export const BreathingModal: React.FC = () => {
         </div>
 
         {/* Cycles Counter */}
-        <div className="flex items-center gap-2 bg-card-subtle px-4 py-2 rounded-full mb-8">
+        <div className="relative z-10 flex items-center gap-3 bg-card-subtle px-4 py-2 rounded-full mb-8">
           <div className="flex items-center gap-1.5">
             {[...Array(4)].map((_, i) => (
               <div 
                 key={i} 
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  i === (cyclesCompleted % 4) ? 'bg-primary' : 'bg-borderToken'
+                className={`w-[7px] h-[7px] rounded-full transition-colors bg-primary ${
+                  i === (cyclesCompleted % 4) ? 'opacity-100' : 'opacity-20'
                 }`} 
               />
             ))}
           </div>
-          <span className="text-[12.5px] font-medium text-mutedText ml-2">
+          <span className="text-[12.5px] font-medium text-mutedText">
             {(cyclesCompleted % 4) + 1} / 4 cycles
           </span>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center justify-center gap-3 w-full">
+        <div className="relative z-10 flex items-center justify-center gap-3 w-full">
           <button
             onClick={() => setIsActive(!isActive)}
             className="flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-[20px] bg-primary hover:bg-primary-hover text-white text-[14px] font-medium shadow-xs transition-all cursor-pointer"

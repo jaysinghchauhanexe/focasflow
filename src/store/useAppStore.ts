@@ -17,7 +17,8 @@ import {
   AppTheme,
   LofiStationId,
   AnalyticsFilter,
-  AppSiteFocusItem
+  AppSiteFocusItem,
+  ChatSession
 } from '../types';
 import { calculateDayCapacity, buildDaySchedule } from '../engine/scheduler';
 import { playCompletionSound } from '../utils/soundEffects';
@@ -43,6 +44,8 @@ interface AppState {
   isAiModalOpen: boolean;
   aiLoading: boolean;
   lastAiResult: AiResponsePayload | null;
+  aiChatSessions: ChatSession[];
+  aiActiveSessionId: string | null;
   isOverloadModalOpen: boolean;
   isBreathingModalOpen: boolean;
   isSidebarCollapsed: boolean;
@@ -172,6 +175,8 @@ interface AppState {
   closeAiModal: () => void;
   setAiLoading: (loading: boolean) => void;
   setLastAiResult: (res: AiResponsePayload | null) => void;
+  setAiChatSessions: (sessionsOrUpdater: ChatSession[] | ((prev: ChatSession[]) => ChatSession[])) => void;
+  setAiActiveSessionId: (id: string | null) => void;
   openOverloadModal: () => void;
   closeOverloadModal: () => void;
   isMoodModalOpen: boolean;
@@ -507,8 +512,8 @@ import { Store } from '@tauri-apps/plugin-store';
 
 let tauriStore: Store | null = null;
 try {
-  if (window.__TAURI_INTERNALS__) {
-    tauriStore = new Store('focusflow-data.bin');
+  if ((window as any).__TAURI_INTERNALS__) {
+    tauriStore = new (Store as any)('focusflow-data.bin');
   }
 } catch (e) {
   console.log('Tauri store not available');
@@ -569,6 +574,15 @@ const initialAppSites: AppSiteFocusItem[] = [];
 applyTheme(loadedSettings.theme || 'green');
 applyFont(loadedSettings.fontHeading || 'Gilda Display');
 
+const calculateEndTime = (startTimeStr?: string, durationMinutes?: number): string | undefined => {
+  if (!startTimeStr || !durationMinutes) return undefined;
+  const [hours, minutes] = startTimeStr.split(':').map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return undefined;
+  const totalMinutes = hours * 60 + minutes + durationMinutes;
+  const endHours = Math.floor(totalMinutes / 60) % 24;
+  const endMinutes = totalMinutes % 60;
+  return `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+};
 export const useAppStore = create<AppState>((set, get) => ({
   currentTab: 'today',
   selectedDate: getTodayDate(),
@@ -590,6 +604,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   isAiModalOpen: false,
   aiLoading: false,
   lastAiResult: null,
+  aiChatSessions: loadPersisted('focusflow_ai_chat_sessions', []),
+  aiActiveSessionId: loadPersisted('focusflow_ai_active_session', null),
   isOverloadModalOpen: false,
   isBreathingModalOpen: false,
   isMoodModalOpen: false,
@@ -1181,7 +1197,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           category: op.category || 'Work',
           scheduledDate: targetDate,
           scheduledStart: op.start_time || undefined,
-          scheduledEnd: op.end_time || undefined,
+          scheduledEnd: op.end_time || calculateEndTime(op.start_time, op.duration_minutes),
           timeMode: op.start_time ? 'scheduled' : 'duration',
           flexibility: op.start_time ? 'fixed' : 'flexible',
           createdAt: new Date().toISOString(),
@@ -1197,7 +1213,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           category: op.category || 'Work',
           scheduledDate: selectedDate,
           scheduledStart: op.start_time || '16:00',
-          scheduledEnd: op.end_time || undefined,
+          scheduledEnd: op.end_time || calculateEndTime(op.start_time, op.duration_minutes || 45),
           timeMode: 'scheduled',
           flexibility: 'fixed',
           createdAt: new Date().toISOString(),
@@ -1320,6 +1336,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeAiModal: () => set({ isAiModalOpen: false }),
   setAiLoading: (loading) => set({ aiLoading: loading }),
   setLastAiResult: (res) => set({ lastAiResult: res }),
+  setAiChatSessions: (val) => set((state) => {
+    const next = typeof val === 'function' ? val(state.aiChatSessions) : val;
+    savePersisted('focusflow_ai_chat_sessions', next);
+    return { aiChatSessions: next };
+  }),
+  setAiActiveSessionId: (id) => set({ aiActiveSessionId: id }),
   openOverloadModal: () => set({ isOverloadModalOpen: true }),
   closeOverloadModal: () => set({ isOverloadModalOpen: false }),
   openMoodModal: () => set({ isMoodModalOpen: true }),
