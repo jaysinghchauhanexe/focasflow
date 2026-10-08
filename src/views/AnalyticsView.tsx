@@ -520,7 +520,7 @@ export const AnalyticsView: React.FC = () => {
       case 1:
         return 'bg-primary-soft';
       default:
-        return 'bg-card-subtle opacity-40 border border-borderToken/20';
+        return 'bg-card-muted/80 dark:bg-white/[0.06] border border-borderToken/30';
     }
   };
 
@@ -648,10 +648,10 @@ export const AnalyticsView: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         
         {/* 1. Focus Time */}
-        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors min-h-[140px]">
+        <div className="bg-card rounded-[24px] p-6 flex flex-col justify-between transition-colors min-h-[140px]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-card-subtle flex items-center justify-center text-primary border border-borderToken">
+              <div className="w-6 h-6 rounded-full bg-card-subtle flex items-center justify-center text-primary">
                 <Clock size={13} strokeWidth={2.2} />
               </div>
               <span className="text-[13px] font-medium text-mutedText">Focus Time</span>
@@ -696,10 +696,10 @@ export const AnalyticsView: React.FC = () => {
         </div>
 
         {/* 2. Tasks Completed */}
-        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors min-h-[140px]">
+        <div className="bg-card rounded-[24px] p-6 flex flex-col justify-between transition-colors min-h-[140px]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-card-subtle flex items-center justify-center text-primary border border-borderToken">
+              <div className="w-6 h-6 rounded-full bg-card-subtle flex items-center justify-center text-primary">
                 <CheckCircle2 size={13} strokeWidth={2.2} />
               </div>
               <span className="text-[13px] font-medium text-mutedText">Tasks Completed</span>
@@ -733,10 +733,10 @@ export const AnalyticsView: React.FC = () => {
         </div>
 
         {/* 3. Top Category */}
-        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors min-h-[140px]">
+        <div className="bg-card rounded-[24px] p-6 flex flex-col justify-between transition-colors min-h-[140px]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-card-subtle flex items-center justify-center text-primary border border-borderToken">
+              <div className="w-6 h-6 rounded-full bg-card-subtle flex items-center justify-center text-primary">
                 <Target size={13} strokeWidth={2.2} />
               </div>
               <span className="text-[13px] font-medium text-mutedText">Top Category</span>
@@ -761,10 +761,10 @@ export const AnalyticsView: React.FC = () => {
         </div>
 
         {/* 4. Current Streak */}
-        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors min-h-[140px]">
+        <div className="bg-card rounded-[24px] p-6 flex flex-col justify-between transition-colors min-h-[140px]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-card-subtle flex items-center justify-center text-[#EFA743] border border-borderToken">
+              <div className="w-6 h-6 rounded-full bg-card-subtle flex items-center justify-center text-[#EFA743]">
                 <Zap size={13} strokeWidth={2.5} className="fill-[#EFA743]" />
               </div>
               <span className="text-[13px] font-medium text-mutedText">Current Streak</span>
@@ -805,7 +805,7 @@ export const AnalyticsView: React.FC = () => {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-stretch">
         
         {/* Left: Focus Time Trend (Fixed Bar Geometry & Glued Tooltip) */}
-        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors">
+        <div className="bg-card rounded-[24px] p-6 flex flex-col justify-between transition-colors">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-[17px] font-heading font-semibold text-foreground tracking-tight">
@@ -835,7 +835,7 @@ export const AnalyticsView: React.FC = () => {
                   <span className="text-[11px] font-medium text-mutedText w-7 flex-shrink-0 text-left">
                     {grid.label}
                   </span>
-                  <div className="flex-1 border-b border-borderToken/50" />
+                  <div className="flex-1 border-b border-borderToken" />
                 </div>
               ))}
             </div>
@@ -884,7 +884,7 @@ export const AnalyticsView: React.FC = () => {
         </div>
 
         {/* Right: Category Breakdown */}
-        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors">
+        <div className="bg-card rounded-[24px] p-6 flex flex-col justify-between transition-colors">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-[17px] font-heading font-semibold text-foreground tracking-tight">
@@ -909,7 +909,7 @@ export const AnalyticsView: React.FC = () => {
                   cy="50"
                   r="38"
                   fill="transparent"
-                  stroke="#CBD5E1"
+                  stroke="var(--color-card-muted)"
                   strokeWidth="14"
                   strokeDasharray="238.76"
                   strokeDashoffset="0"
@@ -1012,7 +1012,7 @@ export const AnalyticsView: React.FC = () => {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-stretch">
         
         {/* Left: Priority Completion Velocity */}
-        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors">
+        <div className="bg-card rounded-[24px] p-6 flex flex-col justify-between transition-colors">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-1.5">
               <h3 className="text-[17px] font-heading font-semibold text-foreground tracking-tight">
@@ -1054,7 +1054,7 @@ export const AnalyticsView: React.FC = () => {
                   <span className="text-[11px] font-medium text-mutedText w-6 flex-shrink-0 text-left">
                     {val}
                   </span>
-                  <div className="flex-1 border-b border-borderToken/50" />
+                  <div className="flex-1 border-b border-borderToken" />
                 </div>
               ))}
             </div>
@@ -1077,7 +1077,7 @@ export const AnalyticsView: React.FC = () => {
                     cy={p.y}
                     r="3.5"
                     fill="#EF4444"
-                    className="transition-transform hover:scale-150 cursor-pointer"
+                    className="transition-transform hover:scale-125 cursor-pointer"
                   >
                     <title>{`${velocityDates[i] || 'Day'}: ${p.val} High Priority completed`}</title>
                   </circle>
@@ -1099,7 +1099,7 @@ export const AnalyticsView: React.FC = () => {
                     cy={p.y}
                     r="3.5"
                     fill="#F59E0B"
-                    className="transition-transform hover:scale-150 cursor-pointer"
+                    className="transition-transform hover:scale-125 cursor-pointer"
                   >
                     <title>{`${velocityDates[i] || 'Day'}: ${p.val} Medium Priority completed`}</title>
                   </circle>
@@ -1121,7 +1121,7 @@ export const AnalyticsView: React.FC = () => {
                     cy={p.y}
                     r="3.5"
                     fill="var(--color-primary)"
-                    className="transition-transform hover:scale-150 cursor-pointer"
+                    className="transition-transform hover:scale-125 cursor-pointer"
                   >
                     <title>{`${velocityDates[i] || 'Day'}: ${p.val} Low Priority completed`}</title>
                   </circle>
@@ -1140,7 +1140,7 @@ export const AnalyticsView: React.FC = () => {
         </div>
 
         {/* Right: Tasks Matching Active Filters */}
-        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors">
+        <div className="bg-card rounded-[24px] p-6 flex flex-col justify-between transition-colors">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-1.5">
               <h3 className="text-[17px] font-heading font-semibold text-foreground tracking-tight">
@@ -1165,7 +1165,7 @@ export const AnalyticsView: React.FC = () => {
 
               {/* Horizontal Segmented Progress Bar */}
               <div className="flex-1 w-full">
-                <div className="h-4 w-full bg-card-subtle rounded-full overflow-hidden flex gap-1 p-0.5 border border-borderToken/40">
+                <div className="h-4 w-full bg-card-subtle rounded-full overflow-hidden flex gap-1 p-0.5">
                   <div
                     style={{ width: `${filterStats.compPct}%` }}
                     className="h-full bg-primary rounded-full transition-all duration-500"
@@ -1217,7 +1217,7 @@ export const AnalyticsView: React.FC = () => {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 items-stretch">
         
         {/* Left: Focus Session Distribution */}
-        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors">
+        <div className="bg-card rounded-[24px] p-6 flex flex-col justify-between transition-colors">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-1.5">
               <h3 className="text-[17px] font-heading font-semibold text-foreground tracking-tight">
@@ -1248,7 +1248,7 @@ export const AnalyticsView: React.FC = () => {
                   <span className="text-[11px] font-medium text-mutedText w-6 flex-shrink-0 text-left">
                     {val}
                   </span>
-                  <div className="flex-1 border-b border-borderToken/50" />
+                  <div className="flex-1 border-b border-borderToken" />
                 </div>
               ))}
             </div>
@@ -1273,7 +1273,7 @@ export const AnalyticsView: React.FC = () => {
         </div>
 
         {/* Right: Most Productive Days (Hourly Activity Heatmap) */}
-        <div className="bg-card border border-borderToken rounded-[24px] p-6 flex flex-col justify-between transition-colors">
+        <div className="bg-card rounded-[24px] p-6 flex flex-col justify-between transition-colors">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-1.5">
               <h3 className="text-[17px] font-heading font-semibold text-foreground tracking-tight">
@@ -1288,7 +1288,7 @@ export const AnalyticsView: React.FC = () => {
               <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-mutedText mr-1">
                 <span>Less</span>
                 <div className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-[3px] bg-card-subtle border border-borderToken/30" />
+                  <span className="w-2.5 h-2.5 rounded-[3px] bg-card-muted/80 dark:bg-white/[0.06] border border-borderToken/30" />
                   <span className="w-2.5 h-2.5 rounded-[3px] bg-primary-soft" />
                   <span className="w-2.5 h-2.5 rounded-[3px] bg-primary/45" />
                   <span className="w-2.5 h-2.5 rounded-[3px] bg-primary/75" />
@@ -1318,7 +1318,7 @@ export const AnalyticsView: React.FC = () => {
                         <div
                           key={hourIdx}
                           title={`${day} ${hourIdx}:00 - Activity Level ${level}`}
-                          className={`aspect-square rounded-[3px] transition-all hover:scale-125 cursor-pointer ${getHeatmapCellBg(level)}`}
+                          className={`aspect-square rounded-[3px] transition-all duration-150 hover:scale-110 hover:brightness-110 cursor-pointer ${getHeatmapCellBg(level)}`}
                         />
                       ))}
                     </div>

@@ -107,7 +107,7 @@ export const Sidebar: React.FC = () => {
             <button
               type="button"
               onClick={toggleSidebar}
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-mutedText hover:text-primary hover:bg-primary-soft transition-all duration-300 flex-shrink-0 cursor-pointer"
+              className="w-9 h-9 rounded-2xl flex items-center justify-center text-mutedText hover:text-foreground hover:bg-card-subtle transition-all duration-300 flex-shrink-0 cursor-pointer"
               style={{
                 opacity: isSidebarCollapsed ? 0 : 1,
                 transform: isSidebarCollapsed ? 'scale(0.7) translateX(8px)' : 'scale(1) translateX(0)',
@@ -120,11 +120,11 @@ export const Sidebar: React.FC = () => {
             </button>
           </div>
 
-          {/* Collapsed Expand Button (Smooth drop-in directly below the logo) */}
+          {/* Collapsed Expand Button (Matches exact same h-11 w-full rounded-2xl as nav items) */}
           <div
             className="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex justify-center w-full"
             style={{
-              maxHeight: isSidebarCollapsed ? '38px' : '0px',
+              maxHeight: isSidebarCollapsed ? '48px' : '0px',
               opacity: isSidebarCollapsed ? 1 : 0,
               transform: isSidebarCollapsed ? 'translateY(0)' : 'translateY(-8px)',
               pointerEvents: isSidebarCollapsed ? 'auto' : 'none',
@@ -133,7 +133,7 @@ export const Sidebar: React.FC = () => {
             <button
               type="button"
               onClick={toggleSidebar}
-              className="w-8 h-8 mt-1.5 rounded-xl flex items-center justify-center text-mutedText hover:text-primary hover:bg-primary-soft bg-card-subtle transition-all duration-200 cursor-pointer"
+              className="w-full h-11 mt-1 rounded-2xl flex items-center justify-center text-mutedText hover:text-foreground hover:bg-card-subtle transition-all duration-200 cursor-pointer"
               title="Expand sidebar (Ctrl+B)"
               aria-label="Expand sidebar"
             >

@@ -88,7 +88,7 @@ export const ScheduleView: React.FC = () => {
                             data-completion-trigger="true"
                             data-no-click-sound="true"
                             onClick={() => toggleTaskStatus(block.itemId!)}
-                            className="p-1.5 rounded-xl bg-card text-mutedText hover:text-primary hover:bg-card-muted transition-colors cursor-pointer"
+                            className="p-1.5 rounded-xl bg-card-subtle text-mutedText hover:text-primary hover:bg-card-muted border border-borderToken transition-colors cursor-pointer"
                           >
                             <Check size={16} />
                           </button>

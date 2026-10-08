@@ -195,9 +195,10 @@ export const TodayTasksCard: React.FC = () => {
                       data-no-click-sound="true"
                       data-no-rounded-full="true"
                       onClick={() => toggleTaskStatus(task.id)}
-                      className={`w-[22px] h-[22px] rounded-[8px] flex items-center justify-center transition-spring cursor-pointer active:scale-75 hover:scale-115 ${isCompleted
-                          ? 'bg-tag-health text-white shadow-xs'
-                          : 'border border-borderToken hover:border-primary bg-card'
+                      title={isCompleted ? 'Mark incomplete' : 'Mark complete'}
+                      className={`w-[22px] h-[22px] rounded-[8px] flex items-center justify-center transition-spring cursor-pointer active:scale-75 hover:scale-115 flex-shrink-0 ${isCompleted
+                          ? 'bg-tag-health text-white shadow-xs border border-tag-health'
+                          : 'border border-borderToken hover:border-primary bg-card-subtle'
                         }`}
                     >
                       {isCompleted && <Check size={14} strokeWidth={3} className="text-white animate-check-pop" />}

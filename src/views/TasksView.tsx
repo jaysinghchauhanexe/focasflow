@@ -546,10 +546,11 @@ export const TasksView: React.FC = () => {
             data-no-click-sound="true"
             data-no-rounded-full="true"
             onClick={() => toggleTaskStatus(task.id)}
+            title={isCompleted ? 'Mark incomplete' : 'Mark complete'}
             className={`w-[20px] h-[20px] rounded-[7px] flex items-center justify-center transition-all cursor-pointer active:scale-75 hover:scale-110 flex-shrink-0 ${
               isCompleted
-                ? 'bg-tag-health text-white shadow-xs'
-                : 'border border-borderToken hover:border-primary bg-card'
+                ? 'bg-tag-health text-white shadow-xs border border-tag-health'
+                : 'border border-borderToken hover:border-primary bg-card-subtle'
             }`}
           >
             {isCompleted && <Check size={13} strokeWidth={3} className="text-white animate-check-pop" />}
@@ -796,7 +797,7 @@ export const TasksView: React.FC = () => {
             ========================================================================= */}
         <div className="space-y-3.5 min-w-0">
           {/* Card 1: 7-Day Week Calendar Strip Card */}
-          <div className="bg-card rounded-[22px] p-3.5 sm:p-4 shadow-soft border border-borderToken transition-all duration-300">
+          <div className="bg-card rounded-[22px] p-3.5 sm:p-4 shadow-soft transition-all duration-300">
             <div className="flex items-center justify-between pb-2 mb-1">
               <div className="flex items-center gap-2">
                 <button
@@ -825,7 +826,7 @@ export const TasksView: React.FC = () => {
                   className={`ml-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
                     activeDate === todayStr
                       ? 'bg-primary-soft text-primary'
-                      : 'bg-card-subtle border border-borderToken text-mutedText hover:text-foreground'
+                      : 'bg-card-subtle text-mutedText hover:text-foreground'
                   }`}
                 >
                   Today
@@ -884,7 +885,7 @@ export const TasksView: React.FC = () => {
           </div>
 
           {/* Card 2: Filters Bar Card (SAME WIDTH AS TASKS) */}
-          <div className="bg-card rounded-[24px] p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-soft border border-borderToken transition-all duration-300">
+          <div className="bg-card rounded-[24px] p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-soft transition-all duration-300">
             {/* Left: View Tabs Segment */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <button
@@ -917,7 +918,7 @@ export const TasksView: React.FC = () => {
               >
                 <span>Today</span>
                 <span className={`px-1.5 py-0.2 rounded-full text-[10.5px] font-bold ${
-                  activeTab === 'today' && !isSpecificDateSelected ? 'bg-white/25 text-white' : 'bg-card-subtle border border-borderToken text-mutedText'
+                  activeTab === 'today' && !isSpecificDateSelected ? 'bg-white/25 text-white' : 'bg-card-subtle text-mutedText'
                 }`}>
                   {sectionTodayTasks.length}
                 </span>
@@ -936,7 +937,7 @@ export const TasksView: React.FC = () => {
               >
                 <span>Upcoming</span>
                 <span className={`px-1.5 py-0.2 rounded-full text-[10.5px] font-bold ${
-                  activeTab === 'upcoming' ? 'bg-white/25 text-white' : 'bg-card-subtle border border-borderToken text-mutedText'
+                  activeTab === 'upcoming' ? 'bg-white/25 text-white' : 'bg-card-subtle text-mutedText'
                 }`}>
                   {sectionUpcomingTasks.length}
                 </span>
@@ -955,7 +956,7 @@ export const TasksView: React.FC = () => {
               >
                 <span>Backlog</span>
                 <span className={`px-1.5 py-0.2 rounded-full text-[10.5px] font-bold ${
-                  activeTab === 'backlog' ? 'bg-white/25 text-white' : 'bg-card-subtle border border-borderToken text-mutedText'
+                  activeTab === 'backlog' ? 'bg-white/25 text-white' : 'bg-card-subtle text-mutedText'
                 }`}>
                   {sectionLaterTasks.length}
                 </span>
@@ -999,7 +1000,7 @@ export const TasksView: React.FC = () => {
 
           {/* Card 3: Enhanced Rollover Card (if any) */}
           {pastUnfinishedTasks.length > 0 && !isSpecificDateSelected && (
-            <div className="bg-card rounded-[26px] p-4 sm:p-5 shadow-soft border border-borderToken flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300">
+            <div className="bg-card rounded-[26px] p-4 sm:p-5 shadow-soft flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300">
               <div className="flex items-center gap-3.5">
                 <div className="w-10 h-10 rounded-2xl bg-[#E5484D]/12 text-[#E5484D] flex items-center justify-center flex-shrink-0">
                   <RotateCcw size={18} />
@@ -1027,7 +1028,7 @@ export const TasksView: React.FC = () => {
 
           {/* Card 4: Tasks List Container */}
           {isSpecificDateSelected ? (
-            <div className="bg-card rounded-[28px] p-5 shadow-soft border border-borderToken transition-all duration-300">
+            <div className="bg-card rounded-[28px] p-5 shadow-soft transition-all duration-300">
               <div className="flex items-center justify-between pb-3 mb-2 border-b border-borderToken">
                 <div className="flex items-center gap-2">
                   <h3 className="text-[17px] font-serif font-semibold text-foreground">
@@ -1060,7 +1061,7 @@ export const TasksView: React.FC = () => {
             <>
               {/* SECTION 1: TODAY */}
               {(activeTab === 'all' || activeTab === 'today') && (
-                <div className="bg-card rounded-[28px] p-4 sm:p-5 shadow-soft border border-borderToken transition-all duration-300">
+                <div className="bg-card rounded-[28px] p-4 sm:p-5 shadow-soft transition-all duration-300">
                   <div
                     onClick={() => toggleSectionCollapse('today')}
                     className="flex items-center justify-between pb-3 mb-1 border-b border-borderToken cursor-pointer group"
@@ -1103,7 +1104,7 @@ export const TasksView: React.FC = () => {
 
               {/* SECTION 2: UPCOMING */}
               {(activeTab === 'all' || activeTab === 'upcoming') && (
-                <div className="bg-card rounded-[28px] p-4 sm:p-5 shadow-soft border border-borderToken transition-all duration-300">
+                <div className="bg-card rounded-[28px] p-4 sm:p-5 shadow-soft transition-all duration-300">
                   <div
                     onClick={() => toggleSectionCollapse('upcoming')}
                     className="flex items-center justify-between pb-3 mb-1 border-b border-borderToken cursor-pointer group"
@@ -1146,7 +1147,7 @@ export const TasksView: React.FC = () => {
 
               {/* SECTION 3: LATER / BACKLOG */}
               {(activeTab === 'all' || activeTab === 'backlog') && (
-                <div className="bg-card rounded-[28px] p-4 sm:p-5 shadow-soft border border-borderToken transition-all duration-300">
+                <div className="bg-card rounded-[28px] p-4 sm:p-5 shadow-soft transition-all duration-300">
                   <div
                     onClick={() => toggleSectionCollapse('later')}
                     className="flex items-center justify-between pb-3 mb-1 border-b border-borderToken cursor-pointer group"
@@ -1195,7 +1196,7 @@ export const TasksView: React.FC = () => {
             ========================================================================= */}
         <div className="space-y-3.5 min-w-0">
           {/* Card 1: Today's Progress (Full Width of Right Column) */}
-          <div className="bg-card rounded-[22px] p-4 shadow-soft border border-borderToken transition-all duration-300">
+          <div className="bg-card rounded-[22px] p-4 shadow-soft transition-all duration-300">
             {/* Header */}
             <div className="flex items-center justify-between pb-1">
               <h3 className="text-[14px] font-serif font-semibold text-foreground">Today's Progress</h3>
@@ -1215,15 +1216,15 @@ export const TasksView: React.FC = () => {
                 {/* Radial Donut Ring (Fixed 52px diameter) */}
                 <div className="relative w-[52px] h-[52px] flex-shrink-0 flex items-center justify-center">
                   <svg className="w-[52px] h-[52px] -rotate-90" viewBox="0 0 44 44">
-                    <circle cx="22" cy="22" r="14" fill="#E2EDE7" />
-                    <circle cx="22" cy="22" r="17" fill="none" stroke="#EBF2ED" strokeWidth="4" />
+                    <circle cx="22" cy="22" r="14" fill="var(--color-card-subtle)" />
+                    <circle cx="22" cy="22" r="17" fill="none" stroke="var(--color-card-muted)" strokeWidth="3.5" />
                     <circle
                       cx="22"
                       cy="22"
                       r="17"
                       fill="none"
-                      stroke="var(--color-primary, #24584C)"
-                      strokeWidth="4"
+                      stroke="var(--color-primary)"
+                      strokeWidth="3.5"
                       strokeDasharray={2 * Math.PI * 17}
                       strokeDashoffset={2 * Math.PI * 17 * (1 - Math.min(1, Math.max(0, completionPercentage / 100)))}
                       strokeLinecap="round"
@@ -1255,7 +1256,7 @@ export const TasksView: React.FC = () => {
             </div>
 
             {/* Horizontal Progress Bar */}
-            <div className="w-full bg-card-subtle rounded-full h-1.5 overflow-hidden border border-borderToken/30 mt-2">
+            <div className="w-full bg-card-subtle rounded-full h-1.5 overflow-hidden mt-2">
               <div
                 className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${completionPercentage}%` }}
@@ -1266,8 +1267,8 @@ export const TasksView: React.FC = () => {
           {/* Card 2: Split Row (Focus Time Half + Current Streak Half) */}
           <div className="grid grid-cols-2 gap-3">
             {/* Left Half: Focus Time Card */}
-            <div className="bg-card rounded-[20px] p-3 sm:p-3.5 border border-borderToken flex flex-col justify-between transition-all duration-300 min-h-[108px] relative group shadow-soft">
-              <div className="w-6 h-6 rounded-full bg-[#EBF4F0] text-primary flex items-center justify-center border border-primary/15 flex-shrink-0">
+            <div className="bg-card rounded-[20px] p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-300 min-h-[108px] relative group shadow-soft">
+              <div className="w-6 h-6 rounded-full bg-primary-soft text-primary flex items-center justify-center flex-shrink-0">
                 <Clock size={13} strokeWidth={2.2} />
               </div>
 
@@ -1312,8 +1313,8 @@ export const TasksView: React.FC = () => {
             </div>
 
             {/* Right Half: Current Streak Card */}
-            <div className="bg-card rounded-[20px] p-3 sm:p-3.5 border border-borderToken flex flex-col justify-between transition-all duration-300 min-h-[108px] shadow-soft">
-              <div className="w-6 h-6 rounded-full bg-[#FEF3E8] text-[#EA580C] flex items-center justify-center border border-[#EA580C]/20 flex-shrink-0">
+            <div className="bg-card rounded-[20px] p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-300 min-h-[108px] shadow-soft">
+              <div className="w-6 h-6 rounded-full bg-amber-500/15 text-amber-500 flex items-center justify-center flex-shrink-0">
                 <Flame size={13} strokeWidth={2.2} />
               </div>
 

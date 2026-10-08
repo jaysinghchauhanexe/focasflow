@@ -225,7 +225,7 @@ export const PreferencesView: React.FC = () => {
       {/* Row 1: Aesthetics & Design System (Typography + Color Theme) */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
         {/* Typography Studio */}
-        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex flex-col justify-between transition-colors border border-borderToken/60">
+        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex flex-col justify-between transition-colors">
           <div className="space-y-4">
             <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
               <div className="w-8 h-8 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
@@ -290,7 +290,7 @@ export const PreferencesView: React.FC = () => {
         </div>
 
         {/* Color Palette & Theme Studio */}
-        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex flex-col justify-between transition-colors border border-borderToken/60">
+        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex flex-col justify-between transition-colors">
           <div className="space-y-4">
             <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
               <div className="w-8 h-8 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
@@ -365,7 +365,7 @@ export const PreferencesView: React.FC = () => {
       {/* Row 2: Mood & Focus Cadence */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
         {/* SECTION: MOOD & EMOTIONAL CADENCE */}
-        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-5 transition-colors border border-borderToken/60">
+        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-5 transition-colors">
           <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
             <div className="w-8 h-8 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
               <Smile size={18} />
@@ -382,7 +382,7 @@ export const PreferencesView: React.FC = () => {
 
           <div className="space-y-3.5">
             {/* Preference: Mood Pop-up Notifications */}
-            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors">
               <div className="space-y-0.5 pr-2">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[13.5px] font-semibold text-foreground">
@@ -405,7 +405,7 @@ export const PreferencesView: React.FC = () => {
             </div>
 
             {/* Preference: Face Expressions & Micro-Animations */}
-            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors">
               <div className="space-y-0.5 pr-2">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[13.5px] font-semibold text-foreground">
@@ -428,7 +428,7 @@ export const PreferencesView: React.FC = () => {
             </div>
 
             {/* Preference: Daily Mood Check-in */}
-            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors">
               <div className="space-y-0.5 pr-2">
                 <span className="text-[13.5px] font-semibold text-foreground block">
                   Daily Morning Check-in Prompts
@@ -448,7 +448,7 @@ export const PreferencesView: React.FC = () => {
         </div>
 
         {/* SECTION: FOCUS, TIMERS & SOUNDSCAPES */}
-        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-5 transition-colors border border-borderToken/60">
+        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-5 transition-colors">
           <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
             <div className="w-8 h-8 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
               <Volume2 size={18} />
@@ -465,7 +465,7 @@ export const PreferencesView: React.FC = () => {
 
           <div className="space-y-3.5">
             {/* Preference: Auto-play music on focus start */}
-            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors">
               <div className="space-y-0.5 pr-2">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[13.5px] font-semibold text-foreground">
@@ -488,7 +488,7 @@ export const PreferencesView: React.FC = () => {
             </div>
 
             {/* Default Soundscape Station Selector */}
-            <div className="p-4 rounded-2xl bg-card-subtle border border-borderToken/50 space-y-2">
+            <div className="p-4 rounded-2xl bg-card-subtle space-y-2">
               <span className="text-[12px] font-semibold text-mutedText uppercase tracking-wider block">
                 Default Focus Soundscape Station
               </span>
@@ -505,10 +505,10 @@ export const PreferencesView: React.FC = () => {
                       key={st.id}
                       type="button"
                       onClick={() => handleSetStation(st.id as LofiStationId)}
-                      className={`p-3 rounded-xl flex flex-col items-center justify-center text-center transition-all cursor-pointer border-2 ${
+                      className={`p-3 rounded-xl flex flex-col items-center justify-center text-center transition-all cursor-pointer border ${
                         isSel
-                          ? 'bg-primary-soft border-primary shadow-xs'
-                          : 'bg-card border-transparent hover:bg-card-muted'
+                          ? 'bg-primary-soft border-primary/50 text-primary'
+                          : 'bg-card border-transparent hover:bg-card-muted text-textSecondary'
                       }`}
                     >
                       <Icon size={16} className={isSel ? 'text-primary' : 'text-mutedText'} />
@@ -523,7 +523,7 @@ export const PreferencesView: React.FC = () => {
             </div>
 
             {/* Preference: Task Overtime Warnings */}
-            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors">
               <div className="space-y-0.5 pr-2">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[13.5px] font-semibold text-foreground">
@@ -546,7 +546,7 @@ export const PreferencesView: React.FC = () => {
             </div>
 
             {/* Preference: Completion Chime (tick-ting.mp3) */}
-            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors">
               <div className="space-y-1 pr-2">
                 <div className="flex items-center gap-2">
                   <span className="text-[13.5px] font-semibold text-foreground">
@@ -580,7 +580,7 @@ export const PreferencesView: React.FC = () => {
             </div>
 
             {/* Preference: Tactile Button Click Sound (mouse-click-single.mp3) */}
-            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors">
               <div className="space-y-1 pr-2">
                 <div className="flex items-center gap-2">
                   <span className="text-[13.5px] font-semibold text-foreground">
@@ -619,7 +619,7 @@ export const PreferencesView: React.FC = () => {
       {/* Row 3: Schedule Automations & Visual Polish */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
         {/* SECTION: SCHEDULE & CAPACITY AUTOMATIONS */}
-        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-5 transition-colors border border-borderToken/60">
+        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-5 transition-colors">
           <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
             <div className="w-8 h-8 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
               <Calendar size={18} />
@@ -636,7 +636,7 @@ export const PreferencesView: React.FC = () => {
 
           <div className="space-y-3.5">
             {/* Preference: Day Overload Warnings */}
-            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors">
               <div className="space-y-0.5 pr-2">
                 <span className="text-[13.5px] font-semibold text-foreground block">
                   Overload Capacity Detection Alerts
@@ -654,7 +654,7 @@ export const PreferencesView: React.FC = () => {
             </div>
 
             {/* Preference: Auto-roll flexible tasks */}
-            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors">
               <div className="space-y-0.5 pr-2">
                 <span className="text-[13.5px] font-semibold text-foreground block">
                   Auto-Roll Unfinished Flexible Tasks
@@ -672,7 +672,7 @@ export const PreferencesView: React.FC = () => {
             </div>
 
             {/* Preference: Strict Bedtime Boundary */}
-            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+            <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors">
               <div className="space-y-0.5 pr-2">
                 <span className="text-[13.5px] font-semibold text-foreground block">
                   Strict Bedtime Rest Boundary Protection
@@ -692,7 +692,7 @@ export const PreferencesView: React.FC = () => {
         </div>
 
         {/* SECTION: VISUAL POLISH & SHORTCUTS */}
-        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-5 transition-colors border border-borderToken/60 flex flex-col justify-between">
+        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-5 transition-colors flex flex-col justify-between">
           <div className="space-y-5">
             <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
               <div className="w-8 h-8 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
@@ -710,7 +710,7 @@ export const PreferencesView: React.FC = () => {
 
             <div className="space-y-3.5">
               {/* Preference: Smooth Auto-Height */}
-              <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+              <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors">
                 <div className="space-y-0.5 pr-2">
                   <span className="text-[13.5px] font-semibold text-foreground block">
                     Liquid Smooth Height Transitions
@@ -730,18 +730,18 @@ export const PreferencesView: React.FC = () => {
           </div>
 
           {/* Keyboard Shortcuts Reference Card */}
-          <div className="p-4 rounded-2xl bg-card-subtle border border-borderToken/50 space-y-2.5 mt-4">
+          <div className="p-4 rounded-2xl bg-card-subtle space-y-2.5 mt-4">
             <span className="text-[12px] font-semibold text-mutedText uppercase tracking-wider block">
               Keyboard Power Shortcuts
             </span>
             <div className="grid grid-cols-2 gap-2 text-[12px]">
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-card border border-borderToken/40">
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-card">
                 <span className="text-textSecondary">Toggle Sidebar</span>
                 <kbd className="px-1.5 py-0.5 rounded bg-card-muted text-[10.5px] font-mono font-bold text-foreground">
                   Ctrl + B
                 </kbd>
               </div>
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-card border border-borderToken/40">
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-card">
                 <span className="text-textSecondary">AI Assistant</span>
                 <kbd className="px-1.5 py-0.5 rounded bg-card-muted text-[10.5px] font-mono font-bold text-foreground">
                   Ctrl + K
@@ -753,7 +753,7 @@ export const PreferencesView: React.FC = () => {
       </div>
 
       {/* Row 4: AI Assistant & Developer Intelligence */}
-      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-5 transition-colors border border-borderToken/60">
+      <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft space-y-5 transition-colors">
         <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
           <div className="w-8 h-8 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
             <Cpu size={18} />
@@ -770,7 +770,7 @@ export const PreferencesView: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Preference: AI Debug Mode & Raw JSON */}
-          <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+          <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors">
             <div className="space-y-0.5 pr-2">
               <span className="text-[13.5px] font-semibold text-foreground block">
                 Debug AI & JSON Inspector
@@ -788,7 +788,7 @@ export const PreferencesView: React.FC = () => {
           </div>
 
           {/* Preference: Show Executed Operations Breakdown */}
-          <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors border border-borderToken/50">
+          <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-card-subtle hover:bg-card-muted/60 transition-colors">
             <div className="space-y-0.5 pr-2">
               <span className="text-[13.5px] font-semibold text-foreground block">
                 Show Executed Operations Breakdown
@@ -809,3 +809,4 @@ export const PreferencesView: React.FC = () => {
     </div>
   );
 };
+

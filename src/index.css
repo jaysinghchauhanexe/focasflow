@@ -228,8 +228,8 @@ body[data-theme="dark"],
   --color-text-secondary: #CBD5E1;
   --color-text-muted: #94A3B8;
 
-  --color-border: rgba(255, 255, 255, 0.12);
-  --color-border-subtle: rgba(255, 255, 255, 0.06);
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border-subtle: rgba(255, 255, 255, 0.03);
 
   --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
   --shadow-float: 0 10px 30px -5px rgba(0, 0, 0, 0.65);
@@ -246,6 +246,40 @@ body[data-theme="dark"],
   --tag-important-bg: rgba(248, 113, 113, 0.18);
   --tag-neutral: #A1A1AA;
   --tag-neutral-bg: rgba(161, 161, 170, 0.18);
+}
+
+/* Subtle, refined hairline borders on interactive form controls, inputs, and checkmarks */
+input,
+textarea,
+select,
+[role="combobox"] {
+  border-color: var(--color-border, rgba(0, 0, 0, 0.12));
+}
+
+[data-completion-trigger="true"] {
+  border-color: var(--color-border, rgba(0, 0, 0, 0.18));
+}
+
+[data-theme="dark"] [data-completion-trigger="true"] {
+  border-color: rgba(255, 255, 255, 0.24) !important;
+}
+
+[data-completion-trigger="true"]:hover {
+  border-color: var(--color-primary) !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select,
+[data-theme="dark"] .pill-dropdown,
+[data-theme="dark"] [role="combobox"] {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] select:focus {
+  border-color: var(--color-primary) !important;
 }
 
 /* High-contrast text on bright primary badges and buttons in dark mode */

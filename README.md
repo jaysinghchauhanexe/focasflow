@@ -10,9 +10,13 @@ FocusFlow reimagines personal productivity by combining local-first privacy, on-
 
 ---
 
+![Dashboard](public/screenshots/dashboard.png)
+
 ## ✨ Features
 
 ### 🧠 Local & Cloud AI Assistant
+
+![Ai chat](public/screenshots/ai-chat.png)
 
 - **On-Device WebLLM & Ollama**: Run models like `Qwen 2.5` or `Llama 3.2` directly in your browser/desktop with WebGPU or connect your local Ollama daemon.
 - **Natural Language Task Operations**: Add, reschedule, split, or prioritize tasks using simple conversational commands (e.g. _"Schedule 2 hours for client API tomorrow at 3 PM"_).
@@ -25,6 +29,8 @@ FocusFlow reimagines personal productivity by combining local-first privacy, on-
 - **Zero Cloud Leakage**: Voice dictation runs entirely on your device with no external API calls.
 
 ### 📊 Deep Analytics & Visual Intelligence
+
+![Analytics](public/screenshots/analytics.png)
 
 - **Focus Time Trends**: 7-day stacked bar charts displaying daily tracked minutes with interactive peak tooltips.
 - **Category & Duration Breakdown**: Proportional donut visualization of focus distribution across Work, Study, Health, and Personal projects.

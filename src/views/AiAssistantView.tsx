@@ -1255,7 +1255,7 @@ export const AiAssistantView: React.FC = () => {
                 e.preventDefault();
                 handleSend();
               }}
-              className="rounded-[24px] bg-card border border-borderToken p-3 sm:p-3.5 transition-all focus-within:border-primary/60 shadow-none flex flex-col justify-between min-h-[96px]"
+              className="rounded-[24px] bg-card-subtle border border-borderToken p-3 sm:p-3.5 transition-all focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20 shadow-xs flex flex-col justify-between min-h-[96px]"
             >
               {/* Top area: Input to write anything + Mic button to the right, just above send button */}
               <div className="flex items-start justify-between gap-2">
@@ -1289,7 +1289,7 @@ export const AiAssistantView: React.FC = () => {
                       ? 'bg-primary-soft text-primary'
                       : isListening
                         ? 'bg-tag-important text-white animate-pulse'
-                        : 'text-mutedText hover:text-foreground hover:bg-card-subtle'
+                        : 'text-mutedText hover:text-foreground hover:bg-card'
                     }`}
                   title={
                     isTranscribing
@@ -1317,7 +1317,7 @@ export const AiAssistantView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setQuickPromptsOpen((v) => !v)}
-                      className="w-8 h-8 rounded-full border border-borderToken/80 hover:border-primary/40 hover:bg-card-subtle text-mutedText hover:text-foreground flex items-center justify-center transition-all cursor-pointer shadow-none"
+                      className="w-8 h-8 rounded-full bg-card hover:bg-card-muted border border-borderToken text-mutedText hover:text-foreground flex items-center justify-center transition-all cursor-pointer shadow-none"
                       title="Quick Prompts"
                     >
                       <Plus size={15} />
@@ -1360,7 +1360,7 @@ export const AiAssistantView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowModelDropdown((v) => !v)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card-subtle hover:bg-card-muted text-foreground text-[12px] font-medium border border-borderToken/80 transition-all cursor-pointer shadow-none"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card hover:bg-card-muted text-foreground text-[12px] font-medium border border-borderToken transition-all cursor-pointer shadow-none"
                     >
                       <Sparkles size={13} className="text-primary" />
                       <span className="font-mono text-[11.5px] font-semibold">{activeModelName || 'Default'}</span>

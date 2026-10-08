@@ -9,7 +9,8 @@ export const HabitsView: React.FC = () => {
 
   const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  const today = parseLocalDate(selectedDate || getTodayDateString());
+  const todayDateStr = getTodayDateString();
+  const today = parseLocalDate(todayDateStr);
   const currentDayOfWeek = (today.getDay() + 6) % 7;
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - currentDayOfWeek);
@@ -38,7 +39,7 @@ export const HabitsView: React.FC = () => {
 
         <button
           onClick={() => openHabitModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[13px] font-semibold rounded-2xl transition-all cursor-pointer shadow-xs active:scale-95"
         >
           <Plus size={15} />
           <span>New Habit</span>
@@ -70,14 +71,14 @@ export const HabitsView: React.FC = () => {
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => openHabitModal(habit)}
-                      className="p-1.5 rounded-lg text-mutedText hover:text-foreground hover:bg-card-subtle"
+                      className="p-1.5 rounded-lg text-mutedText hover:text-foreground hover:bg-card-subtle transition-colors cursor-pointer"
                       title="Edit habit"
                     >
                       <Edit2 size={14} />
                     </button>
                     <button
                       onClick={() => deleteHabit(habit.id)}
-                      className="p-1.5 rounded-lg text-mutedText hover:text-tag-important hover:bg-tag-importantBg"
+                      className="p-1.5 rounded-lg text-mutedText hover:text-tag-important hover:bg-tag-importantBg transition-colors cursor-pointer"
                       title="Delete habit"
                     >
                       <Trash2 size={14} />
@@ -109,27 +110,39 @@ export const HabitsView: React.FC = () => {
                   {daysOfWeek.map((dayName, idx) => {
                     const dateStr = weekDates[idx];
                     const isCompleted = habit.completedDates.includes(dateStr);
-                    const isToday = dateStr === selectedDate;
+                    const isToday = dateStr === todayDateStr;
 
                     return (
-                      <div key={dayName} className="flex flex-col items-center gap-1.5 flex-1">
-                        <span className="text-[11px] text-mutedText font-medium">
-                          {dayName}
-                        </span>
+                      <div key={dayName} className="flex flex-col items-center gap-1.5 flex-1 relative">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className={`text-[11.5px] font-semibold transition-colors ${
+                            isToday ? 'text-primary' : 'text-mutedText'
+                          }`}>
+                            {dayName}
+                          </span>
+                          <span className={`w-1 h-1 rounded-full ${isToday ? 'bg-primary' : 'bg-transparent'}`} />
+                        </div>
+
                         <button
                           type="button"
                           data-completion-trigger="true"
                           data-no-click-sound="true"
                           onClick={() => toggleHabitDate(habit.id, dateStr)}
-                          className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                          title={`${dayName} (${dateStr})${isToday ? ' - Today' : ''}`}
+                          className={`w-9 h-9 rounded-2xl flex items-center justify-center transition-all cursor-pointer relative ${
                             isCompleted
-                              ? 'bg-primary text-white shadow-xs'
+                              ? isToday
+                                ? 'bg-primary text-white shadow-xs ring-2 ring-primary ring-offset-2 ring-offset-card'
+                                : 'bg-primary text-white shadow-xs'
                               : isToday
-                              ? 'border-2 border-primary bg-card text-primary'
+                              ? 'border-2 border-primary bg-primary-soft/40 text-primary ring-2 ring-primary/25 ring-offset-1 ring-offset-card'
                               : 'bg-card-subtle text-mutedText hover:bg-card-muted border border-borderToken'
                           }`}
                         >
-                          {isCompleted && <Check size={14} strokeWidth={3} className="text-white" />}
+                          {isCompleted && <Check size={15} strokeWidth={3} className="text-white" />}
+                          {!isCompleted && isToday && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                          )}
                         </button>
                       </div>
                     );

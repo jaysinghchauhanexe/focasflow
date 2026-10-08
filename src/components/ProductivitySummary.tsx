@@ -39,14 +39,14 @@ export const DiurnalSkyIllustration: React.FC<{ className?: string; svgClassName
     <div
       className={`relative select-none pointer-events-none flex items-center overflow-visible transition-all duration-700 ${className}`}
       style={{
-        maskImage: 'linear-gradient(to right, transparent 0%, black 14%, black 82%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 22%, black 72%, transparent 100%)',
-        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 14%, black 82%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 22%, black 72%, transparent 100%)',
+        maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.05) 4%, rgba(0,0,0,0.7) 16%, black 24%, black 76%, rgba(0,0,0,0.7) 84%, rgba(0,0,0,0.05) 96%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 14%, black 78%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.05) 4%, rgba(0,0,0,0.7) 16%, black 24%, black 76%, rgba(0,0,0,0.7) 84%, rgba(0,0,0,0.05) 96%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 14%, black 78%, transparent 100%)',
         maskComposite: 'intersect',
         WebkitMaskComposite: 'destination-in',
       }}
     >
       <svg
-        viewBox="0 -18 240 103"
+        viewBox="-10 -18 260 105"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className={`${svgClassName} overflow-visible`}
@@ -150,8 +150,8 @@ export const DiurnalSkyIllustration: React.FC<{ className?: string; svgClassName
             {/* High Afternoon Sun Core */}
             <circle cx="120" cy="22" r="17" fill="url(#afternoonSun)" />
             {/* Drifting Clouds */}
-            <path d="M 45 22 Q 52 14 62 18 Q 72 14 80 20 Q 84 25 76 28 L 48 28 Z" fill="rgba(255, 255, 255, 0.45)" />
-            <path d="M 155 16 Q 162 10 170 14 Q 178 11 184 16 L 158 20 Z" fill="rgba(255, 255, 255, 0.35)" />
+            <path d="M 52 22 Q 60 14 70 18 Q 78 14 86 20 Q 90 25 82 28 L 54 28 Z" fill="rgba(255, 255, 255, 0.45)" />
+            <path d="M 152 16 Q 160 10 168 14 Q 176 11 182 16 L 156 20 Z" fill="rgba(255, 255, 255, 0.35)" />
             {/* Soaring Bird */}
             <path d="M 96 14 Q 100 10 104 14 Q 108 10 112 14" stroke="var(--color-primary)" strokeWidth="1.1" strokeLinecap="round" fill="none" opacity="0.6" />
           </>
@@ -191,14 +191,14 @@ export const DiurnalSkyIllustration: React.FC<{ className?: string; svgClassName
           </>
         )}
 
-        {/* Background Mountain Layer */}
-        <path d="M 0 85 L 0 58 Q 40 28 80 52 T 165 44 L 240 66 L 240 85 Z" fill="url(#mountBack)" />
+        {/* Background Mountain Layer - Seamless wide curve */}
+        <path d="M -20 85 L -20 74 Q 28 36 78 52 T 165 42 Q 210 54 260 74 L 260 85 Z" fill="url(#mountBack)" />
 
-        {/* Middle Mountain Layer */}
-        <path d="M 10 85 L 48 52 Q 82 28 116 54 T 195 46 L 240 72 L 240 85 Z" fill="url(#mountMid)" />
+        {/* Middle Mountain Layer - Symmetrical rolling foothills */}
+        <path d="M -15 85 L 5 76 Q 48 40 92 56 T 185 46 Q 225 62 255 78 L 255 85 Z" fill="url(#mountMid)" />
 
-        {/* Foreground Mountain Layer with crisp peaks */}
-        <path d="M 25 85 L 68 42 L 92 58 L 126 32 L 158 62 L 186 48 L 225 78 L 240 85 Z" fill="url(#mountFront)" />
+        {/* Foreground Mountain Layer with graceful, balanced peaks */}
+        <path d="M -5 85 L 30 70 L 66 44 L 94 58 L 124 32 L 156 60 L 186 44 L 218 70 L 245 85 Z" fill="url(#mountFront)" />
       </svg>
     </div>
   );
