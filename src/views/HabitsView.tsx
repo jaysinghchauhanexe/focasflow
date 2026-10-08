@@ -2,13 +2,14 @@ import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Plus, Check, Clock, Trash2, Edit2 } from 'lucide-react';
 import { DoodlePlant } from '../components/DoodleIllustrations';
+import { parseLocalDate, formatLocalDate, getTodayDateString } from '../utils/dateUtils';
 
 export const HabitsView: React.FC = () => {
   const { habits, toggleHabitDate, openHabitModal, deleteHabit, selectedDate } = useAppStore();
 
   const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  const today = new Date(selectedDate);
+  const today = parseLocalDate(selectedDate || getTodayDateString());
   const currentDayOfWeek = (today.getDay() + 6) % 7;
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - currentDayOfWeek);
@@ -16,7 +17,7 @@ export const HabitsView: React.FC = () => {
   const weekDates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(startOfWeek);
     d.setDate(startOfWeek.getDate() + i);
-    return d.toISOString().split('T')[0];
+    return formatLocalDate(d);
   });
 
   return (

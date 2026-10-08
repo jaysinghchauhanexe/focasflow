@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Task, Category, Priority, CustomCategoryItem, CustomPriorityItem } from '../types';
+import { getTodayDateString, getTomorrowDateString, parseLocalDate, formatLocalDate, addDaysToDateString } from '../utils/dateUtils';
 import {
   Plus,
   Search,
@@ -164,7 +165,7 @@ export const TasksView: React.FC = () => {
 
   const menuContainerRef = useRef<HTMLDivElement>(null);
 
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayStr = useMemo(() => getTodayDateString(), []);
   const activeDate = selectedDate || todayStr;
 
   useEffect(() => {
@@ -209,16 +210,12 @@ export const TasksView: React.FC = () => {
 
   const handlePrevWeek = () => {
     playClickSound();
-    const d = new Date(activeDate);
-    d.setDate(d.getDate() - 7);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    setSelectedDate(addDaysToDateString(activeDate, -7));
   };
 
   const handleNextWeek = () => {
     playClickSound();
-    const d = new Date(activeDate);
-    d.setDate(d.getDate() + 7);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    setSelectedDate(addDaysToDateString(activeDate, 7));
   };
 
   const handleJumpToday = () => {
@@ -307,13 +304,8 @@ export const TasksView: React.FC = () => {
   }, [tasks, todayStr, taskSearchQuery, taskCategoryFilter, taskPriorityFilter, taskStatusFilter]);
 
   const sectionUpcomingTasks = useMemo(() => {
-    const tomorrow = new Date(todayStr);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomStr = tomorrow.toISOString().split('T')[0];
-
-    const nextWeek = new Date(todayStr);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    const nextWeekStr = nextWeek.toISOString().split('T')[0];
+    const tomStr = getTomorrowDateString();
+    const nextWeekStr = addDaysToDateString(todayStr, 7);
 
     return applyFilter(
       tasks.filter((t) => t.scheduledDate && t.scheduledDate >= tomStr && t.scheduledDate <= nextWeekStr && t.status !== 'completed')
@@ -321,9 +313,7 @@ export const TasksView: React.FC = () => {
   }, [tasks, todayStr, taskSearchQuery, taskCategoryFilter, taskPriorityFilter, taskStatusFilter]);
 
   const sectionLaterTasks = useMemo(() => {
-    const nextWeek = new Date(todayStr);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    const nextWeekStr = nextWeek.toISOString().split('T')[0];
+    const nextWeekStr = addDaysToDateString(todayStr, 7);
 
     return applyFilter(
       tasks.filter((t) => (t.scheduledDate && t.scheduledDate > nextWeekStr) || (!t.scheduledDate && t.status === 'completed'))
@@ -604,9 +594,9 @@ export const TasksView: React.FC = () => {
           {/* Date Badge if upcoming/different date */}
           {task.scheduledDate && task.scheduledDate !== todayStr && (
             <span className="text-[11.5px] font-normal text-mutedText font-sans hidden sm:inline-block">
-              {task.scheduledDate === (() => { const d = new Date(todayStr); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })()
+              {task.scheduledDate === getTomorrowDateString()
                 ? 'Tomorrow'
-                : new Date(task.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                : parseLocalDate(task.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
           )}
 

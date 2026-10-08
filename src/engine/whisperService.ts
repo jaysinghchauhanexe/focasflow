@@ -174,7 +174,10 @@ export async function startWhisperRecording(): Promise<void> {
 
   processorNode = audioCtx.createScriptProcessor(4096, 1, 1);
 
+  // Bound recording to ~60s maximum to prevent runaway memory consumption
+  const MAX_PCM_CHUNKS = 1200;
   processorNode.onaudioprocess = (e) => {
+    if (pcmBuffer.length >= MAX_PCM_CHUNKS) return;
     const channelData = e.inputBuffer.getChannelData(0);
     const copy = new Float32Array(channelData.length);
     copy.set(channelData);

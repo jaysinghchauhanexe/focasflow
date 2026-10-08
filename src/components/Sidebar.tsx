@@ -162,7 +162,7 @@ export const Sidebar: React.FC = () => {
                   }
                 }}
                 title={isSidebarCollapsed ? `${item.label}${item.badge !== undefined ? ` (${item.badge})` : ''}` : undefined}
-                className={`w-full h-11 flex items-center px-2.5 rounded-2xl text-[14px] font-medium transition-all duration-150 relative overflow-hidden group cursor-pointer ${isActive
+                className={`w-full h-11 flex items-center px-2.5 rounded-2xl text-[14px] font-medium transition-all duration-150 relative group cursor-pointer ${isActive
                   ? 'bg-primary-soft text-primary font-semibold'
                   : 'text-textSecondary hover:text-foreground hover:bg-card-subtle'
                   }`}
@@ -179,7 +179,7 @@ export const Sidebar: React.FC = () => {
                   {/* Compact notification badge dot when collapsed */}
                   {item.badge !== undefined && (
                     <span
-                      className="absolute -top-1.5 -right-2 bg-primary text-white text-[9px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center shadow-xs transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                      className="absolute -top-1 -right-1 bg-primary text-primary-text text-[9.5px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center shadow-xs transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-20"
                       style={{
                         opacity: isSidebarCollapsed ? 1 : 0,
                         transform: isSidebarCollapsed ? 'scale(1)' : 'scale(0.3)',

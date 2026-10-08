@@ -1,8 +1,9 @@
 import { Task, Habit, HistoryLog } from '../types';
+import { formatLocalDate, parseLocalDate, getTodayDateString } from './dateUtils';
 
 /**
  * Standardized Metrics & Analytics Calculation Engine for FocusFlow
- * Guarantees 100% mathematical consistency across all views:
+ * Guarantees mathematical consistency across all views:
  * Dashboard, My Tasks, Analytics, Profile, History, etc.
  */
 
@@ -17,7 +18,7 @@ export function getDailyFocusSeconds(
   focusElapsedSeconds: number = 0,
   isFocusTimerRunning: boolean = false
 ): number {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayDateString();
   let totalSec = 0;
 
   tasks.forEach((t) => {
@@ -100,8 +101,8 @@ export function getWeeklyFocusData(
   weekTotalMinutes: number;
   weekAverageMinutes: number;
 } {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const curr = new Date(activeDateStr || todayStr);
+  const todayStr = getTodayDateString();
+  const curr = activeDateStr ? parseLocalDate(activeDateStr) : new Date();
   const dayOfWeek = curr.getDay(); // 0 = Sun
   const sunday = new Date(curr);
   sunday.setDate(curr.getDate() - dayOfWeek);
@@ -113,7 +114,7 @@ export function getWeeklyFocusData(
   for (let i = 0; i < 7; i++) {
     const d = new Date(sunday);
     d.setDate(sunday.getDate() + i);
-    const iso = d.toISOString().split('T')[0];
+    const iso = formatLocalDate(d);
 
     const dayFocusSec = getDailyFocusSeconds(
       iso,
@@ -175,7 +176,7 @@ export function calculateRealStreak(
   sparklinePoints: string;
   activeDatesCount: number;
 } {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayDateString();
   const activeDates = new Set<string>();
 
   tasks.forEach((t) => {
@@ -204,7 +205,7 @@ export function calculateRealStreak(
   }
 
   while (true) {
-    const iso = checkDate.toISOString().split('T')[0];
+    const iso = formatLocalDate(checkDate);
     if (activeDates.has(iso)) {
       streak++;
       checkDate.setDate(checkDate.getDate() - 1);
@@ -218,7 +219,7 @@ export function calculateRealStreak(
   for (let i = 0; i < 7; i++) {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
-    const iso = d.toISOString().split('T')[0];
+    const iso = formatLocalDate(d);
     const x = (i / 6) * 100;
     const y = activeDates.has(iso) ? 4 : 16;
     sparklinePts.push(`${x},${y}`);

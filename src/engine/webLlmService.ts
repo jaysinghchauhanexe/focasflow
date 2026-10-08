@@ -1,35 +1,35 @@
 import { MLCEngine, InitProgressReport, hasModelInCache } from '@mlc-ai/web-llm';
 
-export interface InAppModel {
+export interface InAppModelMeta {
   id: string;
   name: string;
-  company: 'Alibaba' | 'Meta' | 'SmolLM' | 'Google' | 'Microsoft';
+  company: string;
   size: string;
   sizeBytesApprox: number;
-  isRecommended?: boolean;
   tagline: string;
   huggingFaceRepo: string;
+  isRecommended?: boolean;
 }
 
-export const IN_APP_MODELS: InAppModel[] = [
+export const SUPPORTED_IN_APP_MODELS: InAppModelMeta[] = [
   {
     id: 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
-    name: 'Qwen 2.5 1.5B',
+    name: 'Qwen 2.5 1.5B (Recommended)',
     company: 'Alibaba',
-    size: '980 MB',
-    sizeBytesApprox: 980 * 1024 * 1024,
-    isRecommended: true,
-    tagline: 'Top recommended. Flawless structured JSON & task scheduling.',
+    size: '950 MB',
+    sizeBytesApprox: 950 * 1024 * 1024,
+    tagline: 'Fastest initialization, excellent JSON extraction & schedule planning.',
     huggingFaceRepo: 'mlc-ai/Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
+    isRecommended: true,
   },
   {
-    id: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC',
-    name: 'Qwen 2.5 0.5B',
+    id: 'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC',
+    name: 'Qwen 2.5 Coder 1.5B',
     company: 'Alibaba',
-    size: '390 MB',
-    sizeBytesApprox: 390 * 1024 * 1024,
-    tagline: 'Ultra-lightweight micro model. Instant downloads and low memory.',
-    huggingFaceRepo: 'mlc-ai/Qwen2.5-0.5B-Instruct-q4f16_1-MLC',
+    size: '950 MB',
+    sizeBytesApprox: 950 * 1024 * 1024,
+    tagline: 'High strictness for deterministic structured operations.',
+    huggingFaceRepo: 'mlc-ai/Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC',
   },
   {
     id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
@@ -37,26 +37,25 @@ export const IN_APP_MODELS: InAppModel[] = [
     company: 'Meta',
     size: '880 MB',
     sizeBytesApprox: 880 * 1024 * 1024,
-    isRecommended: true,
-    tagline: "Meta's efficient reasoning model. Great tool use & instruction following.",
+    tagline: 'Ultra-lightweight edge model by Meta.',
     huggingFaceRepo: 'mlc-ai/Llama-3.2-1B-Instruct-q4f16_1-MLC',
   },
   {
-    id: 'SmolLM2-360M-Instruct-q4f16_1-MLC',
-    name: 'SmolLM 2 360M',
-    company: 'SmolLM',
-    size: '230 MB',
-    sizeBytesApprox: 230 * 1024 * 1024,
-    tagline: 'Tiny 230MB model by HuggingFace. Runs virtually anywhere.',
-    huggingFaceRepo: 'mlc-ai/SmolLM2-360M-Instruct-q4f16_1-MLC',
+    id: 'Llama-3.2-3B-Instruct-q4f16_1-MLC',
+    name: 'Llama 3.2 3B',
+    company: 'Meta',
+    size: '2.0 GB',
+    sizeBytesApprox: 2000 * 1024 * 1024,
+    tagline: 'High conversational reasoning and complex multi-tasking.',
+    huggingFaceRepo: 'mlc-ai/Llama-3.2-3B-Instruct-q4f16_1-MLC',
   },
   {
     id: 'SmolLM2-1.7B-Instruct-q4f16_1-MLC',
-    name: 'SmolLM 2 1.7B',
-    company: 'SmolLM',
+    name: 'SmolLM2 1.7B',
+    company: 'Hugging Face',
     size: '1.0 GB',
-    sizeBytesApprox: 1024 * 1024 * 1024,
-    tagline: 'High quality on-device reasoning from HuggingFace.',
+    sizeBytesApprox: 1000 * 1024 * 1024,
+    tagline: 'Specialized small language model optimized for rapid local inference.',
     huggingFaceRepo: 'mlc-ai/SmolLM2-1.7B-Instruct-q4f16_1-MLC',
   },
   {
@@ -79,8 +78,12 @@ export const IN_APP_MODELS: InAppModel[] = [
   },
 ];
 
+export const IN_APP_MODELS = SUPPORTED_IN_APP_MODELS;
+export type InAppModel = InAppModelMeta;
+
 let globalEngine: MLCEngine | null = null;
 let currentLoadedModelId: string | null = null;
+let inFlightModelLoad: { modelId: string; promise: Promise<MLCEngine> } | null = null;
 
 export const isWebGPUSupported = (): boolean => {
   return typeof navigator !== 'undefined' && 'gpu' in navigator;
@@ -89,18 +92,19 @@ export const isWebGPUSupported = (): boolean => {
 export async function checkModelCached(modelId: string): Promise<boolean> {
   try {
     const inCache = await hasModelInCache(modelId);
-    if (inCache) {
-      try {
-        const downloadedMap = JSON.parse(localStorage.getItem('focusflow_downloaded_models') || '{}');
-        downloadedMap[modelId] = true;
-        localStorage.setItem('focusflow_downloaded_models', JSON.stringify(downloadedMap));
-      } catch {}
-      return true;
-    }
     const downloadedMap = JSON.parse(localStorage.getItem('focusflow_downloaded_models') || '{}');
-    if (downloadedMap[modelId]) return true;
-
-    return false;
+    if (inCache) {
+      downloadedMap[modelId] = true;
+      localStorage.setItem('focusflow_downloaded_models', JSON.stringify(downloadedMap));
+      return true;
+    } else {
+      // If cache inspection confirmed it's NOT in cache, clear any stale local storage flag
+      if (downloadedMap[modelId]) {
+        delete downloadedMap[modelId];
+        localStorage.setItem('focusflow_downloaded_models', JSON.stringify(downloadedMap));
+      }
+      return false;
+    }
   } catch {
     const downloadedMap = JSON.parse(localStorage.getItem('focusflow_downloaded_models') || '{}');
     return !!downloadedMap[modelId];
@@ -112,6 +116,15 @@ export async function deleteInAppModelCached(modelId: string): Promise<void> {
     const downloadedMap = JSON.parse(localStorage.getItem('focusflow_downloaded_models') || '{}');
     delete downloadedMap[modelId];
     localStorage.setItem('focusflow_downloaded_models', JSON.stringify(downloadedMap));
+
+    // Unload active engine if this model was loaded
+    if (currentLoadedModelId === modelId && globalEngine) {
+      try {
+        await globalEngine.unload?.();
+      } catch {}
+      globalEngine = null;
+      currentLoadedModelId = null;
+    }
 
     // Delete from CacheStorage
     if (typeof window !== 'undefined' && 'caches' in window) {
@@ -144,11 +157,6 @@ export async function deleteInAppModelCached(modelId: string): Promise<void> {
         }
       } catch {}
     }
-
-    if (currentLoadedModelId === modelId) {
-      globalEngine = null;
-      currentLoadedModelId = null;
-    }
   } catch (err) {
     console.warn('Error deleting in-app model cache:', err);
   }
@@ -162,25 +170,50 @@ export async function loadInAppModel(
     return globalEngine;
   }
 
-  const engine = new MLCEngine();
-  if (onProgress) {
-    engine.setInitProgressCallback(onProgress);
+  // If a load for the same model is already in flight, reuse its promise
+  if (inFlightModelLoad && inFlightModelLoad.modelId === modelId) {
+    return inFlightModelLoad.promise;
   }
 
-  await engine.reload(modelId);
-  globalEngine = engine;
-  currentLoadedModelId = modelId;
+  const loadPromise = (async () => {
+    // If switching models, cleanly dispose of previous engine
+    if (globalEngine && currentLoadedModelId !== modelId) {
+      try {
+        await globalEngine.unload?.();
+      } catch {}
+      globalEngine = null;
+      currentLoadedModelId = null;
+    }
 
-  // Persist that this model is active & downloaded
+    const engine = new MLCEngine();
+    if (onProgress) {
+      engine.setInitProgressCallback(onProgress);
+    }
+
+    await engine.reload(modelId);
+    globalEngine = engine;
+    currentLoadedModelId = modelId;
+
+    // Persist that this model is active & downloaded
+    try {
+      const downloadedMap = JSON.parse(localStorage.getItem('focusflow_downloaded_models') || '{}');
+      downloadedMap[modelId] = true;
+      localStorage.setItem('focusflow_downloaded_models', JSON.stringify(downloadedMap));
+    } catch {}
+
+    return engine;
+  })();
+
+  inFlightModelLoad = { modelId, promise: loadPromise };
+
   try {
-    const downloadedMap = JSON.parse(localStorage.getItem('focusflow_downloaded_models') || '{}');
-    downloadedMap[modelId] = true;
-    localStorage.setItem('focusflow_downloaded_models', JSON.stringify(downloadedMap));
-  } catch (e) {
-    // Local storage safe
+    const res = await loadPromise;
+    return res;
+  } finally {
+    if (inFlightModelLoad?.modelId === modelId) {
+      inFlightModelLoad = null;
+    }
   }
-
-  return engine;
 }
 
 export function extractJsonFromText(rawText: string): any {

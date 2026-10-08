@@ -46,7 +46,7 @@ export const LofiBackgroundPlayer: React.FC = () => {
       sendCommand('pauseVideo');
       stopFallbackAudio();
     }
-  }, [isPlayingLofi, activeLofiStation]);
+  }, [isPlayingLofi, activeLofiStation, lofiVolume]);
 
   // Web Audio Fallback Ambient Generator (Relaxing Pink/Brown Noise + Soft Tones)
   const playFallbackAudio = () => {
@@ -103,6 +103,13 @@ export const LofiBackgroundPlayer: React.FC = () => {
       // ignore
     }
   };
+
+  // Ensure audio resources are released when unmounting
+  useEffect(() => {
+    return () => {
+      stopFallbackAudio();
+    };
+  }, []);
 
   // Safe YouTube embed URL with loop and playlist
   const embedUrl = `https://www.youtube-nocookie.com/embed/${station.youtubeId}?enablejsapi=1&autoplay=${isPlayingLofi ? 1 : 0}&playsinline=1&controls=0&disablekb=1&loop=1&playlist=${station.youtubeId}`;

@@ -1,5 +1,6 @@
 import { AiRequestContext, AiResponsePayload, Task, Habit, AppSettings, AiOperation } from '../types';
 import { runInAppInference, extractJsonFromText } from './webLlmService';
+import { getTodayDateString, formatLocalDate } from '../utils/dateUtils';
 
 export function hasExplicitActionIntent(userMessage: string): boolean {
   const msg = userMessage.toLowerCase().trim();
@@ -116,7 +117,7 @@ export async function sendAiCommand(
   }
 
   const now = new Date();
-  const currentDate = now.toISOString().split('T')[0];
+  const currentDate = formatLocalDate(now);
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
   const remainingTasks = tasks

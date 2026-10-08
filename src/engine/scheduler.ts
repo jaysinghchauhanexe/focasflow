@@ -1,4 +1,5 @@
 import { Task, Habit, Routine, AppSettings, DayCapacity, SchedulerSuggestion, ScheduleBlock } from '../types';
+import { getDayOfWeekFromDateString, parseLocalDate, formatLocalDate } from '../utils/dateUtils';
 
 export function timeToMinutes(timeStr: string): number {
   if (!timeStr) return 0;
@@ -83,15 +84,30 @@ export function calculateDayCapacity(
     actualFocusedMinutes += h.duration || 15;
   }
 
-  // Add habits for today
-  const dayOfWeek = new Date(date).getDay(); // 0 is Sunday
+  // Add habits for today with accurate frequency filter
+  const dayOfWeek = getDayOfWeekFromDateString(date); // 0 is Sunday
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
   const todayHabits = habits.filter(h => {
     if (!h.active) return false;
     if (h.frequency === 'daily') return true;
-    if (h.frequency === 'weekdays' && !isWeekend) return true;
-    if (h.frequency === 'weekends' && isWeekend) return true;
-    return true;
+    if (h.frequency === 'weekdays') return !isWeekend;
+    if (h.frequency === 'weekends') return isWeekend;
+    if (h.frequency === 'weekly') {
+      if (h.completedDates.includes(date)) return true;
+      const targetCount = h.target || 1;
+      const refDate = parseLocalDate(date);
+      const dayIdx = (refDate.getDay() + 6) % 7; // 0 for Mon
+      const monday = new Date(refDate);
+      monday.setDate(refDate.getDate() - dayIdx);
+      const weekDates = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        return formatLocalDate(d);
+      });
+      const completedThisWeek = weekDates.filter(d => h.completedDates.includes(d)).length;
+      return completedThisWeek < targetCount;
+    }
+    return false;
   });
 
   for (const h of todayHabits) {
@@ -118,21 +134,30 @@ export function calculateDayCapacity(
         explanation: `Move ${ft.title} to tomorrow to free up ${ft.duration} minutes.`,
         targetDate: 'tomorrow',
       });
-      if (suggestions.length >= 3) break;
     }
 
-    // 2. Suggest shortening long tasks
-    const longTasks = activeTasks.filter(t => t.duration > 60 && t.priority !== 'critical');
-    for (const lt of longTasks) {
+    // 2. Suggest splitting large tasks (> 60 mins)
+    const largeTasks = activeTasks.filter(t => t.duration > 60 && t.priority !== 'critical');
+    for (const lt of largeTasks) {
       suggestions.push({
-        id: `sug-shorten-${lt.id}`,
-        actionType: 'shorten',
+        id: `sug-split-${lt.id}`,
+        actionType: 'split',
         targetTaskId: lt.id,
         taskTitle: lt.title,
-        explanation: `Shorten ${lt.title} from ${lt.duration}m to ${Math.round(lt.duration * 0.6)}m.`,
-        newDuration: Math.round(lt.duration * 0.6),
+        explanation: `Split ${lt.title} (${lt.duration}m) into two manageable blocks.`,
       });
-      if (suggestions.length >= 4) break;
+    }
+
+    // 3. Suggest dropping low energy tasks
+    const lowEnergyTasks = activeTasks.filter(t => t.energyLevel === 'low' && t.priority === 'optional');
+    for (const letask of lowEnergyTasks) {
+      suggestions.push({
+        id: `sug-drop-${letask.id}`,
+        actionType: 'drop',
+        targetTaskId: letask.id,
+        taskTitle: letask.title,
+        explanation: `Postpone low energy task ${letask.title} for a calmer day.`,
+      });
     }
   }
 
@@ -155,6 +180,7 @@ export function calculateDayCapacity(
 /**
  * Deterministic schedule builder
  * Takes commitments (fixed blocks) and schedules tasks & habits sequentially into free slots.
+ * Supports overnight sleep schedules.
  */
 export function buildDaySchedule(
   date: string,
@@ -163,14 +189,26 @@ export function buildDaySchedule(
   routines: Routine[],
   settings: AppSettings
 ): { scheduledTasks: Task[]; blocks: ScheduleBlock[] } {
-  const dayOfWeek = new Date(date).getDay();
-  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-
   const wakeM = timeToMinutes(settings.wakeTime || '07:00');
-  const sleepM = timeToMinutes(settings.sleepTime || '23:00');
+  let sleepM = timeToMinutes(settings.sleepTime || '23:00');
+  if (sleepM <= wakeM) {
+    sleepM += 1440; // Overnight schedule unrolling
+  }
 
   const blocks: ScheduleBlock[] = [];
   const scheduledTasks = [...tasks];
+
+  // Helper to get unrolled minute value relative to waking day
+  const getBlockStartMinutes = (b: ScheduleBlock) => {
+    let m = timeToMinutes(b.startTime);
+    if (sleepM > 1440 && m < wakeM) m += 1440;
+    return m;
+  };
+  const getBlockEndMinutes = (b: ScheduleBlock) => {
+    let m = timeToMinutes(b.endTime);
+    if (sleepM > 1440 && m <= wakeM) m += 1440;
+    return m;
+  };
 
   // 1. Add routines
   for (const routine of routines.filter(r => r.active)) {
@@ -194,8 +232,12 @@ export function buildDaySchedule(
 
   // 2. Add fixed commitments (tasks marked with flexibility: 'fixed' or explicit scheduledStart)
   for (const task of tasks.filter(t => t.scheduledDate === date && t.flexibility === 'fixed' && t.scheduledStart)) {
-    const startM = timeToMinutes(task.scheduledStart!);
-    const endM = task.scheduledEnd ? timeToMinutes(task.scheduledEnd) : startM + task.duration;
+    let startM = timeToMinutes(task.scheduledStart!);
+    let endM = task.scheduledEnd ? timeToMinutes(task.scheduledEnd) : startM + task.duration;
+    if (sleepM > 1440 && startM < wakeM) {
+      startM += 1440;
+      endM += 1440;
+    }
     blocks.push({
       id: `block-fixed-${task.id}`,
       title: task.title,
@@ -211,7 +253,7 @@ export function buildDaySchedule(
   }
 
   // Sort existing fixed blocks
-  blocks.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+  blocks.sort((a, b) => getBlockStartMinutes(a) - getBlockStartMinutes(b));
 
   // 3. Sort non-fixed tasks by Priority: Critical -> Important -> Flexible -> Optional
   const priorityWeight: Record<string, number> = {
@@ -242,14 +284,14 @@ export function buildDaySchedule(
 
       // Check overlap
       const conflict = blocks.find(b => {
-        const bStart = timeToMinutes(b.startTime);
-        const bEnd = timeToMinutes(b.endTime);
+        const bStart = getBlockStartMinutes(b);
+        const bEnd = getBlockEndMinutes(b);
         return (taskStart < bEnd && taskEnd > bStart);
       });
 
       if (conflict) {
         // Jump past the conflicting block
-        cursorM = timeToMinutes(conflict.endTime) + 10; // 10 min transition buffer
+        cursorM = getBlockEndMinutes(conflict) + 10; // 10 min transition buffer
       } else {
         // Place task here
         const startStr = minutesToTime(taskStart);
@@ -286,7 +328,7 @@ export function buildDaySchedule(
   }
 
   // Sort final blocks by start time
-  blocks.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+  blocks.sort((a, b) => getBlockStartMinutes(a) - getBlockStartMinutes(b));
 
   return { scheduledTasks, blocks };
 }

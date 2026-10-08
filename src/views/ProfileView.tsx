@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { getTodayDateString } from '../utils/dateUtils';
 import {
   User,
   Sparkles,
@@ -90,7 +91,7 @@ export const ProfileView: React.FC = () => {
 
   // Unified Centralized Metrics
   const completedTasksCount = tasks.filter((t) => t.status === 'completed').length;
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayDateString();
   
   const todayFocusSec = getDailyFocusSeconds(
     todayStr,
@@ -111,6 +112,13 @@ export const ProfileView: React.FC = () => {
   // Real Streak
   const { currentStreak } = calculateRealStreak(tasks, habits, history);
 
+  const saveTimeoutRef = useRef<any>(null);
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, []);
+
   const handleSaveProfile = () => {
     updateUserProfile({
       userName: name.trim() || 'Jay',
@@ -120,7 +128,8 @@ export const ProfileView: React.FC = () => {
       userAvatar: avatar,
     });
     setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2200);
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => setSavedSuccess(false), 2200);
   };
 
   const handleAskAiToday = async () => {

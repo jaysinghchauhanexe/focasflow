@@ -1,7 +1,8 @@
 export type DefaultPriority = 'important' | 'regular' | 'flexible' | 'optional';
 export type Priority = 'important' | 'regular' | 'flexible' | 'optional' | 'critical' | (string & {});
 export type TaskStatus = 'pending' | 'active' | 'completed' | 'skipped' | 'moved';
-export type Category = 'Health' | 'Work' | 'Personal' | 'Learning' | 'Neutral';
+export type DefaultCategory = 'Health' | 'Work' | 'Personal' | 'Learning' | 'Neutral';
+export type Category = 'Health' | 'Work' | 'Personal' | 'Learning' | 'Neutral' | (string & {});
 export type EnergyLevel = 'high' | 'medium' | 'low';
 export type Flexibility = 'fixed' | 'flexible';
 
@@ -219,7 +220,7 @@ export interface AiRequestContext {
 export interface SchedulerSuggestion {
 
   id: string;
-  actionType: 'move' | 'shorten' | 'skip';
+  actionType: 'move' | 'shorten' | 'skip' | 'split' | 'drop';
   targetTaskId: string;
   taskTitle: string;
   explanation: string;

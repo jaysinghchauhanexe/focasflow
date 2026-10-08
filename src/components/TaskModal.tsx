@@ -4,6 +4,7 @@ import { Category, Priority, Subtask } from '../types';
 import { X, Sprout, Calendar, Clock, Briefcase, Flag, GripVertical, Trash2, Plus, RefreshCw, Archive, Link as LinkIcon, FileText, Info, Circle } from 'lucide-react';
 import { CustomTimePicker } from './CustomTimePicker';
 import { CustomSelect } from './CustomSelect';
+import { getTodayDateString } from '../utils/dateUtils';
 
 export const TaskModal: React.FC = () => {
   const { isTaskModalOpen, closeTaskModal, editingTask, addTask, updateTask, selectedDate, settings } = useAppStore();
@@ -14,7 +15,7 @@ export const TaskModal: React.FC = () => {
   const [category, setCategory] = useState<Category>('Work');
   const [priority, setPriority] = useState<Priority>('important');
   const [scheduledStart, setScheduledStart] = useState('');
-  const [taskDate, setTaskDate] = useState<string>(selectedDate || new Date().toISOString().split('T')[0]);
+  const [taskDate, setTaskDate] = useState<string>(selectedDate || getTodayDateString());
 
   const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [customDurationValue, setCustomDurationValue] = useState('45');
@@ -35,7 +36,7 @@ export const TaskModal: React.FC = () => {
       setCategory(editingTask.category || 'Work');
       setPriority(editingTask.priority || 'important');
       setScheduledStart(editingTask.scheduledStart || '');
-      setTaskDate(editingTask.scheduledDate || selectedDate || new Date().toISOString().split('T')[0]);
+      setTaskDate(editingTask.scheduledDate || selectedDate || getTodayDateString());
       if (editingTask.subtasks && editingTask.subtasks.length > 0) {
         setShowChecklist(true);
         setSubtasks(editingTask.subtasks);
@@ -54,7 +55,7 @@ export const TaskModal: React.FC = () => {
           setCategory(draft.category !== undefined ? draft.category : 'Work');
           setPriority(draft.priority !== undefined ? draft.priority : 'important');
           setScheduledStart(draft.scheduledStart !== undefined ? draft.scheduledStart : '00:00');
-          setTaskDate(draft.taskDate !== undefined ? draft.taskDate : (selectedDate || new Date().toISOString().split('T')[0]));
+          setTaskDate(draft.taskDate !== undefined ? draft.taskDate : (selectedDate || getTodayDateString()));
           setShowChecklist(draft.showChecklist !== undefined ? draft.showChecklist : false);
           setSubtasks(draft.subtasks !== undefined ? draft.subtasks : []);
           setIsCustomDuration(draft.isCustomDuration !== undefined ? draft.isCustomDuration : false);
@@ -67,7 +68,7 @@ export const TaskModal: React.FC = () => {
       setCategory('Work');
       setPriority('important');
       setScheduledStart('00:00');
-      setTaskDate(selectedDate || new Date().toISOString().split('T')[0]);
+      setTaskDate(selectedDate || getTodayDateString());
       setShowChecklist(false);
       setSubtasks([]);
       setIsCustomDuration(false);

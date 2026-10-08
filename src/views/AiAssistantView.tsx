@@ -120,6 +120,7 @@ export const AiAssistantView: React.FC = () => {
   const [speechErrorToast, setSpeechErrorToast] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [whisperProgressText, setWhisperProgressText] = useState<string | null>(null);
+  const [mobileViewTab, setMobileViewTab] = useState<'chat' | 'sidebar'>('chat');
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -211,6 +212,23 @@ export const AiAssistantView: React.FC = () => {
   const prevScrollTopRef = useRef<number>(0);
   const anchorMsgIdRef = useRef<string | null>(null);
   const anchorOffsetTopRef = useRef<number>(0);
+  const activeTimeoutsRef = useRef<Set<any>>(new Set());
+
+  const safeTimeout = (fn: () => void, ms: number) => {
+    const id = setTimeout(() => {
+      activeTimeoutsRef.current.delete(id);
+      fn();
+    }, ms);
+    activeTimeoutsRef.current.add(id);
+    return id;
+  };
+
+  useEffect(() => {
+    return () => {
+      activeTimeoutsRef.current.forEach((id) => clearTimeout(id));
+      activeTimeoutsRef.current.clear();
+    };
+  }, []);
 
   // When changing active session, reset visible count to initial
   useEffect(() => {
@@ -276,7 +294,7 @@ export const AiAssistantView: React.FC = () => {
   const scrollToBottom = () => {
     isAutoScrollingRef.current = true;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    setTimeout(() => {
+    safeTimeout(() => {
       isAutoScrollingRef.current = false;
     }, 400);
   };
@@ -375,7 +393,7 @@ export const AiAssistantView: React.FC = () => {
     } catch (err: any) {
       setDownloadProgressText(`Download failed: ${err?.message || 'Error downloading weights'}`);
     } finally {
-      setTimeout(() => {
+      safeTimeout(() => {
         setDownloadingInApp(false);
       }, 1500);
     }
@@ -402,17 +420,17 @@ export const AiAssistantView: React.FC = () => {
             const trimmed = prev.trim();
             return trimmed ? `${trimmed} ${text.trim()}` : text.trim();
           });
-          setTimeout(() => {
+          safeTimeout(() => {
             inputRef.current?.focus();
           }, 50);
         } else {
           setSpeechErrorToast('No speech detected. Please speak clearly into your microphone.');
-          setTimeout(() => setSpeechErrorToast(null), 2500);
+          safeTimeout(() => setSpeechErrorToast(null), 2500);
         }
       } catch (err: any) {
         console.warn('Whisper transcription error:', err);
         setSpeechErrorToast(`Whisper speech error: ${err?.message || 'Failed to process audio'}`);
-        setTimeout(() => setSpeechErrorToast(null), 3500);
+        safeTimeout(() => setSpeechErrorToast(null), 3500);
       } finally {
         setIsTranscribing(false);
         setWhisperProgressText(null);
@@ -429,7 +447,7 @@ export const AiAssistantView: React.FC = () => {
       console.warn('Microphone recording error:', err);
       setIsListening(false);
       setSpeechErrorToast('Microphone access denied. Please allow microphone permissions in settings.');
-      setTimeout(() => setSpeechErrorToast(null), 3500);
+      safeTimeout(() => setSpeechErrorToast(null), 3500);
     }
   };
 
@@ -490,7 +508,7 @@ export const AiAssistantView: React.FC = () => {
     const hint = `Refining schedule: Specify what you'd like adjusted...`;
     setRefiningPromptHint(hint);
     setInputVal(`Refine schedule: `);
-    setTimeout(() => {
+    safeTimeout(() => {
       inputRef.current?.focus();
     }, 50);
   };
@@ -799,21 +817,54 @@ export const AiAssistantView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-5 h-full max-w-[1600px] mx-auto select-none animate-fade-in overflow-hidden">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 h-full max-w-[1600px] mx-auto select-none animate-fade-in overflow-hidden">
       {/* ========================================================================= */}
-      {/* 1. LEFT / MAIN AI CHAT & HERO PANEL (Clean, seamless without heavy lines) */}
+      {/* 1. LEFT / MAIN AI CHAT & HERO PANEL                                      */}
       {/* ========================================================================= */}
-      <div className="flex-1 flex flex-col bg-card rounded-[28px] shadow-soft overflow-hidden">
-        {/* TOP HEADER (Clean without model pill or harsh borders) */}
-        <div className="px-6 py-4 flex items-center justify-between gap-4 flex-shrink-0 bg-card">
+      <div className={`flex-1 flex-col bg-card rounded-[24px] sm:rounded-[28px] shadow-soft overflow-hidden ${
+        mobileViewTab === 'chat' ? 'flex' : 'hidden lg:flex'
+      }`}>
+        {/* TOP HEADER */}
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between gap-3 flex-shrink-0 bg-card border-b border-borderToken/40 lg:border-none">
           <div>
-            <h1 className="text-[20px] sm:text-[22px] font-serif font-bold text-foreground tracking-tight flex items-center gap-2">
+            <h1 className="text-[18px] sm:text-[22px] font-serif font-bold text-foreground tracking-tight flex items-center gap-2">
               <span>FocusFlow AI</span>
             </h1>
-            <p className="text-[12px] text-mutedText">Your personal productivity companion</p>
+            <p className="text-[11.5px] sm:text-[12px] text-mutedText">Your personal productivity companion</p>
           </div>
 
           <div className="flex items-center gap-2 relative">
+            {/* Small Screen Tab Switcher */}
+            <div className="flex lg:hidden items-center p-0.5 bg-card-subtle rounded-xl border border-borderToken/70">
+              <button
+                type="button"
+                onClick={() => setMobileViewTab('chat')}
+                className={`px-3 py-1 rounded-lg text-[11.5px] font-medium transition-all ${
+                  mobileViewTab === 'chat'
+                    ? 'bg-primary text-primary-text font-semibold shadow-xs'
+                    : 'text-mutedText hover:text-foreground'
+                }`}
+              >
+                Chat
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileViewTab('sidebar')}
+                className={`px-3 py-1 rounded-lg text-[11.5px] font-medium transition-all flex items-center gap-1 ${
+                  mobileViewTab === 'sidebar'
+                    ? 'bg-primary text-primary-text font-semibold shadow-xs'
+                    : 'text-mutedText hover:text-foreground'
+                }`}
+              >
+                <span>History</span>
+                {sessions.length > 0 && (
+                  <span className="w-3.5 h-3.5 rounded-full bg-primary-soft text-primary text-[9.5px] flex items-center justify-center font-bold">
+                    {sessions.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
             {/* More Options Button */}
             <div className="relative">
               <button
@@ -892,40 +943,40 @@ export const AiAssistantView: React.FC = () => {
           {/* STATE A: EMPTY / NEW CHAT HERO SCREEN (Dashboard Vector Art)     */}
           {/* ================================================================= */}
           {activeMessages.length === 0 ? (
-            <div className="flex-1 flex flex-col justify-center items-center text-center max-w-4xl mx-auto w-full my-auto space-y-7 animate-fade-in">
+            <div className="flex-1 flex flex-col justify-center items-center text-center max-w-4xl mx-auto w-full my-auto space-y-5 sm:space-y-7 animate-fade-in">
               {/* Dynamic Dashboard SVG Sky Artwork (Morning/Afternoon/Evening/Night) - Grand Size */}
-              <div className="flex justify-center items-center overflow-visible my-2">
+              <div className="flex justify-center items-center overflow-visible my-1 sm:my-2">
                 <DiurnalSkyIllustration
                   className="overflow-visible"
-                  svgClassName="w-[360px] sm:w-[480px] md:w-[560px] h-[140px] sm:h-[180px] md:h-[210px]"
+                  svgClassName="w-[280px] sm:w-[420px] md:w-[520px] h-[110px] sm:h-[150px] md:h-[190px]"
                 />
               </div>
 
               {/* Greeting Heading */}
-              <div className="space-y-1.5">
-                <h2 className="text-[26px] sm:text-[32px] font-serif font-bold text-foreground tracking-tight">
+              <div className="space-y-1 sm:space-y-1.5">
+                <h2 className="text-[22px] sm:text-[30px] font-serif font-bold text-foreground tracking-tight">
                   {greetingText}, {userName}
                 </h2>
-                <p className="text-[14px] sm:text-[15px] text-mutedText font-medium">
+                <p className="text-[13px] sm:text-[15px] text-mutedText font-medium">
                   How can I help you today?
                 </p>
               </div>
 
               {/* 4 Quick Action Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 w-full pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-3.5 w-full pt-1">
                 {heroActionCards.map((card) => {
                   const Icon = card.icon;
                   return (
                     <div
                       key={card.id}
                       onClick={() => handleSend(card.prompt)}
-                      className="p-4 rounded-2xl bg-card-subtle hover:bg-card-muted border border-borderToken/60 transition-colors duration-150 cursor-pointer text-left flex flex-col justify-between h-[135px]"
+                      className="p-3.5 sm:p-4 rounded-2xl bg-card-subtle hover:bg-card-muted border border-borderToken/60 transition-colors duration-150 cursor-pointer text-left flex flex-col justify-between min-h-[110px] sm:h-[135px]"
                     >
                       <div className="w-8 h-8 rounded-xl bg-primary-soft text-primary flex items-center justify-center flex-shrink-0">
                         <Icon size={17} />
                       </div>
-                      <div>
-                        <h3 className="text-[13.5px] font-semibold text-foreground">
+                      <div className="mt-2 sm:mt-0">
+                        <h3 className="text-[13px] sm:text-[13.5px] font-semibold text-foreground">
                           {card.title}
                         </h3>
                         <p className="text-[11px] text-mutedText line-clamp-2 mt-0.5 leading-snug">
@@ -972,9 +1023,9 @@ export const AiAssistantView: React.FC = () => {
                       {/* ----------------- USER MESSAGE BUBBLE (With Profile Image) ----------------- */}
                       {!isAi ? (
                         <div className="flex justify-end gap-3 items-start pl-8">
-                          <div className="max-w-[85%] sm:max-w-[75%] rounded-[24px] bg-primary text-white p-4 sm:p-5 shadow-xs space-y-1 text-left">
-                            <div className="flex items-center justify-between gap-3 text-[11.5px] text-white/80 pb-1 font-medium">
-                              <span className="font-semibold text-white">{userName}</span>
+                          <div className="max-w-[85%] sm:max-w-[75%] rounded-[24px] bg-primary text-primary-text p-4 sm:p-5 shadow-xs space-y-1 text-left">
+                            <div className="flex items-center justify-between gap-3 text-[11.5px] opacity-90 pb-1 font-medium">
+                              <span className="font-semibold">{userName}</span>
                               <span>{msg.timestamp}</span>
                             </div>
                             <p className="text-[13.5px] sm:text-[14px] leading-relaxed select-text font-normal">
@@ -1369,7 +1420,9 @@ export const AiAssistantView: React.FC = () => {
       {/* ========================================================================= */}
       {/* 2. RIGHT SIDEBAR PANEL: SINGLE CARD WITH DIVIDERS                        */}
       {/* ========================================================================= */}
-      <div className="w-full lg:w-[320px] bg-card rounded-[28px] p-5 shadow-soft flex flex-col justify-between flex-shrink-0 overflow-y-auto border border-borderToken/70">
+      <div className={`w-full lg:w-[320px] bg-card rounded-[24px] sm:rounded-[28px] p-4 sm:p-5 shadow-soft flex-col justify-between flex-shrink-0 overflow-y-auto border border-borderToken/70 ${
+        mobileViewTab === 'sidebar' ? 'flex flex-1' : 'hidden lg:flex'
+      }`}>
         <div className="space-y-4">
           {/* SECTION 1: SUGGESTIONS */}
           <div>
@@ -1392,7 +1445,10 @@ export const AiAssistantView: React.FC = () => {
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => handleSend(sug.prompt)}
+                    onClick={() => {
+                      handleSend(sug.prompt);
+                      setMobileViewTab('chat');
+                    }}
                     disabled={loading}
                     className="w-full flex items-center gap-2.5 p-2 px-3 rounded-xl bg-card-subtle hover:bg-primary-soft hover:text-primary text-textSecondary text-[12.5px] font-medium transition-colors text-left cursor-pointer border border-transparent hover:border-primary/20 disabled:opacity-50"
                   >
@@ -1414,8 +1470,11 @@ export const AiAssistantView: React.FC = () => {
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={handleStartNewChat}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary-soft hover:bg-primary text-primary hover:text-white text-[11px] font-semibold transition-all cursor-pointer"
+                  onClick={() => {
+                    handleStartNewChat();
+                    setMobileViewTab('chat');
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary-soft hover:bg-primary text-primary hover:text-primary-text text-[11px] font-semibold transition-all cursor-pointer"
                   title="Start a new chat thread"
                 >
                   <Plus size={12} />
@@ -1435,7 +1494,7 @@ export const AiAssistantView: React.FC = () => {
               </div>
             </div>
 
-            <div className="max-h-[170px] overflow-y-auto space-y-1.5 pr-1">
+            <div className="max-h-[220px] lg:max-h-[170px] overflow-y-auto space-y-1.5 pr-1">
               {sessions.length === 0 ? (
                 <p className="text-[12px] text-mutedText text-center py-4">No previous chats yet.</p>
               ) : (
@@ -1444,7 +1503,10 @@ export const AiAssistantView: React.FC = () => {
                   return (
                     <div
                       key={session.id}
-                      onClick={() => setActiveSessionId(session.id)}
+                      onClick={() => {
+                        setActiveSessionId(session.id);
+                        setMobileViewTab('chat');
+                      }}
                       className={`group flex items-center justify-between gap-2 p-2 px-2.5 rounded-xl transition-all cursor-pointer border ${isActive
                           ? 'bg-primary-soft border-primary/30 font-medium'
                           : 'bg-card-subtle hover:bg-card-muted border-transparent'
@@ -1479,7 +1541,7 @@ export const AiAssistantView: React.FC = () => {
         </div>
 
         {/* BOTTOM WATERMARK QUOTE SECTION */}
-        <div className="mt-4 pt-3 border-t border-borderToken/60 relative overflow-hidden flex items-center min-h-[50px]">
+        <div className="mt-4 pt-3 border-t border-borderToken/60 relative overflow-hidden flex items-center min-h-[44px]">
           <p className="text-[11px] text-mutedText italic leading-relaxed relative z-10">
             &ldquo;Small consistent practices build a tranquil life.&rdquo;
           </p>

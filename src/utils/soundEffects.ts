@@ -9,19 +9,15 @@ const CLICK_SOUND_PATH = '/sound effects/mouse-click-single.mp3';
 class SoundEffectsManager {
   private completionAudioPool: HTMLAudioElement[] = [];
   private clickAudioPool: HTMLAudioElement[] = [];
-  private poolSize = 6;
+  private poolSize = 4;
   private completionIndex = 0;
   private clickIndex = 0;
   private lastClickTime = 0;
   private lastCompletionTime = 0;
   private isInitialized = false;
 
-  constructor() {
-    this.initPools();
-  }
-
   private initPools() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || this.isInitialized) return;
 
     try {
       for (let i = 0; i < this.poolSize; i++) {
@@ -41,8 +37,6 @@ class SoundEffectsManager {
 
   /**
    * Play the completion sound (tick-ting.mp3)
-   * Used when completing a task, checking a habit, finishing a goal, etc.
-   * Cancels and silences any overlapping click sound.
    */
   public playCompletion(volume = 0.75) {
     try {
@@ -56,7 +50,7 @@ class SoundEffectsManager {
         }
       }
 
-      if (!this.isInitialized && this.completionAudioPool.length === 0) {
+      if (!this.isInitialized) {
         this.initPools();
       }
       if (this.completionAudioPool.length === 0) return;
@@ -81,8 +75,6 @@ class SoundEffectsManager {
 
   /**
    * Play tactile mouse click sound (mouse-click-single.mp3)
-   * Used for buttons, switches, tabs, and interactive clickable elements.
-   * Will NOT play if a completion event triggered recently.
    */
   public playClick(volume = 0.45) {
     try {
@@ -95,7 +87,7 @@ class SoundEffectsManager {
       if (now - this.lastClickTime < 35) return;
       this.lastClickTime = now;
 
-      if (!this.isInitialized && this.clickAudioPool.length === 0) {
+      if (!this.isInitialized) {
         this.initPools();
       }
       if (this.clickAudioPool.length === 0) return;
@@ -129,14 +121,15 @@ export const playClickSound = (volume?: number) => soundEffects.playClick(volume
 
 /**
  * Global handler to attach to window/document to automatically play click sound
- * on any button, role="button", clickable tab, or interactive elements.
- * Skips elements with data-completion-trigger or data-no-click-sound.
+ * on interactive elements. Respects user preference if supplied.
  */
-export const setupGlobalClickSoundListener = () => {
+export const setupGlobalClickSoundListener = (isEnabled?: () => boolean) => {
   if (typeof window === 'undefined' || typeof document === 'undefined') return () => {};
 
   const handleClick = (e: MouseEvent) => {
     try {
+      if (isEnabled && !isEnabled()) return;
+
       const target = e.target as HTMLElement | null;
       if (!target) return;
 

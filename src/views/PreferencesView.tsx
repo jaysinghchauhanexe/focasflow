@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore, applyTheme, applyFont, defaultPreferences } from '../store/useAppStore';
 import { UserPreferences, LofiStationId, AppTheme } from '../types';
 import { playCompletionSound, playClickSound } from '../utils/soundEffects';
@@ -106,9 +106,18 @@ export const PreferencesView: React.FC = () => {
     triggerSavedFeedback('Preferences reset to default values');
   };
 
+  const feedbackTimerRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    };
+  }, []);
+
   const triggerSavedFeedback = (msg = 'Preferences saved') => {
+    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
     setSavedFeedback(msg);
-    setTimeout(() => setSavedFeedback(null), 2500);
+    feedbackTimerRef.current = setTimeout(() => setSavedFeedback(null), 2500);
   };
 
   const themes: { id: AppTheme; name: string; desc: string; primary: string; bg: string; card: string; text: string }[] = [

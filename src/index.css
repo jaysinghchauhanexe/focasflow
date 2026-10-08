@@ -120,37 +120,37 @@ body[data-theme="teal"],
 }
 
 /* ==========================================================================
-   THEME 3: BLUE (#2D90E0)
+   THEME 3: BLUE (Ocean Blue - Rich Sapphire)
    ========================================================================== */
 [data-theme="blue"],
 html[data-theme="blue"],
 body[data-theme="blue"],
 #root[data-theme="blue"] {
-  --color-bg: #EDF4FC;
+  --color-bg: #EEF4FB;
   --color-card: #FFFFFF;
-  --color-card-subtle: #F6F9FE;
-  --color-card-muted: #E2EEFA;
+  --color-card-subtle: #F5F9FD;
+  --color-card-muted: #E0EDFA;
 
-  --color-primary: #2D90E0;
-  --color-primary-hover: #207BC7;
-  --color-primary-active: #1867A8;
-  --color-primary-soft: rgba(45, 144, 224, 0.14);
+  --color-primary: #1E6FDB;
+  --color-primary-hover: #165BB8;
+  --color-primary-active: #104590;
+  --color-primary-soft: rgba(30, 111, 219, 0.12);
   --color-primary-text: #FFFFFF;
-  --color-focus: rgba(45, 144, 224, 0.30);
+  --color-focus: rgba(30, 111, 219, 0.28);
 
-  --color-text: #0B2338;
-  --color-text-secondary: #1E3F5E;
-  --color-text-muted: #5B7B9E;
+  --color-text: #0B1D30;
+  --color-text-secondary: #264363;
+  --color-text-muted: #567699;
 
-  --color-border: rgba(45, 144, 224, 0.14);
-  --color-border-subtle: rgba(45, 144, 224, 0.07);
+  --color-border: rgba(30, 111, 219, 0.14);
+  --color-border-subtle: rgba(30, 111, 219, 0.07);
 
   --shadow-soft: none;
   --shadow-float: none;
 
   --tag-health: #1E8E56;
   --tag-health-bg: #E6F7EE;
-  --tag-work: #257FCA;
+  --tag-work: #1E6FDB;
   --tag-work-bg: #E5F2FC;
   --tag-personal: #7B4EB8;
   --tag-personal-bg: #F3ECFA;
@@ -206,46 +206,58 @@ body[data-theme="monochrome"],
 }
 
 /* ==========================================================================
-   THEME 5: DARK (Midnight Obsidian - Ultra Deep Dark)
+   THEME 5: DARK (Midnight Obsidian - High Contrast Luxury Dark)
    ========================================================================== */
 [data-theme="dark"],
 html[data-theme="dark"],
 body[data-theme="dark"],
 #root[data-theme="dark"] {
-  --color-bg: #030712;
-  --color-card: #0B0F19;
-  --color-card-subtle: #111827;
-  --color-card-muted: #172033;
+  --color-bg: #090D16;
+  --color-card: #111827;
+  --color-card-subtle: #172236;
+  --color-card-muted: #1F2E47;
 
   --color-primary: #38BDF8;
-  --color-primary-hover: #0EA5E9;
+  --color-primary-hover: #7DD3FC;
   --color-primary-active: #0284C7;
   --color-primary-soft: rgba(56, 189, 248, 0.16);
-  --color-primary-text: #FFFFFF;
+  --color-primary-text: #04121E;
   --color-focus: rgba(56, 189, 248, 0.35);
 
-  --color-text: #F9FAFB;
-  --color-text-secondary: #D1D5DB;
-  --color-text-muted: #9CA3AF;
+  --color-text: #F8FAFC;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #94A3B8;
 
-  --color-border: rgba(255, 255, 255, 0.10);
-  --color-border-subtle: rgba(255, 255, 255, 0.05);
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-border-subtle: rgba(255, 255, 255, 0.06);
 
-  --shadow-soft: none;
-  --shadow-float: none;
+  --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
+  --shadow-float: 0 10px 30px -5px rgba(0, 0, 0, 0.65);
 
   --tag-health: #4ADE80;
-  --tag-health-bg: rgba(74, 222, 128, 0.15);
+  --tag-health-bg: rgba(74, 222, 128, 0.18);
   --tag-work: #38BDF8;
-  --tag-work-bg: rgba(56, 189, 248, 0.15);
+  --tag-work-bg: rgba(56, 189, 248, 0.18);
   --tag-personal: #C084FC;
-  --tag-personal-bg: rgba(192, 132, 252, 0.15);
+  --tag-personal-bg: rgba(192, 132, 252, 0.18);
   --tag-learning: #FBBF24;
-  --tag-learning-bg: rgba(251, 191, 36, 0.15);
+  --tag-learning-bg: rgba(251, 191, 36, 0.18);
   --tag-important: #F87171;
-  --tag-important-bg: rgba(248, 113, 113, 0.15);
-  --tag-neutral: #9CA3AF;
-  --tag-neutral-bg: rgba(156, 163, 175, 0.15);
+  --tag-important-bg: rgba(248, 113, 113, 0.18);
+  --tag-neutral: #A1A1AA;
+  --tag-neutral-bg: rgba(161, 161, 170, 0.18);
+}
+
+/* High-contrast text on bright primary badges and buttons in dark mode */
+[data-theme="dark"] .bg-primary,
+[data-theme="dark"] button.bg-primary,
+[data-theme="dark"] a.bg-primary {
+  color: var(--color-primary-text, #04121E) !important;
+}
+[data-theme="dark"] .bg-primary svg,
+[data-theme="dark"] button.bg-primary svg {
+  color: var(--color-primary-text, #04121E) !important;
+  stroke: var(--color-primary-text, #04121E);
 }
 
 /* ==========================================================================

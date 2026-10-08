@@ -22,6 +22,7 @@ import {
 } from '../types';
 import { calculateDayCapacity, buildDaySchedule } from '../engine/scheduler';
 import { playCompletionSound } from '../utils/soundEffects';
+import { getTodayDateString, getTomorrowDateString, formatLocalDate, parseLocalDate, generateSafeId, isValidDateString } from '../utils/dateUtils';
 
 interface AppState {
   currentTab: 'today' | 'tasks' | 'analytics' | 'habits' | 'routines' | 'goals' | 'schedule' | 'settings' | 'preferences' | 'ai-planner' | 'profile';
@@ -187,10 +188,7 @@ interface AppState {
   getDayCapacity: () => DayCapacity;
 }
 
-const getTodayDate = () => {
-  const d = new Date();
-  return d.toISOString().split('T')[0];
-};
+const getTodayDate = () => getTodayDateString();
 
 const initialTasks: Task[] = [
   {
@@ -548,11 +546,20 @@ const loadPersisted = <T>(key: string, fallback: T): T => {
   }
 };
 
+let tauriSavePromise: Promise<void> = Promise.resolve();
+
 const savePersisted = <T>(key: string, value: T) => {
   try {
     localStorage.setItem(`focusflow_${key}`, JSON.stringify(value));
     if (tauriStore) {
-      tauriStore.set(key, value).then(() => tauriStore!.save()).catch(e => console.error(e));
+      tauriSavePromise = tauriSavePromise
+        .then(async () => {
+          await tauriStore!.set(key, value);
+          await tauriStore!.save();
+        })
+        .catch((e) => {
+          console.error(`Storage error saving ${key} to Tauri store:`, e);
+        });
     }
   } catch (e) {
     console.error('Storage error:', e);
@@ -723,7 +730,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   isPlayingSoundscape: false,
 
   setCurrentTab: (tab) => set({ currentTab: tab }),
-  setSelectedDate: (date) => set({ selectedDate: date }),
+  setSelectedDate: (date) => {
+    set({ selectedDate: date });
+    get().replanDay();
+  },
   setActiveFilter: (filter) => set({ activeFilter: filter }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setMood: (mood) => {
@@ -767,7 +777,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   addTask: (taskData) => {
     const newTask: Task = {
       ...taskData,
-      id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: generateSafeId('task'),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -793,8 +803,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       const updated = state.tasks.filter((t) => t.id !== id);
       savePersisted('tasks', updated);
       const isCurrentActive = state.activeFocusTaskId === id;
+      const nextElapsedMap = { ...state.taskElapsedSeconds };
+      delete nextElapsedMap[id];
+      savePersisted('task_elapsed_seconds', nextElapsedMap);
       return { 
         tasks: updated,
+        taskElapsedSeconds: nextElapsedMap,
         ...(isCurrentActive ? { activeFocusTaskId: null, isFocusTimerRunning: false, focusElapsedSeconds: 0 } : {})
       };
     });
@@ -863,10 +877,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   moveTaskToTomorrow: (id) => {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const tomorrowStr = getTomorrowDateString();
 
     set((state) => {
       const updated = state.tasks.map((t) => {
@@ -891,7 +902,15 @@ export const useAppStore = create<AppState>((set, get) => ({
       const task = state.tasks.find(t => t.id === id);
       if (!task) return state;
       const otherTasks = state.tasks.filter(t => t.id !== id);
-      const updated = [...otherTasks, { ...task, priority: 'flexible' as const, movedCount: (task.movedCount || 0) + 1 }];
+      const updated = [
+        ...otherTasks,
+        {
+          ...task,
+          priority: 'flexible' as const,
+          movedCount: (task.movedCount || 0) + 1,
+          updatedAt: new Date().toISOString(),
+        }
+      ];
       savePersisted('tasks', updated);
       return { tasks: updated };
     });
@@ -899,10 +918,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   lightenTodayLoad: () => {
-    const todayStr = get().selectedDate || new Date().toISOString().split('T')[0];
-    const tomorrow = new Date(todayStr);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const todayStr = get().selectedDate || getTodayDateString();
+    const tomorrowStr = getTomorrowDateString();
 
     let count = 0;
     set((state) => {
@@ -945,7 +962,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   addHabit: (habitData) => {
     const newHabit: Habit = {
       ...habitData,
-      id: `habit-${Date.now()}`,
+      id: generateSafeId('habit'),
       completedDates: [],
       createdAt: new Date().toISOString(),
     };
@@ -1000,7 +1017,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   addRoutine: (routineData) => {
     const newRoutine: Routine = {
       ...routineData,
-      id: `routine-${Date.now()}`,
+      id: generateSafeId('routine'),
     };
     set((state) => {
       const updated = [...state.routines, newRoutine];
@@ -1028,7 +1045,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   addGoal: (goalData) => {
     const newGoal: Goal = {
       ...goalData,
-      id: `goal-${Date.now()}`,
+      id: generateSafeId('goal'),
     };
     set((state) => {
       const updated = [...state.goals, newGoal];
@@ -1182,122 +1199,147 @@ export const useAppStore = create<AppState>((set, get) => ({
     let updatedTasks = [...tasks];
     let updatedHabits = [...habits];
 
-    for (const op of result.operations) {
-      if (op.op_type === 'ADD_TASK') {
-        const targetDate = op.target_date === 'tomorrow'
-          ? (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })()
-          : (op.target_date && op.target_date !== 'today' ? op.target_date : selectedDate);
+    const resolveOpTargetDate = (opTargetDate?: string): string => {
+      if (opTargetDate === 'tomorrow') return getTomorrowDateString();
+      if (opTargetDate && opTargetDate !== 'today' && isValidDateString(opTargetDate)) return opTargetDate;
+      return selectedDate || getTodayDateString();
+    };
 
-        updatedTasks.unshift({
-          id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-          title: op.title || 'New Task',
-          duration: op.duration_minutes || 45,
-          priority: op.priority || 'important',
-          status: 'pending',
-          category: op.category || 'Work',
-          scheduledDate: targetDate,
-          scheduledStart: op.start_time || undefined,
-          scheduledEnd: op.end_time || calculateEndTime(op.start_time, op.duration_minutes),
-          timeMode: op.start_time ? 'scheduled' : 'duration',
-          flexibility: op.start_time ? 'fixed' : 'flexible',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-      } else if (op.op_type === 'ADD_COMMITMENT') {
-        updatedTasks.unshift({
-          id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-          title: op.title || 'Fixed Commitment',
-          duration: op.duration_minutes || 45,
-          priority: op.priority || 'important',
-          status: 'pending',
-          category: op.category || 'Work',
-          scheduledDate: selectedDate,
-          scheduledStart: op.start_time || '16:00',
-          scheduledEnd: op.end_time || calculateEndTime(op.start_time, op.duration_minutes || 45),
-          timeMode: 'scheduled',
-          flexibility: 'fixed',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-      } else if (op.op_type === 'SKIP_TASK') {
-        const target = updatedTasks.find(t => t.title.toLowerCase().includes((op.title || '').toLowerCase()) || t.id === op.task_id);
-        if (target) {
-          target.status = 'skipped';
-        }
-      } else if (op.op_type === 'COMPLETE_TASK') {
-        const target = updatedTasks.find(t => t.title.toLowerCase().includes((op.title || '').toLowerCase()) || t.id === op.task_id);
-        if (target) {
-          target.status = 'completed';
-          playCompletionSound();
-        }
-      } else if (op.op_type === 'MOVE_TASK') {
-        const target = updatedTasks.find(t => t.title.toLowerCase().includes((op.title || '').toLowerCase()) || t.id === op.task_id);
-        if (target) {
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          target.scheduledDate = op.target_date === 'tomorrow' ? tomorrow.toISOString().split('T')[0] : selectedDate;
-          target.movedCount = (target.movedCount || 0) + 1;
-        }
-      } else if (op.op_type === 'DELETE_TASK') {
-        const rawTitle = (op.title || '').trim().toLowerCase();
-        if (rawTitle === 'all' || rawTitle === 'all tasks' || rawTitle === 'everything' || rawTitle === 'all_tasks') {
-          updatedTasks = [];
-        } else {
-          const rangeMatch = rawTitle.match(/task\s*(\d+)\s*(?:through|to|-)\s*(?:task\s*)?(\d+)/i) || rawTitle.match(/(\d+)\s*(?:through|to|-)\s*(\d+)/);
-          if (rangeMatch) {
-            const start = parseInt(rangeMatch[1], 10) - 1;
-            const end = parseInt(rangeMatch[2], 10) - 1;
-            updatedTasks = updatedTasks.filter((_, idx) => idx < start || idx > end);
-          } else {
-            const indexMatch = rawTitle.match(/^task\s*(\d+)$/i) || rawTitle.match(/^#(\d+)$/);
-            const targetIdx = indexMatch ? parseInt(indexMatch[1], 10) - 1 : -1;
+    const findTargetTask = (taskList: Task[], opTaskId?: string, opTitle?: string): Task | undefined => {
+      if (opTaskId) {
+        const byId = taskList.find(t => t.id === opTaskId);
+        if (byId) return byId;
+      }
+      const clean = (opTitle || '').trim().toLowerCase();
+      if (!clean) return undefined;
+      
+      const exact = taskList.filter(t => t.title.trim().toLowerCase() === clean);
+      if (exact.length === 1) return exact[0];
+      
+      const substringMatches = taskList.filter(t => t.title.toLowerCase().includes(clean));
+      if (substringMatches.length === 1) return substringMatches[0];
 
-            updatedTasks = updatedTasks.filter((t, idx) => {
-              if (op.task_id && t.id === op.task_id) return false;
-              if (targetIdx !== -1 && idx === targetIdx) return false;
-              if (rawTitle && (t.title.toLowerCase().includes(rawTitle) || rawTitle.includes(t.title.toLowerCase()))) return false;
-              return true;
-            });
-          }
-        }
-      } else if (op.op_type === 'UPDATE_TASK' || op.op_type === 'CHANGE_DURATION' || op.op_type === 'CHANGE_PRIORITY') {
-        const rawTitle = (op.title || '').trim().toLowerCase();
-        const target = updatedTasks.find(t => t.id === op.task_id || (rawTitle && (t.title.toLowerCase().includes(rawTitle) || rawTitle.includes(t.title.toLowerCase()))));
-        if (target) {
-          if (op.duration_minutes) target.duration = op.duration_minutes;
-          if (op.priority) target.priority = op.priority;
-          if (op.category) target.category = op.category;
-          if (op.start_time) target.scheduledStart = op.start_time;
-          if (op.target_date) target.scheduledDate = op.target_date === 'tomorrow' ? undefined : selectedDate;
-          target.updatedAt = new Date().toISOString();
-        } else if (op.title) {
-          // If task didn't exist in store yet (e.g. user refining a newly proposed task), insert it!
+      return exact.length > 0 ? exact[0] : undefined;
+    };
+
+    if (result && Array.isArray(result.operations)) {
+      for (const op of result.operations) {
+        if (op.op_type === 'ADD_TASK') {
+          const targetDate = resolveOpTargetDate(op.target_date);
+          const duration = Math.max(1, Math.min(720, op.duration_minutes || 45));
+
           updatedTasks.unshift({
-            id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-            title: op.title,
-            duration: op.duration_minutes || 25,
+            id: generateSafeId('task'),
+            title: (op.title || 'New Task').trim(),
+            duration,
             priority: op.priority || 'important',
             status: 'pending',
             category: op.category || 'Work',
-            scheduledStart: op.start_time,
-            scheduledDate: op.target_date === 'tomorrow' ? undefined : selectedDate,
+            scheduledDate: targetDate,
+            scheduledStart: op.start_time || undefined,
+            scheduledEnd: op.end_time || calculateEndTime(op.start_time, duration),
+            timeMode: op.start_time ? 'scheduled' : 'duration',
+            flexibility: op.start_time ? 'fixed' : 'flexible',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           });
+        } else if (op.op_type === 'ADD_COMMITMENT') {
+          const duration = Math.max(1, Math.min(720, op.duration_minutes || 45));
+          updatedTasks.unshift({
+            id: generateSafeId('task'),
+            title: (op.title || 'Fixed Commitment').trim(),
+            duration,
+            priority: op.priority || 'important',
+            status: 'pending',
+            category: op.category || 'Work',
+            scheduledDate: resolveOpTargetDate(op.target_date),
+            scheduledStart: op.start_time || '16:00',
+            scheduledEnd: op.end_time || calculateEndTime(op.start_time, duration),
+            timeMode: 'scheduled',
+            flexibility: 'fixed',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        } else if (op.op_type === 'SKIP_TASK') {
+          const target = findTargetTask(updatedTasks, op.task_id, op.title);
+          if (target) {
+            target.status = 'skipped';
+            target.updatedAt = new Date().toISOString();
+          }
+        } else if (op.op_type === 'COMPLETE_TASK') {
+          const target = findTargetTask(updatedTasks, op.task_id, op.title);
+          if (target) {
+            target.status = 'completed';
+            target.updatedAt = new Date().toISOString();
+            playCompletionSound();
+          }
+        } else if (op.op_type === 'MOVE_TASK') {
+          const target = findTargetTask(updatedTasks, op.task_id, op.title);
+          if (target) {
+            target.scheduledDate = resolveOpTargetDate(op.target_date || 'tomorrow');
+            target.movedCount = (target.movedCount || 0) + 1;
+            target.updatedAt = new Date().toISOString();
+          }
+        } else if (op.op_type === 'DELETE_TASK') {
+          const rawTitle = (op.title || '').trim().toLowerCase();
+          if (rawTitle === 'all' || rawTitle === 'all tasks' || rawTitle === 'everything' || rawTitle === 'all_tasks') {
+            updatedTasks = [];
+          } else {
+            const rangeMatch = rawTitle.match(/task\s*(\d+)\s*(?:through|to|-)\s*(?:task\s*)?(\d+)/i) || rawTitle.match(/(\d+)\s*(?:through|to|-)\s*(\d+)/);
+            if (rangeMatch) {
+              const start = parseInt(rangeMatch[1], 10) - 1;
+              const end = parseInt(rangeMatch[2], 10) - 1;
+              updatedTasks = updatedTasks.filter((_, idx) => idx < start || idx > end);
+            } else {
+              const indexMatch = rawTitle.match(/^task\s*(\d+)$/i) || rawTitle.match(/^#(\d+)$/);
+              const targetIdx = indexMatch ? parseInt(indexMatch[1], 10) - 1 : -1;
+              const target = findTargetTask(updatedTasks, op.task_id, op.title);
+
+              if (target) {
+                updatedTasks = updatedTasks.filter(t => t.id !== target.id);
+              } else if (targetIdx >= 0 && targetIdx < updatedTasks.length) {
+                updatedTasks = updatedTasks.filter((_, idx) => idx !== targetIdx);
+              }
+            }
+          }
+        } else if (op.op_type === 'UPDATE_TASK' || op.op_type === 'CHANGE_DURATION' || op.op_type === 'CHANGE_PRIORITY') {
+          const target = findTargetTask(updatedTasks, op.task_id, op.title);
+          if (target) {
+            if (op.duration_minutes) target.duration = Math.max(1, Math.min(720, op.duration_minutes));
+            if (op.priority) target.priority = op.priority;
+            if (op.category) target.category = op.category;
+            if (op.start_time) target.scheduledStart = op.start_time;
+            if (op.target_date) target.scheduledDate = resolveOpTargetDate(op.target_date);
+            target.updatedAt = new Date().toISOString();
+          } else if (op.title) {
+            // If task didn't exist in store yet, insert it defensively
+            updatedTasks.unshift({
+              id: generateSafeId('task'),
+              title: op.title.trim(),
+              duration: Math.max(1, Math.min(720, op.duration_minutes || 25)),
+              priority: op.priority || 'important',
+              status: 'pending',
+              category: op.category || 'Work',
+              scheduledStart: op.start_time,
+              scheduledDate: resolveOpTargetDate(op.target_date),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            });
+          }
+        } else if (op.op_type === 'CREATE_HABIT') {
+          updatedHabits.push({
+            id: generateSafeId('habit'),
+            title: (op.title || 'New Habit').trim(),
+            category: op.category || 'Learning',
+            duration: Math.max(1, Math.min(720, op.duration_minutes || 45)),
+            frequency: (op.frequency as any) || 'weekdays',
+            preferredTime: op.preferred_time || 'morning',
+            target: 5,
+            completedDates: [],
+            active: true,
+            createdAt: new Date().toISOString(),
+          });
         }
-      } else if (op.op_type === 'CREATE_HABIT') {
-        updatedHabits.push({
-          id: `habit-${Date.now()}`,
-          title: op.title || 'New Habit',
-          category: op.category || 'Learning',
-          duration: op.duration_minutes || 45,
-          frequency: (op.frequency as any) || 'weekdays',
-          preferredTime: op.preferred_time || 'morning',
-          target: 5,
-          completedDates: [],
-          active: true,
-          createdAt: new Date().toISOString(),
-        });
       }
     }
 
@@ -1383,13 +1425,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       let updatedTasks = state.tasks;
       if (initialTaskTitle && initialTaskTitle.trim()) {
         const newTask: Task = {
-          id: `task-onboard-${Date.now()}`,
+          id: generateSafeId('task-onboard'),
           title: initialTaskTitle.trim(),
           duration: initialTaskDuration || 45,
           priority: initialTaskPriority || 'important',
           category: initialTaskCategory || 'Work',
           status: 'pending',
-          scheduledDate: getTodayDate(),
+          scheduledDate: getTodayDateString(),
           scheduledStart: '10:00',
           scheduledEnd: '10:45',
           flexibility: 'flexible',

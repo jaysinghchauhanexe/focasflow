@@ -29,16 +29,25 @@ export const App: React.FC = () => {
   const { currentTab, replanDay, settings, isFocusTimerRunning, setFocusElapsedSeconds } = useAppStore();
 
   useEffect(() => {
-    syncFromTauriStore(useAppStore.setState);
-    // Initial calculation of daily capacity and schedule
-    replanDay();
-    const cleanupClickSounds = setupGlobalClickSoundListener();
+    let isMounted = true;
+    (async () => {
+      await syncFromTauriStore(useAppStore.setState);
+      if (isMounted) {
+        replanDay();
+      }
+    })();
 
-    // Disable default browser context menu globally
+    const cleanupClickSounds = setupGlobalClickSoundListener(
+      () => useAppStore.getState().settings.preferences?.enableButtonClickSound ?? true
+    );
+
+    // Context menu: scope prevention to Tauri desktop window only, allowing normal browser interactions on web
     const handleContextMenu = (e: MouseEvent) => {
+      const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__;
+      if (!isTauri) return;
+
       const target = e.target as HTMLElement | null;
-      // Allow context menu only inside text input / textarea if needed, otherwise prevent default
-      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
+      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
       if (!isInput) {
         e.preventDefault();
       }
@@ -47,6 +56,7 @@ export const App: React.FC = () => {
     document.addEventListener('contextmenu', handleContextMenu);
 
     return () => {
+      isMounted = false;
       cleanupClickSounds();
       document.removeEventListener('contextmenu', handleContextMenu);
     };

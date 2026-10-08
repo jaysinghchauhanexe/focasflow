@@ -1,16 +1,17 @@
 import React from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { ChevronLeft, ChevronRight, RotateCcw, Calendar as CalendarIcon } from 'lucide-react';
+import { getTodayDateString, parseLocalDate, formatLocalDate, addDaysToDateString } from '../utils/dateUtils';
 
 export const WeekDateStrip: React.FC<{ className?: string }> = ({ className = '' }) => {
   const { selectedDate, setSelectedDate, tasks } = useAppStore();
 
-  const todayStr = React.useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayStr = React.useMemo(() => getTodayDateString(), []);
   const activeDate = selectedDate || todayStr;
 
-  // Calculate 7 days of the active week centered or starting on Sunday
+  // Calculate 7 days of the active week starting on Sunday
   const weekDays = React.useMemo(() => {
-    const curr = new Date(activeDate);
+    const curr = parseLocalDate(activeDate);
     const dayOfWeek = curr.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
     const sunday = new Date(curr);
     sunday.setDate(curr.getDate() - dayOfWeek);
@@ -21,7 +22,7 @@ export const WeekDateStrip: React.FC<{ className?: string }> = ({ className = ''
     for (let i = 0; i < 7; i++) {
       const d = new Date(sunday);
       d.setDate(sunday.getDate() + i);
-      const iso = d.toISOString().split('T')[0];
+      const iso = formatLocalDate(d);
       const hasTasks = tasks.some(t => t.scheduledDate === iso && t.status !== 'completed' && t.status !== 'skipped');
       const hasCompleted = tasks.some(t => (t.scheduledDate === iso || (!t.scheduledDate && iso === todayStr)) && t.status === 'completed');
 
@@ -40,15 +41,11 @@ export const WeekDateStrip: React.FC<{ className?: string }> = ({ className = ''
   }, [activeDate, todayStr, tasks]);
 
   const handlePrevWeek = () => {
-    const d = new Date(activeDate);
-    d.setDate(d.getDate() - 7);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    setSelectedDate(addDaysToDateString(activeDate, -7));
   };
 
   const handleNextWeek = () => {
-    const d = new Date(activeDate);
-    d.setDate(d.getDate() + 7);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    setSelectedDate(addDaysToDateString(activeDate, 7));
   };
 
   const handleJumpToday = () => {
@@ -72,6 +69,8 @@ export const WeekDateStrip: React.FC<{ className?: string }> = ({ className = ''
     });
   };
 
+  const activeDateObj = parseLocalDate(activeDate);
+
   return (
     <div className={`bg-card rounded-[24px] p-3.5 sm:p-4 shadow-soft transition-colors select-none ${className}`}>
       {/* Top Bar with Month/Year + Navigation Controls */}
@@ -79,7 +78,7 @@ export const WeekDateStrip: React.FC<{ className?: string }> = ({ className = ''
         <div className="flex items-center gap-2">
           <CalendarIcon size={15} className="text-primary" />
           <span className="text-[13.5px] sm:text-[14px] font-serif font-semibold text-foreground">
-            {new Date(activeDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            {activeDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </span>
           {activeDate !== todayStr && (
             <button

@@ -17,6 +17,7 @@ import {
 import { DoodleAnalytics } from '../components/DoodleIllustrations';
 import { CustomSelect } from '../components/CustomSelect';
 import { calculateRealStreak, getDailyFocusSeconds } from '../utils/metrics';
+import { getTodayDateString, getYesterdayDateString, formatLocalDate, getDayOfWeekFromDateString } from '../utils/dateUtils';
 
 interface PillDropdownProps {
   value: string;
@@ -110,12 +111,8 @@ export const AnalyticsView: React.FC = () => {
   const [hoveredTrendIndex, setHoveredTrendIndex] = useState<number | null>(null);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
-  const yesterdayStr = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
-  }, []);
+  const todayStr = useMemo(() => getTodayDateString(), []);
+  const yesterdayStr = useMemo(() => getYesterdayDateString(), []);
 
   // Filtered tasks based on active filters
   const filteredTasks = useMemo(() => {
@@ -274,7 +271,7 @@ export const AnalyticsView: React.FC = () => {
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dStr = d.toISOString().split('T')[0];
+      const dStr = formatLocalDate(d);
       const monthLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
       let minutes = 0;
@@ -322,16 +319,127 @@ export const AnalyticsView: React.FC = () => {
   const velocityDates = useMemo(() => last7DaysData.map((d) => d.label), [last7DaysData]);
 
   const priorityCurves = useMemo(() => {
-    const highCount = filteredTasks.filter((t) => t.priority === 'critical' && t.status === 'completed').length;
-    const medCount = filteredTasks.filter((t) => t.priority === 'important' && t.status === 'completed').length;
-    const lowCount = filteredTasks.filter((t) => (t.priority === 'flexible' || t.priority === 'optional') && t.status === 'completed').length;
+    const dailyHigh: number[] = [];
+    const dailyMedium: number[] = [];
+    const dailyLow: number[] = [];
 
-    return {
-      high: [0, 0, 0, 0, Math.max(0, highCount - 2), Math.max(0, highCount - 1), highCount],
-      medium: [0, 0, 0, 0, Math.max(0, medCount - 2), Math.max(0, medCount - 1), medCount],
-      low: [0, 0, 0, 0, Math.max(0, lowCount - 2), Math.max(0, lowCount - 1), lowCount],
-    };
-  }, [filteredTasks]);
+    last7DaysData.forEach((dayObj) => {
+      const dStr = dayObj.date;
+
+      const isTaskOnDate = (t: typeof tasks[0]) => {
+        if (t.updatedAt && t.updatedAt.startsWith(dStr)) return true;
+        if (t.scheduledDate && t.scheduledDate === dStr) return true;
+        if (t.createdAt && t.createdAt.startsWith(dStr)) return true;
+        if (dStr === todayStr && !t.scheduledDate) return true;
+        return false;
+      };
+
+      const high = tasks.filter(
+        (t) => (t.priority === 'critical' || t.priority === 'important') && t.status === 'completed' && isTaskOnDate(t)
+      ).length;
+
+      const med = tasks.filter(
+        (t) => (t.priority === 'regular') && t.status === 'completed' && isTaskOnDate(t)
+      ).length;
+
+      const low = tasks.filter(
+        (t) => (t.priority === 'flexible' || t.priority === 'optional') && t.status === 'completed' && isTaskOnDate(t)
+      ).length;
+
+      dailyHigh.push(high);
+      dailyMedium.push(med);
+      dailyLow.push(low);
+    });
+
+    if (velocityMode === 'Daily') {
+      const maxVal = Math.max(...dailyHigh, ...dailyMedium, ...dailyLow, 1);
+      return {
+        high: dailyHigh,
+        medium: dailyMedium,
+        low: dailyLow,
+        maxVal,
+      };
+    } else {
+      const cumHigh: number[] = [];
+      const cumMed: number[] = [];
+      const cumLow: number[] = [];
+      let rH = 0;
+      let rM = 0;
+      let rL = 0;
+
+      for (let i = 0; i < dailyHigh.length; i++) {
+        rH += dailyHigh[i];
+        rM += dailyMedium[i];
+        rL += dailyLow[i];
+        cumHigh.push(rH);
+        cumMed.push(rM);
+        cumLow.push(rL);
+      }
+
+      const totalHighCompleted = tasks.filter(t => (t.priority === 'critical' || t.priority === 'important') && t.status === 'completed').length;
+      const totalMedCompleted = tasks.filter(t => (t.priority === 'regular') && t.status === 'completed').length;
+      const totalLowCompleted = tasks.filter(t => (t.priority === 'flexible' || t.priority === 'optional') && t.status === 'completed').length;
+
+      if (cumHigh.length > 0 && cumHigh[cumHigh.length - 1] < totalHighCompleted) {
+        cumHigh[cumHigh.length - 1] = totalHighCompleted;
+      }
+      if (cumMed.length > 0 && cumMed[cumMed.length - 1] < totalMedCompleted) {
+        cumMed[cumMed.length - 1] = totalMedCompleted;
+      }
+      if (cumLow.length > 0 && cumLow[cumLow.length - 1] < totalLowCompleted) {
+        cumLow[cumLow.length - 1] = totalLowCompleted;
+      }
+
+      const maxVal = Math.max(...cumHigh, ...cumMed, ...cumLow, 1);
+      return {
+        high: cumHigh,
+        medium: cumMed,
+        low: cumLow,
+        maxVal,
+      };
+    }
+  }, [tasks, last7DaysData, velocityMode, todayStr]);
+
+  const yVelocityMax = useMemo(() => {
+    return Math.max(4, Math.ceil(priorityCurves.maxVal / 4) * 4);
+  }, [priorityCurves.maxVal]);
+
+  const yVelocityTicks = useMemo(() => {
+    return [
+      yVelocityMax,
+      Math.round(yVelocityMax * 0.66),
+      Math.round(yVelocityMax * 0.33),
+      0,
+    ];
+  }, [yVelocityMax]);
+
+  const highPoints = useMemo(() => {
+    return priorityCurves.high.map((val, idx) => ({
+      x: 10 + idx * 80,
+      y: 110 - (val / yVelocityMax) * 95,
+      val,
+    }));
+  }, [priorityCurves.high, yVelocityMax]);
+
+  const medPoints = useMemo(() => {
+    return priorityCurves.medium.map((val, idx) => ({
+      x: 10 + idx * 80,
+      y: 110 - (val / yVelocityMax) * 95,
+      val,
+    }));
+  }, [priorityCurves.medium, yVelocityMax]);
+
+  const lowPoints = useMemo(() => {
+    return priorityCurves.low.map((val, idx) => ({
+      x: 10 + idx * 80,
+      y: 110 - (val / yVelocityMax) * 95,
+      val,
+    }));
+  }, [priorityCurves.low, yVelocityMax]);
+
+  const highPathD = useMemo(() => highPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '), [highPoints]);
+  const medPathD = useMemo(() => medPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '), [medPoints]);
+  const lowPathD = useMemo(() => lowPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '), [lowPoints]);
 
   // 7. TASKS MATCHING ACTIVE FILTERS (100% Real User Tasks)
   const filterStats = useMemo(() => {
@@ -390,7 +498,7 @@ export const AnalyticsView: React.FC = () => {
     filteredTasks.forEach((t) => {
       if (t.scheduledStart) {
         const hour = parseInt(t.scheduledStart.split(':')[0], 10);
-        const dayIdx = t.scheduledDate ? new Date(t.scheduledDate).getDay() : new Date().getDay();
+        const dayIdx = t.scheduledDate ? getDayOfWeekFromDateString(t.scheduledDate) : new Date().getDay();
         const adjustedDay = (dayIdx + 6) % 7; // Mon = 0
         if (!isNaN(hour) && hour >= 0 && hour < 24) {
           grid[adjustedDay][hour] = Math.min(4, grid[adjustedDay][hour] + (t.status === 'completed' ? 2 : 1));
@@ -941,7 +1049,7 @@ export const AnalyticsView: React.FC = () => {
           {/* Line Chart Area */}
           <div className="relative h-44 pt-2">
             <div className="absolute inset-x-0 top-0 bottom-6 flex flex-col justify-between pointer-events-none">
-              {['15', '10', '5', '0'].map((val, idx) => (
+              {yVelocityTicks.map((val, idx) => (
                 <div key={idx} className="flex items-center w-full">
                   <span className="text-[11px] font-medium text-mutedText w-6 flex-shrink-0 text-left">
                     {val}
@@ -955,44 +1063,68 @@ export const AnalyticsView: React.FC = () => {
               <svg viewBox="0 0 500 120" className="w-full h-full overflow-visible">
                 {/* High Priority Line (Coral Red) */}
                 <path
-                  d="M 10,95 L 90,80 L 170,62 L 250,48 L 330,36 L 410,24 L 490,6"
+                  d={highPathD}
                   fill="none"
                   stroke="#EF4444"
                   strokeWidth="2.2"
                   strokeLinecap="round"
+                  className="transition-all duration-300"
                 />
-                {[
-                  [10,95], [90,80], [170,62], [250,48], [330,36], [410,24], [490,6]
-                ].map(([cx, cy], i) => (
-                  <circle key={i} cx={cx} cy={cy} r="3.5" fill="#EF4444" className="transition-transform hover:scale-150" />
+                {highPoints.map((p, i) => (
+                  <circle
+                    key={`high-${i}`}
+                    cx={p.x}
+                    cy={p.y}
+                    r="3.5"
+                    fill="#EF4444"
+                    className="transition-transform hover:scale-150 cursor-pointer"
+                  >
+                    <title>{`${velocityDates[i] || 'Day'}: ${p.val} High Priority completed`}</title>
+                  </circle>
                 ))}
 
                 {/* Medium Priority Line (Amber) */}
                 <path
-                  d="M 10,105 L 90,92 L 170,80 L 250,65 L 330,55 L 410,46 L 490,34"
+                  d={medPathD}
                   fill="none"
                   stroke="#F59E0B"
                   strokeWidth="2.2"
                   strokeLinecap="round"
+                  className="transition-all duration-300"
                 />
-                {[
-                  [10,105], [90,92], [170,80], [250,65], [330,55], [410,46], [490,34]
-                ].map(([cx, cy], i) => (
-                  <circle key={i} cx={cx} cy={cy} r="3.5" fill="#F59E0B" className="transition-transform hover:scale-150" />
+                {medPoints.map((p, i) => (
+                  <circle
+                    key={`med-${i}`}
+                    cx={p.x}
+                    cy={p.y}
+                    r="3.5"
+                    fill="#F59E0B"
+                    className="transition-transform hover:scale-150 cursor-pointer"
+                  >
+                    <title>{`${velocityDates[i] || 'Day'}: ${p.val} Medium Priority completed`}</title>
+                  </circle>
                 ))}
 
                 {/* Low Priority Line (Theme Primary) */}
                 <path
-                  d="M 10,110 L 90,105 L 170,102 L 250,97 L 330,94 L 410,89 L 490,84"
+                  d={lowPathD}
                   fill="none"
                   stroke="var(--color-primary)"
                   strokeWidth="2.2"
                   strokeLinecap="round"
+                  className="transition-all duration-300"
                 />
-                {[
-                  [10,110], [90,105], [170,102], [250,97], [330,94], [410,89], [490,84]
-                ].map(([cx, cy], i) => (
-                  <circle key={i} cx={cx} cy={cy} r="3.5" fill="var(--color-primary)" className="transition-transform hover:scale-150" />
+                {lowPoints.map((p, i) => (
+                  <circle
+                    key={`low-${i}`}
+                    cx={p.x}
+                    cy={p.y}
+                    r="3.5"
+                    fill="var(--color-primary)"
+                    className="transition-transform hover:scale-150 cursor-pointer"
+                  >
+                    <title>{`${velocityDates[i] || 'Day'}: ${p.val} Low Priority completed`}</title>
+                  </circle>
                 ))}
               </svg>
 

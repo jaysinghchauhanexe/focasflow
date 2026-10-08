@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { X, ArrowRight, Wind, Coffee, Sparkles, Check, Flame, Volume2 } from 'lucide-react';
 import { SmoothAutoHeight } from './SmoothAutoHeight';
@@ -133,17 +133,31 @@ export const MoodInsightModal: React.FC = () => {
   } = useAppStore();
 
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const feedbackTimeoutRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimeoutRef.current) {
+        clearTimeout(feedbackTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (!isMoodModalOpen) return null;
+
+  const showFeedback = (msg: string, durationMs: number = 3500) => {
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    setFeedbackMessage(msg);
+    feedbackTimeoutRef.current = setTimeout(() => setFeedbackMessage(null), durationMs);
+  };
 
   const handleLightenLoad = () => {
     const count = lightenTodayLoad();
     if (count > 0) {
-      setFeedbackMessage(`Moved ${count} flexible ${count === 1 ? 'task' : 'tasks'} to tomorrow. Breathing space restored!`);
+      showFeedback(`Moved ${count} flexible ${count === 1 ? 'task' : 'tasks'} to tomorrow. Breathing space restored!`, 4000);
     } else {
-      setFeedbackMessage('All tasks today are essential. Focus only on one single step at a time.');
+      showFeedback('All tasks today are essential. Focus only on one single step at a time.', 4000);
     }
-    setTimeout(() => setFeedbackMessage(null), 4000);
   };
 
   const handleStartTopTask = () => {
@@ -159,8 +173,7 @@ export const MoodInsightModal: React.FC = () => {
     if (!isPlayingLofi || activeLofiStation !== 'coffee') {
       toggleLofi('coffee');
     }
-    setFeedbackMessage('Tuned in to Cozy Cafe Lo-Fi & Morning Jazz');
-    setTimeout(() => setFeedbackMessage(null), 3500);
+    showFeedback('Tuned in to Cozy Cafe Lo-Fi & Morning Jazz', 3500);
   };
 
   const isCozyPlaying = isPlayingLofi && activeLofiStation === 'coffee';
