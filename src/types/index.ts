@@ -169,6 +169,7 @@ export interface AppSettings {
   autoReschedule: boolean;
   theme: AppTheme;
   fontHeading?: string;
+  hasCompletedSetup?: boolean;
   hasCompletedOnboarding?: boolean;
   focusPriority?: 'tasks' | 'habits' | 'balance';
   preferences?: UserPreferences;

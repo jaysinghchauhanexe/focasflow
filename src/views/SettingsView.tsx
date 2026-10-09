@@ -29,7 +29,7 @@ import {
 } from '../engine/webLlmService';
 
 export const SettingsView: React.FC = () => {
-  const { settings, updateSettings, openOnboarding, setCurrentTab } = useAppStore();
+  const { settings, updateSettings, openOnboarding, openSetupWizard, setCurrentTab } = useAppStore();
 
   const [userName, setUserName] = useState(settings.userName);
   const [wakeTime, setWakeTime] = useState(settings.wakeTime);
@@ -598,14 +598,25 @@ export const SettingsView: React.FC = () => {
 
         {/* Submit & Onboarding Actions Bar */}
         <div className="sticky bottom-0 z-30 bg-card/95 backdrop-blur-xl border border-borderToken rounded-[28px] p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 transition-all duration-200">
-          <button
-            type="button"
-            onClick={openOnboarding}
-            className="px-5 py-2.5 rounded-2xl bg-card-subtle hover:bg-card-muted text-textSecondary text-[13px] font-medium transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <Sparkles size={15} className="text-primary" />
-            <span>Launch Onboarding Setup</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openOnboarding}
+              className="px-4 py-2.5 rounded-2xl bg-card-subtle hover:bg-card-muted text-textSecondary text-[13px] font-medium transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Sparkles size={15} className="text-primary" />
+              <span>Launch Onboarding</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={openSetupWizard}
+              className="px-4 py-2.5 rounded-2xl bg-card-subtle hover:bg-card-muted text-textSecondary text-[13px] font-medium transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <HardDrive size={15} className="text-primary" />
+              <span>Preview Setup Wizard</span>
+            </button>
+          </div>
 
           <div className="flex items-center gap-3">
             {saved && (
