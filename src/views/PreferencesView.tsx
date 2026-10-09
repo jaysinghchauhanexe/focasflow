@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAppStore, applyTheme, applyFont, defaultPreferences } from '../store/useAppStore';
+import { useAppStore, applyTheme, defaultPreferences } from '../store/useAppStore';
 import { UserPreferences, LofiStationId, AppTheme } from '../types';
 import { playCompletionSound, playClickSound } from '../utils/soundEffects';
 import {
@@ -13,7 +13,6 @@ import {
   Coffee,
   Headphones,
   Music,
-  Type,
   Palette,
   Shield,
   Clock,
@@ -58,16 +57,12 @@ export const PreferencesView: React.FC = () => {
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
 
   const [theme, setTheme] = useState<AppTheme>(settings.theme || 'green');
-  const [fontHeading, setFontHeading] = useState(settings.fontHeading || 'Gilda Display');
 
   useEffect(() => {
     if (settings.theme) {
       setTheme(settings.theme);
     }
-    if (settings.fontHeading) {
-      setFontHeading(settings.fontHeading);
-    }
-  }, [settings.theme, settings.fontHeading]);
+  }, [settings.theme]);
 
   const preferences: UserPreferences = {
     ...defaultPreferences,
@@ -79,13 +74,6 @@ export const PreferencesView: React.FC = () => {
     applyTheme(selectedTheme);
     updateSettings({ theme: selectedTheme });
     triggerSavedFeedback('Theme updated');
-  };
-
-  const handleSelectFont = (fontName: string) => {
-    setFontHeading(fontName);
-    applyFont(fontName);
-    updateSettings({ fontHeading: fontName });
-    triggerSavedFeedback('Font updated');
   };
 
   const handleToggle = (key: keyof UserPreferences) => {
@@ -101,7 +89,6 @@ export const PreferencesView: React.FC = () => {
 
   const handleResetDefaults = () => {
     updatePreferences(defaultPreferences);
-    handleSelectFont('Gilda Display');
     handleSelectTheme('green');
     triggerSavedFeedback('Preferences reset to default values');
   };
@@ -168,37 +155,16 @@ export const PreferencesView: React.FC = () => {
     },
   ];
 
-  const fontOptions = [
-    {
-      id: 'Gilda Display',
-      name: 'Gilda Display',
-      category: 'Classical Serif',
-      family: "'Gilda Display', Georgia, serif",
-      tag: 'Serif · Editorial & Serene',
-      previewText: 'Mindful Flow & Focus',
-      desc: 'Graceful classical serif with elegant proportions for a calm, quiet luxury feel.',
-    },
-    {
-      id: 'DM Sans',
-      name: 'DM Sans',
-      category: 'Geometric Sans',
-      family: "'DM Sans', 'Inter', sans-serif",
-      tag: 'Sans · Modern & Clean',
-      previewText: 'Mindful Flow & Focus',
-      desc: 'Clean geometric sans designed for maximum legibility and daily reading comfort.',
-    },
-  ];
-
   return (
     <div className="space-y-6 w-full max-w-[1600px] mx-auto pb-16 animate-fade-in select-none">
       {/* Page Header */}
       <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
         <div>
-          <h1 className="text-[26px] sm:text-[30px] font-serif font-bold text-foreground tracking-tight">
+          <h1 className="text-[26px] sm:text-[30px] font-bold text-foreground tracking-tight">
             Application Preferences
           </h1>
           <p className="text-[13.5px] text-mutedText mt-1 max-w-3xl leading-relaxed">
-            Customize typography, color theme aesthetics, mood insight pop-ups, background soundscapes, and overtime intelligence.
+            Customize color theme aesthetics, mood insight pop-ups, background soundscapes, and overtime intelligence.
           </p>
         </div>
 
@@ -222,73 +188,8 @@ export const PreferencesView: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 1: Aesthetics & Design System (Typography + Color Theme) */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
-        {/* Typography Studio */}
-        <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex flex-col justify-between transition-colors">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2.5 pb-3 border-b border-borderToken">
-              <div className="w-8 h-8 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
-                <Type size={18} />
-              </div>
-              <div>
-                <h2 className="text-[17px] font-serif font-semibold text-foreground">
-                  Heading & Title Typography
-                </h2>
-                <p className="text-[12px] text-mutedText">
-                  Switch between classical serif or modern geometric sans across all titles.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-              {fontOptions.map((f) => {
-                const isSelected = fontHeading === f.id;
-                return (
-                  <div
-                    key={f.id}
-                    onClick={() => handleSelectFont(f.id)}
-                    className={`p-4 rounded-2xl cursor-pointer transition-all duration-150 flex flex-col justify-between border-2 ${
-                      isSelected
-                        ? 'bg-primary-soft border-primary shadow-xs'
-                        : 'bg-card-subtle border-transparent hover:bg-card-muted'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-1 mb-2">
-                        <span className="text-[11px] font-bold text-primary tracking-wide">
-                          {f.tag}
-                        </span>
-                        {isSelected && (
-                          <span className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0">
-                            <Check size={11} strokeWidth={3} />
-                          </span>
-                        )}
-                      </div>
-
-                      <p 
-                        className="text-[20px] text-foreground font-medium mb-1 leading-snug"
-                        style={{ fontFamily: f.family }}
-                      >
-                        {f.previewText}
-                      </p>
-                    </div>
-
-                    <div className="pt-2.5 border-t border-borderToken/50 mt-3">
-                      <span className="text-[13px] font-semibold text-foreground block">
-                        {f.name} ({f.category})
-                      </span>
-                      <p className="text-[11.5px] text-mutedText mt-0.5 leading-snug">
-                        {f.desc}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
+      {/* Row 1: Aesthetics & Design System (Color Palette & Theme Studio) */}
+      <div className="grid grid-cols-1 gap-6 items-stretch">
         {/* Color Palette & Theme Studio */}
         <div className="bg-card rounded-[28px] p-6 sm:p-7 shadow-soft flex flex-col justify-between transition-colors">
           <div className="space-y-4">
@@ -297,7 +198,7 @@ export const PreferencesView: React.FC = () => {
                 <Palette size={18} />
               </div>
               <div>
-                <h2 className="text-[17px] font-serif font-semibold text-foreground">
+                <h2 className="text-[17px] font-semibold text-foreground">
                   Color Palette & Theme
                 </h2>
                 <p className="text-[12px] text-mutedText">

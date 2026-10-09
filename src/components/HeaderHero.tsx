@@ -425,9 +425,9 @@ export const HeaderHero: React.FC = () => {
                 fill={isDark ? "#FFFFFF" : "var(--color-text)"}
                 opacity={isSelected ? 1 : 0.9}
                 style={{
-                  fontFamily: "'Gilda Display', serif",
-                  fontSize: isSelected ? '24px' : '22px',
-                  fontWeight: isSelected ? 600 : 400,
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: isSelected ? '23px' : '21px',
+                  fontWeight: isSelected ? 700 : 500,
                   textShadow: isDark ? '0 1px 4px rgba(0,0,0,0.6)' : 'none',
                 }}
               >

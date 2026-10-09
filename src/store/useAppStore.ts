@@ -105,7 +105,7 @@ interface AppState {
     userName: string;
     focusPriority: 'tasks' | 'habits' | 'balance';
     theme: AppTheme;
-    fontHeading: string;
+    fontHeading?: string;
     wakeTime?: string;
     sleepTime?: string;
     initialTaskTitle?: string;
@@ -456,7 +456,7 @@ const initialSettings: AppSettings = {
   localEndpoint: 'http://localhost:11434',
   autoReschedule: true,
   theme: 'green',
-  fontHeading: 'Gilda Display',
+  fontHeading: 'DM Sans',
   hasCompletedSetup: false,
   hasCompletedOnboarding: false,
   focusPriority: 'balance',
@@ -481,26 +481,19 @@ export const applyTheme = (theme: string) => {
   }
 };
 
-export const applyFont = (fontName: string) => {
-  const safeFont = fontName || 'Gilda Display';
+export const applyFont = (_fontName?: string) => {
   try {
     if (typeof document !== 'undefined') {
-      const isSans = safeFont === 'DM Sans';
-      const fontValue = isSans
-        ? `'DM Sans', 'Inter', 'Plus Jakarta Sans', sans-serif`
-        : `'Gilda Display', Georgia, serif`;
-      const fontAttr = isSans ? 'dm-sans' : 'gilda';
-
-      document.documentElement.setAttribute('data-font', fontAttr);
+      const fontValue = `'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+      document.documentElement.setAttribute('data-font', 'dm-sans');
       document.documentElement.style.setProperty('--font-heading', fontValue);
-
       if (document.body) {
-        document.body.setAttribute('data-font', fontAttr);
+        document.body.setAttribute('data-font', 'dm-sans');
         document.body.style.setProperty('--font-heading', fontValue);
       }
       const root = document.getElementById('root');
       if (root) {
-        root.setAttribute('data-font', fontAttr);
+        root.setAttribute('data-font', 'dm-sans');
         root.style.setProperty('--font-heading', fontValue);
       }
     }
@@ -1414,7 +1407,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     } = payload;
 
     applyTheme(theme);
-    applyFont(fontHeading);
+    applyFont('DM Sans');
 
     set((state) => {
       const updatedSettings: AppSettings = {
@@ -1422,7 +1415,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         userName: userName?.trim() || state.settings.userName,
         focusPriority: focusPriority || state.settings.focusPriority,
         theme,
-        fontHeading,
+        fontHeading: 'DM Sans',
         wakeTime: wakeTime || state.settings.wakeTime,
         sleepTime: sleepTime || state.settings.sleepTime,
         hasCompletedOnboarding: true,

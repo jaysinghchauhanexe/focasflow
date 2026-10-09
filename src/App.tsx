@@ -79,8 +79,8 @@ export const App: React.FC = () => {
   }, [settings.theme]);
 
   useEffect(() => {
-    applyFont(settings.fontHeading || 'Gilda Display');
-  }, [settings.fontHeading]);
+    applyFont('DM Sans');
+  }, []);
 
   const renderActiveView = () => {
     switch (currentTab) {

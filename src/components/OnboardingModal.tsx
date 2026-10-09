@@ -85,7 +85,6 @@ export const OnboardingModal: React.FC = () => {
   const [sleepTime, setSleepTime] = useState(settings.sleepTime || '23:00');
   const [focusPriority, setFocusPriority] = useState<'tasks' | 'habits' | 'balance'>('balance');
   const [selectedTheme, setSelectedTheme] = useState<AppTheme>(settings.theme || 'green');
-  const [selectedFont, setSelectedFont] = useState<string>(settings.fontHeading || 'Gilda Display');
   
   // Task state for step 4
   const [taskTitle, setTaskTitle] = useState('Deep Work: Core Project Architecture');
@@ -99,12 +98,6 @@ export const OnboardingModal: React.FC = () => {
       applyTheme(selectedTheme);
     }
   }, [selectedTheme, isOnboardingOpen]);
-
-  useEffect(() => {
-    if (isOnboardingOpen) {
-      applyFont(selectedFont);
-    }
-  }, [selectedFont, isOnboardingOpen]);
 
   if (!isOnboardingOpen) return null;
 
@@ -128,7 +121,7 @@ export const OnboardingModal: React.FC = () => {
       userName,
       focusPriority,
       theme: selectedTheme,
-      fontHeading: selectedFont,
+      fontHeading: 'DM Sans',
       wakeTime,
       sleepTime,
       initialTaskTitle: taskTitle,
@@ -341,57 +334,16 @@ export const OnboardingModal: React.FC = () => {
             </div>
           )}
 
-          {/* STEP 3: Aesthetics, Font & Theme */}
+          {/* STEP 3: Color Theme Atmosphere */}
           {step === 3 && (
             <div className="space-y-6 animate-fadeIn">
               <div className="text-center space-y-1">
-                <h2 className="text-[26px] sm:text-[30px] font-serif font-semibold text-foreground tracking-tight">
+                <h2 className="text-[26px] sm:text-[30px] font-bold text-foreground tracking-tight">
                   Choose Your Visual Atmosphere
                 </h2>
                 <p className="text-[13px] text-mutedText max-w-md mx-auto">
-                  Experience live typography and color themes tuned for peace of mind.
+                  Experience calibrated serene color themes tuned for peace of mind and focus.
                 </p>
-              </div>
-
-              {/* Typography Options */}
-              <div>
-                <label className="flex items-center gap-1.5 text-[12px] font-semibold text-textSecondary uppercase tracking-wider mb-2.5">
-                  <Type size={14} className="text-primary" />
-                  <span>Typography Style</span>
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div
-                    onClick={() => setSelectedFont('Gilda Display')}
-                    className={`p-3.5 rounded-2xl cursor-pointer transition-all border-2 ${
-                      selectedFont === 'Gilda Display'
-                        ? 'bg-primary-soft border-primary shadow-xs'
-                        : 'bg-card-subtle border-transparent hover:bg-card-muted'
-                    }`}
-                  >
-                    <span className="text-[18px] font-['Gilda_Display'] font-normal text-foreground block">
-                      Gilda Display
-                    </span>
-                    <span className="text-[11.5px] text-mutedText mt-0.5 block">
-                      Serif • Editorial, literary, calm
-                    </span>
-                  </div>
-
-                  <div
-                    onClick={() => setSelectedFont('DM Sans')}
-                    className={`p-3.5 rounded-2xl cursor-pointer transition-all border-2 ${
-                      selectedFont === 'DM Sans'
-                        ? 'bg-primary-soft border-primary shadow-xs'
-                        : 'bg-card-subtle border-transparent hover:bg-card-muted'
-                    }`}
-                  >
-                    <span className="text-[18px] font-['DM_Sans'] font-medium text-foreground block">
-                      DM Sans
-                    </span>
-                    <span className="text-[11.5px] text-mutedText mt-0.5 block">
-                      Sans • Clean, modern, crisp
-                    </span>
-                  </div>
-                </div>
               </div>
 
               {/* Color Theme Options */}
@@ -400,28 +352,33 @@ export const OnboardingModal: React.FC = () => {
                   <Palette size={14} className="text-primary" />
                   <span>Color Theme</span>
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {themes.map((t) => (
                     <div
                       key={t.id}
                       onClick={() => setSelectedTheme(t.id)}
-                      className={`p-3 rounded-2xl cursor-pointer transition-all flex items-center justify-between border-2 ${
+                      className={`p-3.5 rounded-2xl cursor-pointer transition-all flex items-center justify-between border-2 ${
                         selectedTheme === t.id
                           ? 'bg-primary-soft border-primary shadow-xs'
                           : 'bg-card-subtle border-transparent hover:bg-card-muted'
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex items-center gap-1">
-                          <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: t.bg }} />
-                          <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: t.primary }} />
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-4 h-4 rounded-full border border-black/10 shadow-xs" style={{ backgroundColor: t.bg }} />
+                          <span className="w-4 h-4 rounded-full shadow-xs" style={{ backgroundColor: t.primary }} />
                         </div>
-                        <span className="text-[13px] font-medium text-foreground">
-                          {t.name}
-                        </span>
+                        <div>
+                          <span className="text-[14px] font-semibold text-foreground block">
+                            {t.name}
+                          </span>
+                          <span className="text-[11.5px] text-mutedText block">
+                            {t.desc}
+                          </span>
+                        </div>
                       </div>
                       {selectedTheme === t.id && (
-                        <Check size={14} className="text-primary" />
+                        <Check size={16} className="text-primary shrink-0" />
                       )}
                     </div>
                   ))}
@@ -566,10 +523,10 @@ export const OnboardingModal: React.FC = () => {
 
                 <div className="bg-card-subtle rounded-2xl p-3 text-center">
                   <span className="text-[11px] font-semibold text-mutedText uppercase tracking-wider block">
-                    Font
+                    Active Hours
                   </span>
                   <span className="text-[13px] font-semibold text-foreground mt-0.5 block">
-                    {selectedFont}
+                    {wakeTime} – {sleepTime}
                   </span>
                 </div>
 
