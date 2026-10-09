@@ -94,13 +94,10 @@ interface AppState {
   isPlayingSoundscape: boolean;
   toggleSoundscape: (soundscape?: any) => void;
 
-  // Onboarding & Setup Wizard
+  // Onboarding
   isOnboardingOpen: boolean;
   openOnboarding: () => void;
   closeOnboarding: () => void;
-  isSetupWizardOpen: boolean;
-  openSetupWizard: () => void;
-  closeSetupWizard: () => void;
   completeOnboarding: (payload: {
     userName: string;
     focusPriority: 'tasks' | 'habits' | 'balance';
@@ -600,7 +597,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   appSiteFocusData: loadPersisted('app_site_focus', []),
 
   isOnboardingOpen: !loadedSettings.hasCompletedOnboarding,
-  isSetupWizardOpen: false,
   isTaskModalOpen: false,
   editingTask: null,
   isHabitModalOpen: false,
@@ -1390,8 +1386,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Onboarding handlers
   openOnboarding: () => set({ isOnboardingOpen: true }),
   closeOnboarding: () => set({ isOnboardingOpen: false }),
-  openSetupWizard: () => set({ isSetupWizardOpen: true }),
-  closeSetupWizard: () => set({ isSetupWizardOpen: false }),
   completeOnboarding: (payload) => {
     const {
       userName,

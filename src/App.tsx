@@ -19,7 +19,6 @@ import { AiResultModal } from './components/AiResultModal';
 import { OverloadModal } from './components/OverloadModal';
 import { BreathingModal } from './components/BreathingModal';
 import { OnboardingModal } from './components/OnboardingModal';
-import { SetupWizardModal } from './components/SetupWizardModal';
 import { MoodInsightModal } from './components/MoodInsightModal';
 import { LofiBackgroundPlayer } from './components/LofiBackgroundPlayer';
 import { setupGlobalClickSoundListener } from './utils/soundEffects';
@@ -138,7 +137,6 @@ export const App: React.FC = () => {
       <OverloadModal />
       <BreathingModal />
       <OnboardingModal />
-      <SetupWizardModal />
       <MoodInsightModal />
 
       {/* Persistent Background Lofi Player */}
