@@ -57,6 +57,7 @@ export const SettingsView: React.FC = () => {
   // Ollama Installed Models State
   const [ollamaInstalledModels, setOllamaInstalledModels] = useState<string[]>([]);
   const [ollamaStatus, setOllamaStatus] = useState<'testing' | 'connected' | 'disconnected'>('testing');
+  const [ollamaErrorType, setOllamaErrorType] = useState<'mixed_content' | 'cors_403' | 'network' | null>(null);
   const [testingOllama, setTestingOllama] = useState(false);
 
   // Load downloaded models from cache / storage
@@ -79,22 +80,49 @@ export const SettingsView: React.FC = () => {
     checkAll();
   }, []);
 
-  // Check Ollama installed models
+  // Check Ollama installed models with root-cause diagnostic
   const checkOllama = async () => {
     setTestingOllama(true);
+    setOllamaErrorType(null);
     try {
       const endpoint = localEndpoint.replace(/\/$/, '');
+      const isHttpsPage = typeof window !== 'undefined' && window.location.protocol === 'https:';
+      const isLocalHttp = endpoint.startsWith('http://localhost') || endpoint.startsWith('http://127.0.0.1');
+
       const res = await fetch(`${endpoint}/api/tags`, { method: 'GET' });
       if (res.ok) {
         const data = await res.json();
         const names: string[] = (data.models || []).map((m: any) => m.name || m.model);
         setOllamaInstalledModels(names);
         setOllamaStatus('connected');
+        setOllamaErrorType(null);
+
+        // Auto-select installed model if current selection isn't in library
+        if (names.length > 0) {
+          const matches = names.some(
+            (m) => m === localModel || m.startsWith(`${localModel}:`) || localModel.startsWith(`${m}:`)
+          );
+          if (!matches) {
+            setLocalModel(names[0]);
+          }
+        }
       } else {
         setOllamaStatus('disconnected');
+        if (res.status === 403) {
+          setOllamaErrorType('cors_403');
+        } else {
+          setOllamaErrorType('network');
+        }
       }
-    } catch {
+    } catch (err: any) {
       setOllamaStatus('disconnected');
+      const isHttpsPage = typeof window !== 'undefined' && window.location.protocol === 'https:';
+      const isLocalHttp = localEndpoint.startsWith('http://localhost') || localEndpoint.startsWith('http://127.0.0.1');
+      if (isHttpsPage && isLocalHttp) {
+        setOllamaErrorType('mixed_content');
+      } else {
+        setOllamaErrorType('network');
+      }
     } finally {
       setTestingOllama(false);
     }
@@ -495,9 +523,9 @@ export const SettingsView: React.FC = () => {
 
                   {/* Connection & Installed Models Feedback */}
                   {ollamaStatus === 'connected' ? (
-                    <div className="p-3 rounded-2xl bg-tag-healthBg text-tag-health text-[12px] space-y-1 animate-enter-up">
+                    <div className="p-3.5 rounded-2xl bg-tag-healthBg/80 border border-tag-health/30 text-tag-health text-[12px] space-y-2 animate-enter-up">
                       <div className="flex items-center gap-2 font-semibold">
-                        <CheckCircle2 size={14} className="flex-shrink-0" />
+                        <CheckCircle2 size={15} className="flex-shrink-0" />
                         <span>Connected to Ollama daemon at {localEndpoint}</span>
                       </div>
                       <div className="text-[11.5px] text-textSecondary">
@@ -505,28 +533,118 @@ export const SettingsView: React.FC = () => {
                         {ollamaInstalledModels.length > 0 ? ollamaInstalledModels.join(', ') : 'None detected. Run "ollama run <model>"'}
                       </div>
                     </div>
+                  ) : ollamaErrorType === 'mixed_content' ? (
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-foreground text-[12px] space-y-3 animate-enter-up">
+                      <div className="flex items-start gap-2.5">
+                        <AlertCircle size={17} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <h4 className="font-semibold text-foreground text-[13px]">
+                            Browser Mixed Content Blocked (Deployed HTTPS Site)
+                          </h4>
+                          <p className="text-mutedText leading-relaxed text-[11.5px]">
+                            You are visiting FocusFlow on a secure HTTPS domain ({typeof window !== 'undefined' ? window.location.host : 'deployed site'}). Web browsers strictly forbid HTTPS websites from making direct insecure HTTP calls to <code className="px-1 py-0.5 rounded bg-card font-mono text-[11px] text-foreground">http://localhost:11434</code>.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="bg-card/80 rounded-xl p-3 border border-borderToken space-y-2.5">
+                        <p className="font-semibold text-foreground text-[11.5px] uppercase tracking-wider text-mutedText">
+                          Recommended Solutions:
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setAiProvider('in_app')}
+                            className="flex flex-col text-left p-2.5 rounded-xl bg-primary/10 hover:bg-primary/15 border border-primary/25 text-foreground transition-all cursor-pointer group"
+                          >
+                            <span className="font-semibold text-primary flex items-center gap-1.5 text-[12px]">
+                              <Sparkles size={13} /> Switch to In-App Direct Model
+                            </span>
+                            <span className="text-[11px] text-mutedText mt-1 leading-snug">
+                              Runs in browser GPU (WebGPU). 100% private, zero external dependencies, works seamlessly on deployed builds.
+                            </span>
+                          </button>
+
+                          <div className="flex flex-col text-left p-2.5 rounded-xl bg-card-subtle border border-borderToken text-mutedText">
+                            <span className="font-semibold text-foreground flex items-center gap-1.5 text-[12px]">
+                              <Globe size={13} /> Use HTTPS Tunnel / Proxy
+                            </span>
+                            <span className="text-[11px] mt-1 leading-snug">
+                              Run <code className="font-mono text-primary">npx localtunnel --port 11434</code> or ngrok and paste your public <code className="font-mono text-primary">https://...</code> tunnel URL below.
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-1 border-t border-borderToken/50 text-[11px] text-mutedText flex items-center gap-1.5">
+                          <span className="font-semibold text-foreground">Browser Setting:</span>
+                          <span>In Chrome/Edge, click the padlock/tune icon in the address bar ➔ <strong>Site settings</strong> ➔ set <strong>Insecure content</strong> to <strong>Allow</strong> ➔ reload.</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : ollamaErrorType === 'cors_403' ? (
+                    <div className="p-3.5 rounded-2xl bg-tag-importantBg/80 border border-tag-important/30 text-tag-important text-[12px] space-y-2 animate-enter-up">
+                      <div className="flex items-center gap-2 font-semibold">
+                        <AlertCircle size={15} className="flex-shrink-0" />
+                        <span>Ollama CORS Access Blocked (403 Forbidden)</span>
+                      </div>
+                      <p className="text-textSecondary leading-relaxed text-[11.5px]">
+                        Ollama is running, but rejecting web requests from this origin. Set the environment variable <code className="px-1.5 py-0.5 rounded bg-card font-mono text-[11px] text-foreground">OLLAMA_ORIGINS="*"</code> in Windows, then completely quit Ollama from the Windows system tray and restart it.
+                      </p>
+                    </div>
                   ) : (
-                    <div className="p-3 rounded-2xl bg-tag-importantBg text-tag-important text-[12px] flex items-center gap-2 animate-enter-up">
-                      <AlertCircle size={14} className="flex-shrink-0" />
-                      <span>Could not reach Ollama at {localEndpoint}. Make sure Ollama is running.</span>
+                    <div className="p-3.5 rounded-2xl bg-tag-importantBg/80 border border-tag-important/30 text-tag-important text-[12px] flex items-center gap-2 animate-enter-up">
+                      <AlertCircle size={15} className="flex-shrink-0" />
+                      <span>Could not reach Ollama at {localEndpoint}. Make sure Ollama application is running.</span>
                     </div>
                   )}
 
                   {/* Model Selector based on installed models or custom */}
-                  <div>
-                    <label className="block text-[11.5px] font-semibold text-mutedText uppercase tracking-wider mb-1">
-                      Ollama Model Name
-                    </label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11.5px] font-semibold text-mutedText uppercase tracking-wider">
+                        Ollama Model Name
+                      </label>
+                      {ollamaInstalledModels.length > 0 && (
+                        <span className="text-[11px] text-mutedText">
+                          {ollamaInstalledModels.length} model{ollamaInstalledModels.length > 1 ? 's' : ''} detected
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Quick-Select Pills for Installed Models */}
+                    {ollamaInstalledModels.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 p-2 rounded-xl bg-card-subtle border border-borderToken/60">
+                        {ollamaInstalledModels.map((m) => {
+                          const isSelected = localModel === m || localModel.startsWith(`${m}:`) || m.startsWith(`${localModel}:`);
+                          return (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => setLocalModel(m)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-mono transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                                  : 'bg-card hover:bg-card-muted text-foreground border border-borderToken/70'
+                              }`}
+                            >
+                              {isSelected && <Check size={12} strokeWidth={2.5} />}
+                              <span>{m}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     <input
                       type="text"
                       value={localModel}
                       onChange={(e) => setLocalModel(e.target.value)}
-                      placeholder="e.g. qwen2.5:1.5b, llama3.2:1b"
+                      placeholder="e.g. qwen3:8b, qwen2.5:1.5b, llama3.2:1b"
                       className="w-full px-4 py-2.5 rounded-2xl bg-card-subtle text-[13px] font-mono text-foreground border border-borderToken focus:border-primary focus:outline-none transition-colors"
                     />
 
                     {/* Warning if selected model is not installed */}
-                    {ollamaStatus === 'connected' && ollamaInstalledModels.length > 0 && !ollamaInstalledModels.includes(localModel) && (
+                    {ollamaStatus === 'connected' && ollamaInstalledModels.length > 0 && !ollamaInstalledModels.some(m => m === localModel || m.startsWith(`${localModel}:`) || localModel.startsWith(`${m}:`)) && (
                       <p className="text-[11.5px] text-tag-important mt-1 flex items-center gap-1 font-medium">
                         <AlertCircle size={12} />
                         <span>"{localModel}" is not in your downloaded Ollama library. Run "ollama run {localModel}" in your terminal to install it.</span>

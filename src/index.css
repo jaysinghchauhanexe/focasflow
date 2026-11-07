@@ -566,3 +566,31 @@ button:not([data-tauri-control]):not([data-no-rounded-full]) {
   border-radius: 9999px !important;
 }
 
+/* AI Thought & Execution Shimmer Effect (Text + Leading Dot) */
+@keyframes aiTextShimmer {
+  0% {
+    background-position: 150% 0;
+  }
+  100% {
+    background-position: -150% 0;
+  }
+}
+
+.animate-ai-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-text-muted) 0%,
+    var(--color-text-muted) 25%,
+    var(--color-primary) 45%,
+    var(--color-text) 50%,
+    var(--color-primary) 55%,
+    var(--color-text-muted) 75%,
+    var(--color-text-muted) 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: aiTextShimmer 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+

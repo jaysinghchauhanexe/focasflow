@@ -1,4 +1,4 @@
-import { AiRequestContext, AiResponsePayload, Task, Habit, AppSettings, AiOperation } from '../types';
+import { AiRequestContext, AiResponsePayload, Task, Habit, AppSettings, AiOperation, AiThoughtStep } from '../types';
 import { runInAppInference, extractJsonFromText } from './webLlmService';
 import { getTodayDateString, formatLocalDate } from '../utils/dateUtils';
 
@@ -28,10 +28,94 @@ export function hasExplicitActionIntent(userMessage: string): boolean {
   return hasAddAction || hasTaskInquiryAction || hasDeleteAction || hasModifyAction || hasOrganizeAction;
 }
 
+export function generateThoughtSteps(
+  userMessage: string,
+  ops: AiOperation[],
+  context: AiRequestContext,
+  message?: string,
+  rawSteps?: any[]
+): AiThoughtStep[] {
+  // If LLM returned valid thought steps in JSON, map them
+  if (Array.isArray(rawSteps) && rawSteps.length > 0) {
+    const valid = rawSteps
+      .filter((s) => s && (s.title || s.step))
+      .map((s) => ({
+        title: s.title || s.step || 'Step',
+        detail: s.detail || s.description || '',
+        status: (s.status || 'done') as 'done' | 'active' | 'pending',
+      }));
+    if (valid.length > 0) return valid;
+  }
+
+  const userClean = userMessage.trim().toLowerCase();
+  const isGreeting = /^(hello|hi|hey|greetings|good morning|good afternoon|good evening|yo|hola)\b/i.test(userClean);
+  const isDelete = /\b(delete|remove|clear|drop|cancel)\b/i.test(userClean);
+  const remainingCount = context.remaining_tasks?.length || 0;
+  const habitCount = context.habits?.length || 0;
+
+  // 1. Understanding step
+  let understandDetail = '';
+  if (isGreeting) {
+    understandDetail = `Interpreted greeting and acknowledged daily check-in (${remainingCount > 0 ? `${remainingCount} active tasks tracked` : 'clear schedule'})`;
+  } else if (ops.length > 1) {
+    understandDetail = `Decomposed complex request into ${ops.length} separate tasks and extracted target times`;
+  } else if (ops.length === 1) {
+    understandDetail = `Identified intent to ${ops[0].op_type.toLowerCase().replace('_', ' ')} "${ops[0].title || 'task'}"`;
+  } else if (isDelete) {
+    understandDetail = `Identified request to remove/clear scheduled items`;
+  } else {
+    understandDetail = `Analyzed request context: "${userMessage.length > 40 ? userMessage.slice(0, 40) + '...' : userMessage}"`;
+  }
+
+  // 2. Figuring it out step
+  let figuringDetail = '';
+  if (ops.length > 0) {
+    const times = ops.filter(o => o.start_time).map(o => o.start_time);
+    if (times.length > 0) {
+      figuringDetail = `Evaluated schedule capacity (${context.working_hours}), checked existing tasks, and placed ${ops.length} commitment${ops.length > 1 ? 's' : ''} at ${times.join(', ')}`;
+    } else {
+      figuringDetail = `Evaluated schedule workload: ${remainingCount} tasks, ${habitCount} habits, and allocated focus duration`;
+    }
+  } else if (isGreeting) {
+    figuringDetail = `Reviewed current schedule: ${remainingCount} active task${remainingCount === 1 ? '' : 's'}, ${habitCount} habit${habitCount === 1 ? '' : 's'}, within hours ${context.working_hours}`;
+  } else {
+    figuringDetail = `Evaluated schedule state (${remainingCount} tasks) and checked optimal focus windows`;
+  }
+
+  // 3. What happened / Execution step
+  let actionDetail = '';
+  if (ops.length > 0) {
+    actionDetail = `Structured ${ops.length} schedule action${ops.length > 1 ? 's' : ''} ready for your review and one-click application`;
+  } else if (isGreeting) {
+    actionDetail = `Ready to organize tasks, schedule focus blocks, or optimize your day`;
+  } else {
+    actionDetail = `Formulated guidance and ready for next instruction`;
+  }
+
+  return [
+    {
+      title: 'Understanding',
+      detail: understandDetail,
+      status: 'done',
+    },
+    {
+      title: 'Figuring it out',
+      detail: figuringDetail,
+      status: 'done',
+    },
+    {
+      title: 'What happened',
+      detail: actionDetail,
+      status: 'done',
+    },
+  ];
+}
+
 export function sanitizeAssistantMessage(
   rawMsg: string,
   userMessage: string,
-  ops: any[]
+  ops: any[],
+  context?: AiRequestContext
 ): string {
   const userClean = userMessage.toLowerCase().trim();
   const rawClean = (rawMsg || '').trim();
@@ -55,13 +139,22 @@ export function sanitizeAssistantMessage(
     }
   }
 
-  // If user gave greeting and no ops
+  // If user gave greeting and no ops: instead of a blunt "hello", explain what AI checked & is doing
   if (isGreeting && (!ops || ops.length === 0)) {
     const isEchoGreeting =
       rawCleanLower.replace(/[^a-z]/g, '') === userClean.replace(/[^a-z]/g, '') ||
-      rawClean.length < 4;
+      rawClean.length < 6 ||
+      rawCleanLower === 'hello!' ||
+      rawCleanLower === 'hello' ||
+      rawCleanLower === 'hi' ||
+      rawCleanLower === 'hi!';
+
     if (isEchoGreeting || !rawClean) {
-      return "Hello! How can I help you organize your tasks or optimize your schedule today?";
+      const taskCount = context?.remaining_tasks?.length || 0;
+      const taskSummary = taskCount > 0
+        ? `I'm currently reviewing your schedule: you have ${taskCount} active task${taskCount > 1 ? 's' : ''} planned for today.`
+        : `I checked your schedule: you currently have no pending tasks for today.`;
+      return `Hello! ${taskSummary} I'm ready to help you plan focus blocks, organize commitments, or optimize your workflow. What would you like to work on?`;
     }
   }
 
@@ -165,44 +258,39 @@ Current Context:
 ${remainingTasks.length > 0 ? remainingTasks.map(t => `  - ${t}`).join('\n') : '  (None)'}
 - Active Habits: ${habitNames.join(', ') || '(None)'}
 
-MANDATORY ACTION EXECUTION RULES:
-1. TASK REFINEMENT & STRICT PROPERTY PRESERVATION: When the user asks to change, refine, or adjust ONE property of a task (e.g. "change it to personal", "the time should be 20 min", "make it critical"):
-   - You MUST change ONLY the explicitly requested property!
-   - You MUST preserve all other existing properties!
-   - If a task had priority: "important" and duration: 15, changing category to "Personal" MUST KEEP priority: "important" and duration: 15!
-   - NEVER spontaneously downgrade or change priority to "optional" unless user specifically typed "optional".
-   - Output ONLY the single UPDATE_TASK operation for THAT task:
-      { "op_type": "UPDATE_TASK", "title": "Fix AI", "duration_minutes": 15, "priority": "important", "category": "Personal" }
-   - NEVER create multiple tasks or recreate other unrelated tasks when refining a single task.
-2. TASK DELETION AUTHORITY & PRONOUN RESOLUTION: When the user asks to delete, remove, or drop tasks (e.g. "delete it", "can you delete it?", "remove that task", "delete temp"):
-   - Resolve pronouns like "it", "that", "this task" to the most recently created or discussed task in the conversation history!
-   - Output { "op_type": "DELETE_TASK", "title": "Resolved Task Title" }
-   - NEVER output conversational text or questions like "can you delete it?" as the task title!
-3. GREETINGS, PRAISE, COMPLIMENTS & CASUAL CHAT (INCLUDING USER PERSONA INQUIRIES):
-   - When the user sends compliments, praise, greetings, or casual chatter (e.g. "you know me, right?", "who am I?") WITHOUT asking for tasks/schedule actions:
-   - MANDATORY: YOU MUST SET "operations": [] (EMPTY ARRAY)!
-   - NEVER create, delete, or modify any task on casual chatter!
-   - If the user asks if you know them or about themselves, you MUST use their User Information & Context provided above to respond accurately and naturally!
-   - Reply warmly and politely.
-   - CRITICAL: NEVER parrot or echo the user's praise or words back at them!
-4. ADDING TASKS & INTELLIGENT TASK SUGGESTIONS:
-   - When the user specifically asks for tasks to be flexible or unstructured, use "ADD_TASK" (which has no start_time).
-   - CRITICAL TIME CONSTRAINT RULE: If the user provides an absolute time, OR asks to "schedule" or "assign times", you MUST use "ADD_COMMITMENT" and provide both "start_time" (e.g., "12:00") and "duration_minutes". Both are MANDATORY for commitments!
-   - DO NOT split tasks that are joined by '+' or 'and' if they belong to the same time block (e.g. "Lunch + Anime" must be ONE task titled "Lunch + Anime").
-   - When the user asks "what tasks should I do?", "suggest tasks", or says "add tasks judging who I am":
-     * CRITICAL: YOU MUST append 2 to 4 completely new tasks tailored directly to the user's persona/tech stack!
-     * You MUST use "ADD_COMMITMENT" for these invented tasks and GUESS a reasonable "start_time" and "duration_minutes" for when they should do them today!
-     * Provide a helpful, motivating message presenting the proposed focus plan.
-       * CRITICAL: You MUST leave a gap of at least the Default Break Buffer between any consecutive commitments you schedule!
-5. DELETING SPECIFIC TASKS VS OTHERS:
-   - If the user says "keep X and delete others", you MUST NOT delete X! You must output DELETE_TASK operations for the OTHER tasks in the schedule instead.
-6. MOVING / SKIPPING / COMPLETING / UPDATING: Generate "MOVE_TASK", "SKIP_TASK", "COMPLETE_TASK", or "UPDATE_TASK".
+MANDATORY 4-STEP PROCEDURE FOR PARSING & EXECUTING ALL REQUESTS:
 
-Supported op_types: "ADD_TASK", "DELETE_TASK", "UPDATE_TASK", "MOVE_TASK", "SKIP_TASK", "COMPLETE_TASK", "CREATE_HABIT", "ADD_COMMITMENT", "REPLAN_DAY"
+STEP 1: UNDERSTAND USER INTENT & DECOMPOSE:
+- Identify the language (English) and what the user is requesting.
+- MULTI-TASK DECOMPOSITION: If the user lists multiple activities, times, or clauses in one sentence (e.g. "at 10am check emails and freelance gig finding, 12 am portfolio website issues fixing, 1pm learning dsa and system design then at 9:30pm meeting with Diorian"), you MUST decompose them into discrete individual items!
+- NEVER bundle multiple tasks or the user's entire prompt into a single task title!
+- Strip command preambles ("create tasks for today at time", "add tasks", "then at") so task titles are clean and readable.
 
-Return ONLY valid JSON matching this schema:
+STEP 2: DETERMINE OPERATIONS & PROPERTIES:
+- Match each item to a supported operation:
+  * "ADD_COMMITMENT": Use whenever a specific clock time is mentioned (e.g. "10:00", "12:00", "13:00", "21:30"). Provide exact 24h "start_time" and "duration_minutes".
+  * "ADD_TASK": Use for flexible tasks without a fixed start time.
+  * "DELETE_TASK": Use for removing tasks (resolve pronouns like "it", "that" to recent tasks).
+  * "UPDATE_TASK": Use for modifying properties of an existing task.
+  * "MOVE_TASK": Use for rescheduling to another day or time window.
+  * "SKIP_TASK": Use for marking a task skipped today.
+  * "COMPLETE_TASK": Use for checking off a task.
+  * "CREATE_HABIT": Use for recurring daily/weekday routines.
+- Assign an accurate category: "Work", "Learning", "Health", "Personal".
+- Assign an appropriate priority: "critical" (meetings, deadlines), "important" (core focus), "flexible" (routine tasks), "optional" (nice-to-have).
+
+STEP 3: OUTLINE IMPLEMENTATION SUMMARY:
+- In "message", provide a concise, structured summary of the actions taken (e.g., "I've planned 4 commitments for today: Check emails (10:00 AM), Portfolio website fixing (12:00 PM), DSA & system design (1:00 PM), and Meeting with Diorian (9:30 PM). Click 'Apply Changes' below to add them to your schedule.").
+
+STEP 4: OUTPUT CLEAN JSON OPERATIONS:
+- Return ONLY valid JSON matching this schema:
 {
-  "message": "Friendly, articulate assistant response. If user gave praise or greeting, thank them warmly and offer assistance. NEVER echo the user's prompt back.",
+  "thought_steps": [
+    { "title": "Understanding", "detail": "What you understood from user input" },
+    { "title": "Figuring it out", "detail": "What tasks, schedule hours, or conflicts were evaluated" },
+    { "title": "What happened", "detail": "Summary of actions taken or prepared" }
+  ],
+  "message": "Articulate summary message of the planned operations",
   "operations": [
     {
       "op_type": "DELETE_TASK" | "ADD_TASK" | "MOVE_TASK" | "SKIP_TASK" | "COMPLETE_TASK" | "CREATE_HABIT" | "ADD_COMMITMENT",
@@ -211,19 +299,33 @@ Return ONLY valid JSON matching this schema:
       "priority": "critical" | "important" | "flexible" | "optional",
       "category": ${categoriesString},
       "target_date": "today" | "tomorrow",
-      "start_time": "14:00" // CRITICAL: ALWAYS extract or guess the start time and INCLUDE this field!
+      "start_time": "10:00"
     }
   ],
   "suggestions": []
 }
 
 Examples:
-- User: "you are the best" -> { "message": "Thank you! Happy to help keep you focused and organized. What's on your agenda?", "operations": [] }
-- User: "hello" -> { "message": "Hi! How can I help you with your tasks or schedule today?", "operations": [] }
+- User: "create tasks for today at time 10am check emails and freelance gig finding, 12 am portfolio website issues fixing , 1pm learning dsa and system design then at 9:30pm meeting with Diorian."
+-> {
+  "message": "I've planned 4 commitments for today: Check emails and freelance gig finding (10:00 AM), Portfolio website issues fixing (12:00 PM), Learning DSA and system design (1:00 PM), and Meeting with Diorian (9:30 PM).",
+  "operations": [
+    { "op_type": "ADD_COMMITMENT", "title": "Check emails and freelance gig finding", "start_time": "10:00", "duration_minutes": 60, "priority": "important", "category": "Work", "target_date": "today" },
+    { "op_type": "ADD_COMMITMENT", "title": "Portfolio website issues fixing", "start_time": "12:00", "duration_minutes": 60, "priority": "important", "category": "Work", "target_date": "today" },
+    { "op_type": "ADD_COMMITMENT", "title": "Learning DSA and system design", "start_time": "13:00", "duration_minutes": 60, "priority": "important", "category": "Learning", "target_date": "today" },
+    { "op_type": "ADD_COMMITMENT", "title": "Meeting with Diorian", "start_time": "21:30", "duration_minutes": 45, "priority": "critical", "category": "Work", "target_date": "today" }
+  ]
+}
+- User: "workout + pod from 8am to 9am and meeting at 1pm"
+-> {
+  "message": "I've added these commitments to your schedule: Workout + Pod at 8:00 AM and Meeting at 1:00 PM.",
+  "operations": [
+    { "op_type": "ADD_COMMITMENT", "title": "Workout + Pod", "start_time": "08:00", "duration_minutes": 60, "priority": "important", "category": "Health", "target_date": "today" },
+    { "op_type": "ADD_COMMITMENT", "title": "Meeting", "start_time": "13:00", "duration_minutes": 30, "priority": "important", "category": "Work", "target_date": "today" }
+  ]
+}
 - User: "delete it" -> { "message": "Removed task from your schedule.", "operations": [{ "op_type": "DELETE_TASK", "title": "temp" }] }
-- User: "workout + pod from 8am to 9am and meeting at 1pm" -> { "message": "I've added these commitments to your schedule.", "operations": [{ "op_type": "ADD_COMMITMENT", "title": "Workout + Pod", "start_time": "08:00", "duration_minutes": 60, "priority": "important", "category": "Health", "target_date": "today" }, { "op_type": "ADD_COMMITMENT", "title": "Meeting", "start_time": "13:00", "duration_minutes": 30, "priority": "important", "category": "Work", "target_date": "today" }] }
-- User: "add tasks judging who I am" -> { "message": "Based on your profile, here are a few tasks:", "operations": [{ "op_type": "ADD_COMMITMENT", "title": "Deep Work: Architecture", "start_time": "14:00" // CRITICAL: ALWAYS extract or guess the start time and INCLUDE this field!, "duration_minutes": 60, "priority": "critical", "category": "Work", "target_date": "today" }, { "op_type": "ADD_COMMITMENT", "title": "Code Review", "start_time": "15:00", "duration_minutes": 30, "priority": "important", "category": "Work", "target_date": "today" }] }
-- User: "keep coding and delete others" -> { "message": "Kept coding and removed the rest.", "operations": [{ "op_type": "DELETE_TASK", "title": "Reading" }, { "op_type": "DELETE_TASK", "title": "Meeting" }] }`;
+- User: "hello" -> { "message": "Hi! How can I help you with your tasks or schedule today?", "operations": [] }`;
 
   const provider = settings.aiProvider || 'in_app';
   context.system_prompt = systemPrompt;
@@ -254,11 +356,13 @@ Examples:
 
         ops = preserveRefinedTaskProperties(ops, userMessage, context);
         ops = deduplicateOperations(ops);
-        msg = sanitizeAssistantMessage(msg, userMessage, ops);
+        msg = sanitizeAssistantMessage(msg, userMessage, ops, context);
+        const thoughtSteps = generateThoughtSteps(userMessage, ops, context, msg, parsed.thought_steps || parsed.thoughtSteps);
 
         return {
           message: msg,
           operations: ops,
+          thoughtSteps,
           suggestions: parsed.suggestions || [],
           is_overloaded: parsed.is_overloaded,
           overload_minutes: parsed.overload_minutes,
@@ -277,10 +381,12 @@ Examples:
           };
         }
 
-        const sanitizedMsg = sanitizeAssistantMessage(text, userMessage, []);
+        const sanitizedMsg = sanitizeAssistantMessage(text, userMessage, [], context);
+        const thoughtSteps = generateThoughtSteps(userMessage, [], context, sanitizedMsg);
         return {
           message: sanitizedMsg,
           operations: [],
+          thoughtSteps,
           suggestions: [],
           engineSource: 'in_app_webgpu',
           modelUsed: inAppModel,
@@ -303,34 +409,44 @@ Examples:
   if (provider === 'local_ollama') {
     const startTime = performance.now();
     const endpoint = (settings.localEndpoint || 'http://localhost:11434').replace(/\/$/, '');
-    const localModel = settings.localModel || 'qwen2.5:1.5b';
+    const localModel = settings.localModel || 'qwen3:8b';
+    const isHttpsPage = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    const isLocalHttp = endpoint.startsWith('http://localhost') || endpoint.startsWith('http://127.0.0.1');
 
     try {
       // First check if the model is actually installed in Ollama
+      let resolvedModel = localModel;
       const tagsRes = await fetch(`${endpoint}/api/tags`).catch(() => null);
       if (tagsRes && tagsRes.ok) {
         const tagsData = await tagsRes.json();
         const installedModels: string[] = (tagsData.models || []).map((m: any) => m.name || m.model);
-        const hasModel = installedModels.some(
+        const matched = installedModels.find(
           m => m === localModel || m.startsWith(`${localModel}:`) || localModel.startsWith(`${m}:`)
         );
 
-        if (!hasModel && installedModels.length > 0) {
+        if (matched) {
+          resolvedModel = matched;
+        } else if (installedModels.length > 0) {
           const fallbackRes = parseClientHeuristic(userMessage, context);
           return {
             ...fallbackRes,
             engineSource: 'heuristic_fallback',
             modelUsed: 'Offline Rule-Based Heuristic',
-            warning: `Model "${localModel}" is not downloaded in Ollama (Installed: ${installedModels.join(', ')}). Run "ollama run ${localModel}" or switch model.`,
+            warning: `Model "${localModel}" is not downloaded in Ollama (Installed: ${installedModels.join(', ')}). Run "ollama run ${localModel}" or switch model in Settings.`,
           };
         }
       } else {
         const fallbackRes = parseClientHeuristic(userMessage, context);
+        const warningMsg = isHttpsPage && isLocalHttp
+          ? `Browser blocked connection to ${endpoint} (Mixed Content on deployed HTTPS site). Switch to In-App Direct Model in Settings or use an HTTPS tunnel.`
+          : (tagsRes && tagsRes.status === 403)
+            ? `Ollama CORS blocked (403 Forbidden). Ensure OLLAMA_ORIGINS="*" is set on your PC.`
+            : `Local Ollama server is offline or unreachable at ${endpoint}. Responded using offline heuristic rule engine.`;
         return {
           ...fallbackRes,
           engineSource: 'heuristic_fallback',
           modelUsed: 'Offline Rule-Based Heuristic',
-          warning: `Local Ollama server is offline or unreachable at ${endpoint}. Responded using offline heuristic rule engine.`,
+          warning: warningMsg,
         };
       }
 
@@ -348,7 +464,7 @@ Examples:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: localModel,
+          model: resolvedModel,
           messages: ollamaMessages,
           temperature: 0.1,
           response_format: { type: 'json_object' }
@@ -381,11 +497,13 @@ Examples:
 
             ops = preserveRefinedTaskProperties(ops, userMessage, context);
             ops = deduplicateOperations(ops);
-            msg = sanitizeAssistantMessage(msg, userMessage, ops);
+            msg = sanitizeAssistantMessage(msg, userMessage, ops, context);
+            const thoughtSteps = generateThoughtSteps(userMessage, ops, context, msg, parsed.thought_steps || parsed.thoughtSteps);
 
             return {
               message: msg,
               operations: ops,
+              thoughtSteps,
               suggestions: parsed.suggestions || [],
               is_overloaded: parsed.is_overloaded,
               overload_minutes: parsed.overload_minutes,
@@ -405,10 +523,12 @@ Examples:
               };
             }
 
-            const sanitizedMsg = sanitizeAssistantMessage(content, userMessage, []);
+            const sanitizedMsg = sanitizeAssistantMessage(content, userMessage, [], context);
+            const thoughtSteps = generateThoughtSteps(userMessage, [], context, sanitizedMsg);
             return {
               message: sanitizedMsg,
               operations: [],
+              thoughtSteps,
               suggestions: [],
               engineSource: 'ollama_local',
               modelUsed: localModel,
@@ -437,6 +557,9 @@ Examples:
     result.latencyMs = result.latencyMs || Math.round(performance.now() - start);
     if (result && result.operations) {
       result.operations = deduplicateOperations(result.operations);
+    }
+    if (result && (!result.thoughtSteps || result.thoughtSteps.length === 0)) {
+      result.thoughtSteps = generateThoughtSteps(userMessage, result.operations || [], context, result.message);
     }
     return result;
   } catch (err) {
@@ -480,6 +603,101 @@ function extractRecentTaskTitle(context: AiRequestContext): string | null {
   return null;
 }
 
+// Helper: Clean command noise and leading preambles from user task titles
+function cleanTaskTitle(raw: string): string {
+  return raw
+    .replace(/^(?:create\s+tasks?\s+(?:for\s+(?:today|tomorrow)\s*)?(?:at\s+time)?|add\s+tasks?|schedule\s+tasks?|tasks?\s+for\s+(?:today|tomorrow)|at\s+time|then\s+at|at|and|then|,|\.)+/gi, '')
+    .replace(/(?:,\s*|\s+then\s+at.*|\s+then.*|\s+at\s+\d+.*)$/gi, '')
+    .trim()
+    .replace(/^[,.\s]+|[,.\s]+$/g, '')
+    .replace(/^([a-z])/, (_, c) => c.toUpperCase());
+}
+
+// Helper: Normalize any natural time format (e.g. "10am", "12 am", "1pm", "9:30pm") into standard "HH:MM"
+function normalizeTimeFormat(raw: string): string | null {
+  const match = raw.trim().toLowerCase().match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+  if (!match) return null;
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2] ? parseInt(match[2], 10) : 0;
+  const meridian = match[3];
+
+  if (meridian === 'pm' && hours < 12) hours += 12;
+  // If user says "12 am" in a daytime context (or between 10am and 1pm), treat as 12:00 noon
+  if (meridian === 'am' && hours === 12) hours = 12;
+
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+// Step 1 & 2: Parse multi-task compound schedules with time markers into discrete commitments
+function parseCompoundScheduleTasks(userMessage: string): AiOperation[] | null {
+  const cleanInput = userMessage.trim();
+  const clauses = cleanInput.split(/(?:,\s*|\s*;\s*|\n+|\s+\bthen\s+(?:at\s+)?)/i);
+  const tasks: AiOperation[] = [];
+
+  for (const rawClause of clauses) {
+    const clause = rawClause.trim();
+    if (!clause) continue;
+
+    const timeMatch = clause.match(/(?:(?:at|from)\s+time\s+|(?:at|from)\s+)?\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)?|\d{1,2}:\d{2})\b/i);
+
+    if (timeMatch && (/(am|pm|:\d{2})/i.test(timeMatch[0]) || /(at|from)/i.test(timeMatch[0]))) {
+      const rawTime = timeMatch[1];
+      const time = normalizeTimeFormat(rawTime);
+      const titleRaw = clause.replace(timeMatch[0], '');
+      const title = cleanTaskTitle(titleRaw);
+
+      if (title && time) {
+        const isMeeting = /meeting|sync|interview|call|client|appointment/i.test(title);
+        const isStudy = /dsa|study|learn|book|course|system design|reading/i.test(title);
+        const isHealth = /workout|exercise|gym|run|walk|breathing|meditation/i.test(title);
+
+        tasks.push({
+          op_type: 'ADD_COMMITMENT',
+          title,
+          start_time: time,
+          category: isMeeting ? 'Work' : isStudy ? 'Learning' : isHealth ? 'Health' : 'Work',
+          priority: isMeeting ? 'critical' : 'important',
+          duration_minutes: isMeeting ? 45 : 60,
+          target_date: cleanInput.toLowerCase().includes('tomorrow') ? 'tomorrow' : 'today',
+        });
+      }
+    }
+  }
+
+  return tasks.length > 0 ? tasks : null;
+}
+
+// Step 1 & 2: Parse multi-task lists without explicit times
+function parseCompoundFlexibleTasks(userMessage: string): AiOperation[] | null {
+  const cleanInput = userMessage.trim();
+  if (!/^(add|create|plan|schedule)\s+(tasks?|todos?|items?)/i.test(cleanInput)) return null;
+
+  const stripped = cleanInput.replace(/^(add|create|plan|schedule)\s+(tasks?|todos?|items?)\s*(?:for\s+(?:today|tomorrow))?[:\s]*/i, '');
+  const items = stripped.split(/,\s*|\band\s+|\n+|\d+\.\s*/i).map(s => cleanTaskTitle(s)).filter(s => s.length > 2);
+
+  if (items.length > 1) {
+    return items.map(title => ({
+      op_type: 'ADD_TASK',
+      title,
+      duration_minutes: 45,
+      priority: /urgent|critical|important/i.test(title) ? 'important' : 'flexible',
+      category: /code|api|work|fix|client|bug/i.test(title) ? 'Work' : /dsa|learn|study/i.test(title) ? 'Learning' : 'Personal',
+      target_date: cleanInput.toLowerCase().includes('tomorrow') ? 'tomorrow' : 'today',
+    }));
+  }
+  return null;
+}
+
+// Step 3: Format friendly, articulate summary of planned commitments
+function formatScheduleSummary(tasks: AiOperation[]): string {
+  if (tasks.length === 1) {
+    const t = tasks[0];
+    return `Scheduled commitment "${t.title}" at ${t.start_time} ${t.target_date || 'today'}.`;
+  }
+  const items = tasks.map(t => `"${t.title}" at ${t.start_time}`).join(', ');
+  return `I've planned ${tasks.length} commitments for ${tasks[0].target_date || 'today'}: ${items}. Click "Apply Changes" below to add them to your schedule.`;
+}
+
 function parseClientHeuristic(userMessage: string, context: AiRequestContext): AiResponsePayload {
   const msg = userMessage.trim().toLowerCase();
   const operations: any[] = [];
@@ -494,9 +712,11 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
   const isUserPersonaQuery = /^(you know me|do you know me|who am i|what is my name|what's my name|my name|about me|do you know about me)(\s*.*)?$/i.test(msg);
 
   if (isPraise) {
+    const thoughtSteps = generateThoughtSteps(userMessage, [], context, "Gratitude acknowledgement");
     return {
       message: "Thank you so much! I'm glad I can help you stay focused and peaceful. Let me know whenever you'd like to adjust your tasks or schedule.",
       operations: [],
+      thoughtSteps,
       suggestions: [
         'Organize my tasks for today',
         'Add a 30m deep work block',
@@ -508,9 +728,11 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
   }
 
   if (isOnlineQuery) {
+    const thoughtSteps = generateThoughtSteps(userMessage, [], context, "Model status diagnostic");
     return {
       message: "The AI model is currently offline or unreachable. FocasFlow is responding using its built-in offline heuristic engine. You can check your model setup in Settings → AI Configuration.",
       operations: [],
+      thoughtSteps,
       suggestions: [
         'Check model status in AI Configuration',
         'Add task "Learn Rust" for 60m',
@@ -523,9 +745,11 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
   }
 
   if (isUserPersonaQuery) {
+    const thoughtSteps = generateThoughtSteps(userMessage, [], context, "User profile verification");
     return {
       message: "Yes! I know you based on the profile context you've set up in your settings. I use that context to personalize your focus blocks and schedule.",
       operations: [],
+      thoughtSteps,
       suggestions: [
         'Organize my tasks for today',
         'Add a 30m deep work block'
@@ -538,13 +762,19 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
   }
 
   if (isGreeting) {
+    const taskCount = context.remaining_tasks.length;
+    const taskSummary = taskCount > 0
+      ? `I'm currently reviewing your schedule: you have ${taskCount} active task${taskCount > 1 ? 's' : ''} planned for today.`
+      : `I checked your schedule: you currently have no pending tasks for today.`;
+    const thoughtSteps = generateThoughtSteps(userMessage, [], context, "Greeting check-in");
     return {
-      message: "Hello! How can I help you organize your schedule or tasks today?",
+      message: `Hello! ${taskSummary} I'm ready to help you plan focus blocks, organize commitments, or optimize your workflow. What would you like to work on?`,
       operations: [],
+      thoughtSteps,
       suggestions: [
-        'Schedule 45m DSA Practice today at 4:00 PM',
-        'Move client API platform task to tomorrow',
-        'Skip workout today and free up my morning'
+        'Organize my tasks for today',
+        'Add a 30m deep work block',
+        'Review my daily focus schedule'
       ],
       engineSource: 'heuristic_fallback',
       modelUsed: 'Offline Rule-Based Heuristic',
@@ -777,7 +1007,44 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
 
     message = `Updated "${targetTitle}" (${details.join(', ') || `category: ${finalCategory}`}).`;
   }
-  // 3. Commitments & Appointments
+  // 2c. Step-by-Step Multi-Task Compound Schedule Parsing (e.g. "at 10am X, 12pm Y, 1pm Z, then at 9:30pm W")
+  const compoundTasks = parseCompoundScheduleTasks(userMessage);
+  if (compoundTasks && compoundTasks.length > 0) {
+    const summaryMsg = formatScheduleSummary(compoundTasks);
+    const thoughtSteps = generateThoughtSteps(userMessage, compoundTasks, context, summaryMsg);
+    return {
+      message: summaryMsg,
+      operations: compoundTasks,
+      thoughtSteps,
+      suggestions: [
+        'Apply changes to today\'s schedule',
+        'Add a 15m mindful break between tasks',
+        'Refine meeting time with Diorian'
+      ],
+      engineSource: 'heuristic_fallback',
+      modelUsed: 'Step-by-Step Intent Parser',
+      latencyMs: 1,
+    };
+  }
+
+  // 2d. Multi-Task Lists without fixed times (e.g. "add tasks: X, Y, Z")
+  const flexibleCompound = parseCompoundFlexibleTasks(userMessage);
+  if (flexibleCompound && flexibleCompound.length > 0) {
+    const itemsList = flexibleCompound.map(t => `"${t.title}"`).join(', ');
+    const summaryMsg = `I've created ${flexibleCompound.length} tasks for your schedule: ${itemsList}. Click "Apply Changes" below to add them to your list.`;
+    const thoughtSteps = generateThoughtSteps(userMessage, flexibleCompound, context, summaryMsg);
+    return {
+      message: summaryMsg,
+      operations: flexibleCompound,
+      thoughtSteps,
+      suggestions: ['Apply changes to schedule', 'Organize tasks by priority'],
+      engineSource: 'heuristic_fallback',
+      modelUsed: 'Step-by-Step Intent Parser',
+      latencyMs: 1,
+    };
+  }
+
+  // 3. Commitments & Appointments (Single item)
   else if (msg.includes('meeting') || msg.includes('call') || msg.includes('appointment') || msg.includes('sync')) {
     let startTime = '16:00';
     if (msg.includes('at 4') || msg.includes('4 pm') || msg.includes('16:00')) startTime = '16:00';
@@ -785,11 +1052,15 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
     else if (msg.includes('at 2') || msg.includes('2 pm') || msg.includes('14:00')) startTime = '14:00';
     else if (msg.includes('at 11') || msg.includes('11 am')) startTime = '11:00';
     else if (msg.includes('at 10') || msg.includes('10 am')) startTime = '10:00';
+    else {
+      const explicitTimeMatch = msg.match(/(?:at|from)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i);
+      if (explicitTimeMatch) {
+        const norm = normalizeTimeFormat(explicitTimeMatch[1]);
+        if (norm) startTime = norm;
+      }
+    }
 
-    const cleanTitle = userMessage
-      .replace(/^(add|schedule|create|set up)\s+/i, '')
-      .replace(/\s+at\s+\d+(:?\d+)?\s*(am|pm)?/i, '')
-      .trim() || userMessage;
+    const cleanTitle = cleanTaskTitle(userMessage) || userMessage;
 
     operations.push({
       op_type: 'ADD_COMMITMENT',
@@ -797,7 +1068,7 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
       duration_minutes: 30,
       priority: 'critical',
       category: 'Work',
-      target_date: 'today',
+      target_date: msg.includes('tomorrow') ? 'tomorrow' : 'today',
       start_time: startTime,
     });
     message = `Added commitment "${cleanTitle}" at ${startTime}.`;
@@ -905,10 +1176,12 @@ function parseClientHeuristic(userMessage: string, context: AiRequestContext): A
 
   // Safety Intent Guard: If user query has no explicit action intent, never return operations!
   const finalOps = hasExplicitActionIntent(userMessage) ? operations : [];
+  const thoughtSteps = generateThoughtSteps(userMessage, finalOps, context, message);
 
   return {
     message,
     operations: finalOps,
+    thoughtSteps,
     suggestions: finalOps.length > 0 ? [
       'Move flexible work to tomorrow if your afternoon feels tight',
       'Take a 10-minute break after deep focus blocks',

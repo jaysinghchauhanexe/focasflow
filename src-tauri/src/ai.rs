@@ -17,9 +17,17 @@ pub struct AiOperation {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AiThoughtStep {
+    pub title: String,
+    pub detail: String,
+    pub status: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AiResponsePayload {
     pub message: String,
     pub operations: Vec<AiOperation>,
+    pub thought_steps: Option<Vec<AiThoughtStep>>,
     pub suggestions: Option<Vec<String>>,
     pub is_overloaded: Option<bool>,
     pub overload_minutes: Option<i32>,
@@ -44,18 +52,67 @@ pub async fn execute_ai_intent(context: AiRequestContext) -> Result<AiResponsePa
     let api_key = context.api_key.clone().unwrap_or_default();
     let model = context.model.clone().unwrap_or_else(|| "anthropic/claude-3.5-haiku".to_string());
 
+    // 1. If OpenRouter API key is configured, use OpenRouter cloud
     if !api_key.trim().is_empty() {
-        match call_openrouter(&api_key, &model, &context).await {
-            Ok(res) => return Ok(res),
-            Err(err) => {
-                eprintln!("OpenRouter call error: {}. Falling back to local parser.", err);
-                // Fallback to local heuristic parser
-            }
+        if let Ok(res) = call_openrouter(&api_key, &model, &context).await {
+            return Ok(res);
         }
     }
 
-    // Local deterministic heuristic engine for offline mode
+    // 2. If local Ollama daemon is running, call local Ollama (e.g. qwen3:8b)
+    if let Ok(res) = call_local_ollama(&context).await {
+        return Ok(res);
+    }
+
+    // 3. Deterministic step-by-step heuristic engine for offline mode
     Ok(parse_local_heuristic(&context))
+}
+
+async fn call_local_ollama(
+    context: &AiRequestContext,
+) -> Result<AiResponsePayload, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(25))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let default_prompt = "You are FocusFlow AI. You MUST follow the 4-step procedure: understand user intent, decompose multiple tasks into discrete individual operations with clean titles and 24h start_time, outline summary in message, and output clean JSON.";
+    let system_prompt = context.system_prompt.as_deref().unwrap_or(default_prompt);
+    let model = context.model.clone().unwrap_or_else(|| "qwen3:8b".to_string());
+
+    let body = serde_json::json!({
+        "model": model,
+        "messages": [
+            { "role": "system", "content": system_prompt },
+            { "role": "user", "content": context.user_message }
+        ],
+        "format": "json",
+        "stream": false,
+        "options": {
+            "temperature": 0.1
+        }
+    });
+
+    let res = client
+        .post("http://localhost:11434/api/chat")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if !res.status().is_success() {
+        return Err(format!("Ollama status error: {}", res.status()));
+    }
+
+    let json_val: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+    let content = json_val["message"]["content"]
+        .as_str()
+        .ok_or_else(|| "Invalid response format from Ollama".to_string())?;
+
+    let parsed: AiResponsePayload =
+        serde_json::from_str(content).map_err(|e| format!("Failed to parse JSON response: {}", e))?;
+
+    Ok(parsed)
 }
 
 async fn call_openrouter(
@@ -66,38 +123,14 @@ async fn call_openrouter(
     let client = reqwest::Client::new();
 
     let default_prompt = "You are FocusFlow AI, a calm, disciplined personal scheduling assistant for Daily Life OS.\n\
-    Your job is to interpret the user's natural language request and convert it into structured operations.\n\
-    DO NOT generate the full schedule timetable yourself. Instead, generate discrete operations.\n\
-    Available operation types:\n\
-    - ADD_TASK (title, duration_minutes, priority ['critical', 'important', 'flexible', 'optional'], category ['Health', 'Work', 'Personal', 'Learning', 'Neutral'], deadline, scheduled_date)\n\
-    - UPDATE_TASK (task_id, title, duration_minutes, priority, category)\n\
-    - DELETE_TASK (task_id, title)\n\
-    - MOVE_TASK (task_id, title, target_date ['today', 'tomorrow', 'next_week', or YYYY-MM-DD], preferred_time ['morning', 'afternoon', 'evening'])\n\
-    - SKIP_TASK (task_id, title, notes)\n\
-    - COMPLETE_TASK (task_id, title)\n\
-    - CHANGE_PRIORITY (task_id, title, priority)\n\
-    - CHANGE_DURATION (task_id, title, duration_minutes)\n\
-    - CREATE_HABIT (title, category, duration_minutes, frequency ['daily', 'weekdays', 'weekends', 'weekly'], preferred_time ['morning', 'afternoon', 'evening'])\n\
-    - ADD_COMMITMENT (title, category, start_time [e.g. '16:00'], duration_minutes, target_date)\n\
-    - REPLAN_DAY (notes)\n\
-    Always respond with ONLY a valid JSON object matching this schema:\n\
-    {\n\
-      \"message\": \"Concise and friendly confirmation message for the user\",\n\
-      \"operations\": [\n\
-        {\n\
-          \"op_type\": \"ADD_TASK\",\n\
-          \"title\": \"Example\",\n\
-          \"duration_minutes\": 60,\n\
-          \"priority\": \"important\",\n\
-          \"category\": \"Work\"\n\
-        }\n\
-      ],\n\
-      \"suggestions\": [\"Suggestion 1\", \"Suggestion 2\"],\n\
-      \"is_overloaded\": false,\n\
-      \"overload_minutes\": 0\n\
-    }";
+    MANDATORY 4-STEP PROCEDURE:\n\
+    1. Understand user intent and decompose multi-task or compound clauses into individual items.\n\
+    2. Determine operations: use ADD_COMMITMENT with 24h start_time for specific times, ADD_TASK for flexible tasks.\n\
+    3. Outline implementation summary in message.\n\
+    4. Output clean JSON only.";
 
-    let system_prompt = context.system_prompt.as_deref().unwrap_or(default_prompt); let prompt = format!(
+    let system_prompt = context.system_prompt.as_deref().unwrap_or(default_prompt);
+    let prompt = format!(
         "Context:\nDate: {}\nTime: {}\nWorking Hours: {}\nSleep Hours: {}\nRemaining Tasks: {:?}\nHabits: {:?}\n\nUser Request: \"{}\"",
         context.current_date,
         context.current_time,
@@ -143,12 +176,145 @@ async fn call_openrouter(
     Ok(parsed)
 }
 
+fn clean_task_title(raw: &str) -> String {
+    let lower = raw.trim().to_lowercase();
+    let mut cleaned = raw.trim();
+
+    let prefixes = [
+        "create tasks for today at time",
+        "create tasks for today",
+        "create task for today",
+        "create tasks for tomorrow",
+        "create tasks",
+        "create task",
+        "add tasks for today",
+        "add task for today",
+        "add tasks",
+        "add task",
+        "schedule tasks for today",
+        "schedule tasks",
+        "schedule task",
+        "schedule",
+        "at time",
+        "then at",
+        "then",
+        "and",
+    ];
+
+    for prefix in &prefixes {
+        if lower.starts_with(prefix) {
+            cleaned = cleaned[prefix.len()..].trim();
+            break;
+        }
+    }
+
+    let mut result = cleaned
+        .trim_matches(|c: char| c == ',' || c == '.' || c == ';' || c.is_whitespace())
+        .to_string();
+
+    if let Some(first_char) = result.chars().next() {
+        result = format!("{}{}", first_char.to_uppercase(), &result[first_char.len_utf8()..]);
+    }
+
+    result
+}
+
+fn normalize_time_str(raw: &str) -> Option<String> {
+    let lower = raw.trim().to_lowercase();
+    let is_pm = lower.contains("pm");
+    let is_am = lower.contains("am");
+
+    let num_part: String = lower.chars().filter(|c| c.is_ascii_digit() || *c == ':').collect();
+    let parts: Vec<&str> = num_part.split(':').collect();
+    if parts.is_empty() {
+        return None;
+    }
+
+    let mut hours: u32 = parts[0].parse().ok()?;
+    let minutes: u32 = if parts.len() > 1 { parts[1].parse().unwrap_or(0) } else { 0 };
+
+    if is_pm && hours < 12 {
+        hours += 12;
+    }
+    // If user wrote "12 am" in daytime context, normalize to noon 12:00
+    if is_am && hours == 12 {
+        hours = 12;
+    }
+
+    Some(format!("{:02}:{:02}", hours, minutes))
+}
+
 fn parse_local_heuristic(context: &AiRequestContext) -> AiResponsePayload {
     let msg = context.user_message.to_lowercase();
     let mut operations = Vec::new();
     let message;
 
-    if msg.contains("meeting") || msg.contains("call") || msg.contains("appointment") {
+    // STEP 1 & 2: Compound multi-task schedule with time markers (e.g. "at 10am check emails, 12 am portfolio fixing, 1pm learning dsa then at 9:30pm meeting with Diorian")
+    let clauses: Vec<&str> = context.user_message
+        .split(|c| c == ',' || c == ';')
+        .flat_map(|s| s.split(" then "))
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect();
+
+    let mut parsed_compound = Vec::new();
+    for clause in &clauses {
+        let cl_lower = clause.to_lowercase();
+        let mut found_time: Option<String> = None;
+        let mut time_str_to_strip = "";
+
+        for word in cl_lower.split_whitespace() {
+            if word.contains("am") || word.contains("pm") || word.contains(':') {
+                if let Some(norm) = normalize_time_str(word) {
+                    found_time = Some(norm);
+                    time_str_to_strip = word;
+                    break;
+                }
+            }
+        }
+
+        if let Some(time) = found_time {
+            let mut title_part = clause.replace(time_str_to_strip, "");
+            title_part = title_part.replace("at time", "").replace("at", "");
+            let clean = clean_task_title(&title_part);
+
+            if !clean.is_empty() {
+                let is_meeting = clean.to_lowercase().contains("meeting") || clean.to_lowercase().contains("sync") || clean.to_lowercase().contains("interview");
+                let is_study = clean.to_lowercase().contains("dsa") || clean.to_lowercase().contains("study") || clean.to_lowercase().contains("learn") || clean.to_lowercase().contains("design");
+                let is_health = clean.to_lowercase().contains("workout") || clean.to_lowercase().contains("exercise") || clean.to_lowercase().contains("gym");
+
+                let category = if is_meeting { "Work" } else if is_study { "Learning" } else if is_health { "Health" } else { "Work" };
+                let priority = if is_meeting { "critical" } else { "important" };
+                let duration = if is_meeting { 45 } else { 60 };
+
+                parsed_compound.push(AiOperation {
+                    op_type: "ADD_COMMITMENT".to_string(),
+                    title: Some(clean),
+                    task_id: None,
+                    duration_minutes: Some(duration),
+                    priority: Some(priority.to_string()),
+                    category: Some(category.to_string()),
+                    target_date: Some("today".to_string()),
+                    start_time: Some(time),
+                    end_time: None,
+                    frequency: None,
+                    preferred_time: None,
+                    notes: None,
+                });
+            }
+        }
+    }
+
+    if parsed_compound.len() > 1 {
+        // STEP 3: Outline summary of multiple planned commitments
+        let count = parsed_compound.len();
+        let summaries: Vec<String> = parsed_compound
+            .iter()
+            .map(|op| format!("{} ({})", op.title.as_deref().unwrap_or("Task"), op.start_time.as_deref().unwrap_or("")))
+            .collect();
+        message = format!("I've planned {} commitments for today: {}. Click 'Apply Changes' below to add them to your schedule.", count, summaries.join(", "));
+        operations = parsed_compound;
+    } else if msg.contains("meeting") || msg.contains("call") || msg.contains("appointment") {
         let mut start_time = "14:00".to_string();
         if msg.contains("at 4") || msg.contains("4 pm") || msg.contains("16:00") {
             start_time = "16:00".to_string();
@@ -162,9 +328,11 @@ fn parse_local_heuristic(context: &AiRequestContext) -> AiResponsePayload {
             start_time = "10:00".to_string();
         }
 
+        let clean_title = clean_task_title(&context.user_message);
+
         operations.push(AiOperation {
             op_type: "ADD_COMMITMENT".to_string(),
-            title: Some(context.user_message.clone()),
+            title: Some(clean_title.clone()),
             task_id: None,
             duration_minutes: Some(45),
             priority: Some("critical".to_string()),
@@ -176,7 +344,7 @@ fn parse_local_heuristic(context: &AiRequestContext) -> AiResponsePayload {
             preferred_time: None,
             notes: None,
         });
-        message = format!("Scheduled commitment at {} today.", start_time);
+        message = format!("Scheduled commitment '{}' at {} today.", clean_title, start_time);
     } else if msg.contains("skip") || msg.contains("don't want to") || msg.contains("dont want to") {
         let target = if msg.contains("exercise") {
             "Morning workout"
@@ -203,9 +371,10 @@ fn parse_local_heuristic(context: &AiRequestContext) -> AiResponsePayload {
         });
         message = format!("Marked {} as skipped. Recalculating remaining day...", target);
     } else if msg.contains("tomorrow") || msg.contains("move") || msg.contains("later") {
+        let clean = clean_task_title(&context.user_message);
         operations.push(AiOperation {
             op_type: "MOVE_TASK".to_string(),
-            title: Some(context.user_message.clone()),
+            title: Some(clean),
             task_id: None,
             duration_minutes: None,
             priority: None,
@@ -222,9 +391,10 @@ fn parse_local_heuristic(context: &AiRequestContext) -> AiResponsePayload {
         let mut duration = 45;
         if msg.contains("30 min") { duration = 30; }
         if msg.contains("60 min") || msg.contains("1 hour") { duration = 60; }
+        let clean = clean_task_title(&context.user_message);
         operations.push(AiOperation {
             op_type: "CREATE_HABIT".to_string(),
-            title: Some(context.user_message.clone()),
+            title: Some(clean.clone()),
             task_id: None,
             duration_minutes: Some(duration),
             priority: Some("important".to_string()),
@@ -236,11 +406,10 @@ fn parse_local_heuristic(context: &AiRequestContext) -> AiResponsePayload {
             preferred_time: Some("morning".to_string()),
             notes: None,
         });
-        message = format!("Created recurring habit ({} min, weekdays).", duration);
+        message = format!("Created recurring habit '{}' ({} min, weekdays).", clean, duration);
     } else if msg.contains("what should i do") || msg.contains("what to do") || msg.contains("right now") {
         message = "Focus on your next scheduled priority task. Your schedule has been reviewed.".to_string();
     } else {
-        // Generic Add Task
         let mut duration = 60;
         if msg.contains("2 hours") || msg.contains("2h") || msg.contains("2 hr") { duration = 120; }
         else if msg.contains("3 hours") || msg.contains("3h") || msg.contains("3 hr") { duration = 180; }
@@ -268,9 +437,10 @@ fn parse_local_heuristic(context: &AiRequestContext) -> AiResponsePayload {
             "Personal"
         };
 
+        let clean = clean_task_title(&context.user_message);
         operations.push(AiOperation {
             op_type: "ADD_TASK".to_string(),
-            title: Some(context.user_message.clone()),
+            title: Some(clean.clone()),
             task_id: None,
             duration_minutes: Some(duration),
             priority: Some(priority.to_string()),
@@ -282,14 +452,15 @@ fn parse_local_heuristic(context: &AiRequestContext) -> AiResponsePayload {
             preferred_time: None,
             notes: None,
         });
-        message = format!("Added '{}' ({} min, {} priority) to your schedule.", context.user_message, duration, priority);
+        message = format!("Added '{}' ({} min, {} priority) to your schedule.", clean, duration, priority);
     }
 
     AiResponsePayload {
         message,
         operations,
+        thought_steps: None,
         suggestions: Some(vec![
-            "Move flexible task to tomorrow if needed".to_string(),
+            "Apply proposed schedule changes".to_string(),
             "Keep 15m buffer before your next meeting".to_string(),
         ]),
         is_overloaded: Some(false),

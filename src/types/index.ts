@@ -191,9 +191,16 @@ export interface AiOperation {
   notes?: string;
 }
 
+export interface AiThoughtStep {
+  title: string;
+  detail: string;
+  status?: 'done' | 'active' | 'pending';
+}
+
 export interface AiResponsePayload {
   message: string;
   operations: AiOperation[];
+  thoughtSteps?: AiThoughtStep[];
   suggestions?: string[];
   is_overloaded?: boolean;
   overload_minutes?: number;

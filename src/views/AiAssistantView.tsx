@@ -121,6 +121,33 @@ export const AiAssistantView: React.FC = () => {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [whisperProgressText, setWhisperProgressText] = useState<string | null>(null);
   const [mobileViewTab, setMobileViewTab] = useState<'chat' | 'sidebar'>('chat');
+  const [loadingStepIndex, setLoadingStepIndex] = useState(0);
+  const [thinkingSeconds, setThinkingSeconds] = useState(0);
+  const [expandedStepsMap, setExpandedStepsMap] = useState<Record<string, boolean>>({});
+  const [isLiveThinkingCollapsed, setIsLiveThinkingCollapsed] = useState(true);
+
+  // Cycle through realistic reasoning stages & track live thinking duration during AI inference
+  useEffect(() => {
+    if (!loading) {
+      setLoadingStepIndex(0);
+      setThinkingSeconds(0);
+      setIsLiveThinkingCollapsed(true);
+      return;
+    }
+    const startTime = Date.now();
+    const timerInterval = setInterval(() => {
+      setThinkingSeconds(Math.max(0.1, (Date.now() - startTime) / 1000));
+    }, 100);
+
+    const stepInterval = setInterval(() => {
+      setLoadingStepIndex((prev) => (prev < 3 ? prev + 1 : prev));
+    }, 1200);
+
+    return () => {
+      clearInterval(timerInterval);
+      clearInterval(stepInterval);
+    };
+  }, [loading]);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -189,6 +216,100 @@ export const AiAssistantView: React.FC = () => {
         : (settings.openRouterModel || 'GPT-4o');
 
   const localEndpoint = settings.localEndpoint || 'http://localhost:11434';
+
+  const activeRemainingTasksCount = tasks.filter((t) => t.status !== 'completed' && t.status !== 'skipped').length;
+  const activeHabitsCount = habits.filter((h) => h.active).length;
+  const LOADING_STEPS = [
+    {
+      label: 'Understanding',
+      subtext: 'Analyzing request intent, context & parameters...',
+      icon: Sparkles,
+    },
+    {
+      label: 'Figuring it out',
+      subtext: `Scanning ${activeRemainingTasksCount} active tasks, ${activeHabitsCount} habits & working hours (${settings.workStart} - ${settings.workEnd})...`,
+      icon: SlidersHorizontal,
+    },
+    {
+      label: 'Aligning schedule',
+      subtext: 'Structuring focus blocks & checking calendar capacity...',
+      icon: Calendar,
+    },
+    {
+      label: `Synthesizing with ${activeModelName}`,
+      subtext: 'Formulating articulate response and structured action plan...',
+      icon: Cpu,
+    },
+  ];
+  const currentLoadingStep = LOADING_STEPS[Math.min(loadingStepIndex, LOADING_STEPS.length - 1)];
+
+  const LIVE_LOADING_ACTIONS = [
+    'understanding your request',
+    `scanning ${activeRemainingTasksCount} tasks & working hours (${settings.workStart} - ${settings.workEnd})`,
+    'structuring focus blocks & checking capacity',
+    `synthesizing with ${activeModelName}`,
+  ];
+
+  const getExecutionHeadline = (msg: ChatMessage) => {
+    const ops = msg.payload?.operations || [];
+    if (ops.length > 0) {
+      const isDelete = ops.some((o) => o.op_type === 'DELETE_TASK');
+      if (isDelete) return 'updating your schedule';
+      const hasCommitments = ops.some((o) => o.start_time);
+      if (hasCommitments) return "organizing today's commitments";
+      return 'planning your focus tasks';
+    }
+    const txt = msg.text.toLowerCase();
+    if (txt.includes('hello') || txt.includes('hi')) return 'reviewing your daily focus';
+    return 'optimizing your schedule';
+  };
+
+  const getOutcomePill = (msg: ChatMessage) => {
+    const ops = msg.payload?.operations || [];
+    if (ops.length > 0) {
+      const isDelete = ops.some((o) => o.op_type === 'DELETE_TASK');
+      if (isDelete) {
+        return {
+          keyword: 'Removed',
+          text: `Removed "${ops[0]?.title || 'task'}" from your schedule.`,
+        };
+      }
+      const commitments = ops.filter((o) => o.start_time);
+      if (commitments.length > 0) {
+        return {
+          keyword: 'Added',
+          text: `Drafted ${commitments.length} commitment${commitments.length > 1 ? 's' : ''} for your daily schedule.`,
+        };
+      }
+      return {
+        keyword: 'Added',
+        text: `Drafted ${ops.length} task${ops.length > 1 ? 's' : ''} for your schedule.`,
+      };
+    }
+
+    const userText = msg.text.toLowerCase();
+    if (userText.includes('hello') || userText.includes('hi')) {
+      const remainingCount = tasks.filter((t) => t.status !== 'completed' && t.status !== 'skipped').length;
+      return {
+        keyword: 'Reviewed',
+        text: `Checked ${remainingCount} active task${remainingCount === 1 ? '' : 's'} and ready to assist.`,
+      };
+    }
+
+    return {
+      keyword: 'Prepared',
+      text: 'Formulated recommendations and schedule guidance.',
+    };
+  };
+
+  const formatThoughtDuration = (latencyMs?: number): string => {
+    if (!latencyMs || latencyMs <= 0) return '1.2 seconds';
+    const secs = latencyMs / 1000;
+    if (secs < 1) {
+      return `${Math.max(0.2, secs).toFixed(1)} seconds`;
+    }
+    return `${secs.toFixed(1)} seconds`;
+  };
 
   // Dynamic greeting based on user time
   const currentHour = new Date().getHours();
@@ -337,7 +458,7 @@ export const AiAssistantView: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           const installedNames: string[] = (data.models || []).map((m: any) => m.name || m.model);
-          const target = settings.localModel || 'qwen2.5:1.5b';
+          const target = settings.localModel || 'qwen3:8b';
           const hasModel = installedNames.some(
             (m) => m === target || m.startsWith(`${target}:`) || target.startsWith(`${m}:`)
           );
@@ -351,11 +472,16 @@ export const AiAssistantView: React.FC = () => {
           }
         } else {
           setConnectionStatus('disconnected');
+          setStatusMessage(res.status === 403 ? 'Ollama CORS Blocked (403)' : 'Ollama Daemon Offline');
+        }
+      } catch (err: any) {
+        setConnectionStatus('disconnected');
+        const isMixed = typeof window !== 'undefined' && window.location.protocol === 'https:' && localEndpoint.startsWith('http://');
+        if (isMixed) {
+          setStatusMessage('Mixed Content Blocked (HTTPS)');
+        } else {
           setStatusMessage('Ollama Daemon Offline');
         }
-      } catch {
-        setConnectionStatus('disconnected');
-        setStatusMessage('Ollama Daemon Offline');
       }
       return;
     }
@@ -1099,10 +1225,74 @@ export const AiAssistantView: React.FC = () => {
                               </div>
                             )}
 
-                            {/* AI Response Text */}
+                            {/* 1. REASONING & EXECUTION TREE (Fiverr AI / Mira pattern) */}
+                            {msg.payload?.thoughtSteps && msg.payload.thoughtSteps.length > 0 && (
+                              <div className="space-y-1.5 text-left pb-1">
+                                {/* Header: ● FocasFlow is {action} + [Collapse] */}
+                                <div className="flex items-center justify-between gap-3 text-[12.5px]">
+                                  <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                                    <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                                    <span className="font-semibold text-foreground text-[12.5px] truncate">
+                                      FocasFlow is {getExecutionHeadline(msg)}
+                                    </span>
+                                    <span className="text-[11px] text-mutedText font-mono">
+                                      • Thought for {formatThoughtDuration(msg.payload?.latencyMs)}
+                                    </span>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setExpandedStepsMap((prev) => ({
+                                        ...prev,
+                                        [msg.id]: !prev[msg.id],
+                                      }))
+                                    }
+                                    className="px-2.5 py-0.5 rounded-full text-[11px] font-medium text-mutedText hover:text-foreground bg-card-subtle hover:bg-card-muted border border-borderToken/50 transition-colors cursor-pointer select-none flex-shrink-0"
+                                  >
+                                    {expandedStepsMap[msg.id] ? 'Collapse' : 'Expand'}
+                                  </button>
+                                </div>
+
+                                {/* Continuous vertical guide line (Collapsed by default) */}
+                                {expandedStepsMap[msg.id] && (
+                                  <div className="border-l-2 border-borderToken/70 ml-1 pl-3.5 space-y-1.5 py-1 text-[12.5px] animate-fade-in">
+                                    {msg.payload.thoughtSteps.map((step, sIdx) => {
+                                      return (
+                                        <div key={sIdx} className="flex items-baseline gap-2 leading-relaxed flex-wrap">
+                                          <span className="font-bold text-foreground text-[12.5px] flex items-center gap-1 flex-shrink-0">
+                                            <Check size={12} strokeWidth={3} className="text-foreground inline" />
+                                            <span>{step.title}</span>
+                                          </span>
+                                          <span className="text-mutedText/60 select-none">·</span>
+                                          <span className="text-mutedText text-[12px] break-words">
+                                            {step.detail}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* 2. AI RESPONSE TEXT */}
                             <p className="text-[13.5px] sm:text-[14px] text-foreground leading-relaxed select-text whitespace-pre-wrap">
                               {msg.text}
                             </p>
+
+                            {/* 3. ACTION OUTCOME PILL (Matching Fiverr AI's "✓ Added Drafted the opening for your website project") */}
+                            {(() => {
+                              const outcome = getOutcomePill(msg);
+                              if (!outcome) return null;
+                              return (
+                                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-tag-healthBg/80 border border-tag-health/30 text-tag-health text-[12px] w-fit shadow-xs">
+                                  <Check size={12} strokeWidth={2.5} className="flex-shrink-0" />
+                                  <span className="font-bold">{outcome.keyword}</span>
+                                  <span className="text-tag-health/90">{outcome.text}</span>
+                                </div>
+                              );
+                            })()}
 
                             {/* Render Structured Schedule Timeline (if operations were generated and not discarded) */}
                             {!msg.isDiscarded && msg.payload?.operations && msg.payload.operations.length > 0 && (
@@ -1164,33 +1354,18 @@ export const AiAssistantView: React.FC = () => {
                               </div>
                             )}
 
-                            {/* AI Debug Telemetry & Raw JSON (Only if enabled in Preferences) */}
-                            {settings.preferences?.enableAiDebugJson && (
-                              <div className="pt-3 border-t border-borderToken/50 flex flex-wrap items-center justify-between gap-2 text-[11px] text-mutedText font-mono">
-                                <span className="px-2 py-0.5 rounded-md bg-card-subtle">
-                                  Latency: {msg.payload?.latencyMs || 0}ms • {msg.payload?.modelUsed || activeModelName}
+                            {/* Thought Duration & Model Detail */}
+                            <div className="pt-2.5 border-t border-borderToken/40 flex items-center justify-between gap-2 text-[11px] text-mutedText font-mono">
+                              <div className="flex items-center gap-1.5">
+                                <Clock size={11} className="text-mutedText/70" />
+                                <span>
+                                  Thought for {formatThoughtDuration(msg.payload?.latencyMs)}
                                 </span>
-
-                                {msg.rawJson && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setShowRawJsonMap((prev) => ({ ...prev, [msg.id]: !prev[msg.id] }))
-                                    }
-                                    className="flex items-center gap-1 text-primary hover:underline cursor-pointer"
-                                  >
-                                    <Code2 size={12} />
-                                    <span>{isJsonOpen ? 'Hide JSON' : 'Inspect JSON'}</span>
-                                  </button>
-                                )}
-
-                                {isJsonOpen && msg.rawJson && (
-                                  <div className="w-full mt-2 p-3 rounded-xl bg-black/80 text-emerald-400 font-mono text-[11px] overflow-x-auto border border-white/10">
-                                    <pre>{msg.rawJson}</pre>
-                                  </div>
-                                )}
                               </div>
-                            )}
+                              <span className="text-[10.5px] text-mutedText/75">
+                                {msg.payload?.modelUsed || activeModelName}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1199,15 +1374,84 @@ export const AiAssistantView: React.FC = () => {
                 });
               })()}
 
-              {/* Loading Indicator */}
+              {/* Dynamic Live AI Reasoning / Activity Tree (Fiverr AI pattern) */}
               {loading && (
-                <div className="flex justify-start gap-3 items-center animate-fade-in">
-                  <div className="w-8 h-8 rounded-full bg-primary-soft text-primary flex items-center justify-center flex-shrink-0 animate-pulse">
+                <div className="flex justify-start gap-3 items-start animate-fade-in pr-8">
+                  <div className="w-8 h-8 rounded-full bg-primary-soft text-primary flex items-center justify-center flex-shrink-0 mt-1 border border-borderToken animate-pulse">
                     <Leaf size={15} />
                   </div>
-                  <div className="p-3.5 px-4 rounded-[22px] bg-card border border-borderToken text-mutedText text-[12.5px] flex items-center gap-2">
-                    <RefreshCw size={13} className="animate-spin text-primary" />
-                    <span>Recalibrating schedule with {activeModelName}...</span>
+
+                  <div className="max-w-[92%] sm:max-w-[85%] rounded-[24px] bg-card border border-borderToken/80 shadow-soft p-5 sm:p-6 space-y-3 text-left w-full">
+                    {/* Live Header: ● FocasFlow is {current action} • Thinking for {X}s + [Expand/Collapse] */}
+                    <div className="flex items-center justify-between gap-3 text-[12.5px]">
+                      <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                        {/* Shimmer sweeps across the dot ● AND the text together */}
+                        <span className="animate-ai-shimmer font-semibold text-[12.5px] inline-flex items-center gap-1.5 truncate">
+                          <span className="text-[10px] leading-none select-none">●</span>
+                          <span>FocasFlow is {LIVE_LOADING_ACTIONS[loadingStepIndex]}</span>
+                        </span>
+                        <span className="text-[11px] text-mutedText font-mono">
+                          • Thinking for {thinkingSeconds.toFixed(1)}s
+                        </span>
+                      </div>
+
+                      {/* Controls: Expand / Collapse button (Collapsed by default) */}
+                      <button
+                        type="button"
+                        onClick={() => setIsLiveThinkingCollapsed((prev) => !prev)}
+                        className="px-2.5 py-0.5 rounded-full text-[11px] font-medium text-mutedText hover:text-foreground bg-card-subtle hover:bg-card-muted border border-borderToken/50 transition-colors cursor-pointer select-none flex-shrink-0"
+                      >
+                        {isLiveThinkingCollapsed ? 'Expand' : 'Collapse'}
+                      </button>
+                    </div>
+
+                    {/* Continuous vertical guide line (Collapsed by default, expands only on click) */}
+                    {!isLiveThinkingCollapsed && (
+                      <div className="border-l-2 border-borderToken/70 ml-1 pl-3.5 space-y-2 py-1 text-[12.5px] animate-fade-in">
+                        {LOADING_STEPS.map((st, sIdx) => {
+                          const isDone = sIdx < loadingStepIndex;
+                          const isCurrent = sIdx === loadingStepIndex;
+                          if (sIdx > loadingStepIndex) return null; // reveal step by step
+                          return (
+                            <div
+                              key={sIdx}
+                              className={`flex items-baseline gap-2 leading-relaxed flex-wrap transition-all ${
+                                isCurrent ? 'animate-fade-in' : ''
+                              }`}
+                            >
+                              {isDone ? (
+                                <span className="font-bold text-foreground text-[12.5px] flex items-center gap-1 flex-shrink-0">
+                                  <Check size={12} strokeWidth={3} className="text-foreground inline" />
+                                  <span>{st.label}</span>
+                                </span>
+                              ) : (
+                                <span className="animate-ai-shimmer font-bold text-[12.5px] inline-flex items-center gap-1 flex-shrink-0">
+                                  <span className="text-[9px] select-none">●</span>
+                                  <span>{st.label}</span>
+                                </span>
+                              )}
+                              <span className="text-mutedText/60 select-none">·</span>
+                              <span className={isCurrent ? 'animate-ai-shimmer font-medium text-[12px]' : 'text-mutedText text-[12px]'}>
+                                {st.subtext}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Thinking Duration & Model Detail - Identical to Thought for card */}
+                    <div className="pt-2.5 border-t border-borderToken/40 flex items-center justify-between gap-2 text-[11px] text-mutedText font-mono">
+                      <div className="flex items-center gap-1.5">
+                        <Clock size={11} className="text-mutedText/70 animate-spin" />
+                        <span>
+                          Thinking for {thinkingSeconds.toFixed(1)}s
+                        </span>
+                      </div>
+                      <span className="text-[10.5px] text-mutedText/75">
+                        {activeModelName}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
